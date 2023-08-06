@@ -1,0 +1,17 @@
+version: "3.0"
+services:
+  app:
+    build:
+      dockerfile: ./Dockerfile
+    ports:
+      - 8080:8080
+  postgres:
+    image: postgres:bullseye
+    restart: always
+    volumes:
+      - ./data:/var/lib/postgresql
+    environment:
+      POSTGRES_PASSWORD: password
+      POSTGRES_USER: myuser
+    ports:
+      - 5432:5432
