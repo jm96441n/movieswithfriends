@@ -1,4 +1,4 @@
-package http
+package web
 
 import (
 	"fmt"
@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/jm96441n/movieswithfriends/store"
 	"golang.org/x/exp/slog"
 )
 
@@ -22,8 +23,8 @@ func loggingMiddlewareBuilder(logger *slog.Logger) func(http.Handler) http.Handl
 	}
 }
 
-func SetupWebServer(logger *slog.Logger, router *mux.Router, templates map[string]*template.Template) {
-	router.HandleFunc("/profiles/{id}", ProfileShowHandler(logger, templates[profileShowKey])).Methods("GET")
+func SetupWebServer(logger *slog.Logger, router *mux.Router, db *store.PGStore, templates map[string]*template.Template) {
+	router.HandleFunc("/profiles/{id}", ProfileShowHandler(logger, db, templates[profileShowKey])).Methods("GET")
 	router.Use(loggingMiddlewareBuilder(logger))
 	// router.HandleFunc("/profile/{id}", ProfileUpdateHandler(logger)).Methods("PUT", "PATCH")
 }

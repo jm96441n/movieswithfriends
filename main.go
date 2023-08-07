@@ -1,35 +1,44 @@
 package main
 
 import (
+	"embed"
+	_ "embed"
 	"net/http"
 	"os"
 
 	"github.com/gorilla/mux"
-	localhttp "github.com/jm96441n/movieswithfriends/http"
+	"github.com/jm96441n/movieswithfriends/store"
+	"github.com/jm96441n/movieswithfriends/web"
 	"golang.org/x/exp/slog"
 )
 
+//go:embed all:templates
+
+var templateFS embed.FS
+
 func main() {
-	//	urlExample := "postgres://myuser:password@localhost:5432/database_name"
-	//	conn, err := pgx.Connect(context.Background(), urlExample)
-	//	if err != nil {
-	//		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
-	//		os.Exit(1)
-	//	}
-	//	defer conn.Close(context.Background())
-	//
-	//	err = conn.QueryRow(context.Background(), "select * from accounts;")
-	//	if err != nil {
-	//		fmt.Fprintf(os.Stderr, "QueryRow failed: %v\n", err)
-	//		os.Exit(1)
-	//	}
-	//
-	tmpls := localhttp.BuildTemplates()
+	tmpls := web.BuildTemplates(templateFS)
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+
+	logger.Info("setting up postgres store")
+
+	creds, err := store.NewCreds(os.Getenv("DB_USERNAME"), os.Getenv("DB_PASSWORD"))
+	if err != nil {
+		logger.Error(err.Error())
+		os.Exit(1)
+	}
+
+	db, err := store.NewPostgesStore(creds, os.Getenv("DB_HOST"), os.Getenv("DB_DATABASE_NAME"))
+	if err != nil {
+		logger.Error(err.Error())
+		os.Exit(1)
+	}
+
+	logger.Info("completed postgres store setup")
 
 	router := mux.NewRouter()
 
-	localhttp.SetupWebServer(logger, router, tmpls)
+	web.SetupWebServer(logger, router, db, tmpls)
 	logger.Info("Listening on :8080...")
 
 	if err := http.ListenAndServe(":8080", router); err != nil {

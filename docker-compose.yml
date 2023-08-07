@@ -5,7 +5,12 @@ services:
       dockerfile: ./Dockerfile
     ports:
       - 8080:8080
-  postgres:
+    environment:
+      DB_USERNAME: myuser
+      DB_PASSWORD: password
+      DB_HOST: db
+      DB_DATABASE_NAME: movies
+  db:
     image: postgres:bullseye
     restart: always
     volumes:
