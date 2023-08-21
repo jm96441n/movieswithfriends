@@ -1,9 +1,9 @@
 function Signup() {
-    return (
-        <div>
-            <h3>Signup</h3>
-        </div>
-    )
+  return (
+    <div>
+      <h3>Signup</h3>
+    </div>
+  );
 }
 
 export default Signup;
