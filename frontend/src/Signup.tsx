@@ -8,13 +8,11 @@ function Signup() {
   const [password, setPassword] = useState<{ password: string }>("");
   const [partyID, setPartyID] = useState<{ partyID: string }>("");
 
-
-  const navigate = useNavigate({ from: '/login' })
-
+  const navigate = useNavigate({ from: "/login" });
 
   function handleOnClick(e: ChangeEvent<HTMLInputElement>) {
-    e.preventDefault()
-    const fetchData = async() => {
+    e.preventDefault();
+    const signUp = async () => {
       try {
         const response = await fetch("http://localhost:8080/signup", {
           method: "POST",
@@ -26,17 +24,17 @@ function Signup() {
             login: email,
             password: password,
             partyID: partyID,
-          })
+          }),
         });
-        console.log(response.status)
+        console.log(response.status);
         if (response.ok) {
-          navigate({to: '/login'})
+          navigate({ to: "/login" });
         }
       } catch (error) {
         console.error(error);
       }
-    }
-    fetchData();
+    };
+    signUp();
   }
 
   return (

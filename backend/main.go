@@ -1,23 +1,18 @@
 package main
 
 import (
-	"embed"
 	_ "embed"
 	"net/http"
 	"os"
 
 	"github.com/gorilla/mux"
+	"github.com/gorilla/sessions"
 	"github.com/jm96441n/movieswithfriends/store"
 	"github.com/jm96441n/movieswithfriends/web"
 	"golang.org/x/exp/slog"
 )
 
-//go:embed all:templates
-
-var templateFS embed.FS
-
 func main() {
-	tmpls := web.BuildTemplates(templateFS)
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 
 	logger.Info("setting up postgres store")
@@ -36,9 +31,23 @@ func main() {
 
 	logger.Info("completed postgres store setup")
 
+	logger.Info("setting up session store")
+
+	sessionStore := sessions.NewCookieStore(
+		[]byte(os.Getenv("SESSION_KEY")),
+	)
+
+	sessionStore.Options = &sessions.Options{
+		Path:     "/",
+		Domain:   "localhost",
+		MaxAge:   60 * 15,
+		HttpOnly: true,
+	}
+	logger.Info("completed session store setup")
+
 	router := mux.NewRouter()
 
-	web.SetupWebServer(logger, router, db, tmpls)
+	web.SetupWebServer(logger, router, db, sessionStore)
 	logger.Info("Listening on :8080...")
 
 	if err := http.ListenAndServe(":8080", router); err != nil {

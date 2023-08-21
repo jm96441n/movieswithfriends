@@ -1,12 +1,13 @@
 package web
 
 import (
+	"encoding/gob"
 	"fmt"
-	"html/template"
 	"net/http"
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/gorilla/sessions"
 	"github.com/jm96441n/movieswithfriends/store"
 	"golang.org/x/exp/slog"
 )
@@ -26,7 +27,8 @@ func loggingMiddlewareBuilder(logger *slog.Logger) func(http.Handler) http.Handl
 func corsMiddleware() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+			w.Header().Set("Access-Control-Allow-Credentials", "true")
 			w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 			w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
 
@@ -37,9 +39,11 @@ func corsMiddleware() func(http.Handler) http.Handler {
 	}
 }
 
-func SetupWebServer(logger *slog.Logger, router *mux.Router, db *store.PGStore, templates map[string]*template.Template) {
-	router.HandleFunc("/profiles/{id}", ProfileShowHandler(logger, db, templates[profileShowKey])).Methods("GET")
+func SetupWebServer(logger *slog.Logger, router *mux.Router, db *store.PGStore, sessionStore sessions.Store) {
+	gob.Register(User{})
+	router.HandleFunc("/profile", ProfileShowHandler(logger, db, sessionStore)).Methods("GET", "OPTIONS")
 	router.HandleFunc("/signup", SignUpHandler(logger, db)).Methods("POST", "OPTIONS")
+	router.HandleFunc("/login", LoginHandler(logger, db, sessionStore)).Methods("POST", "OPTIONS")
 	router.Use(loggingMiddlewareBuilder(logger), corsMiddleware())
 	// router.HandleFunc("/profile/{id}", ProfileUpdateHandler(logger)).Methods("PUT", "PATCH")
 }

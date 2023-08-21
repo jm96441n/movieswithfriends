@@ -18,6 +18,8 @@ services:
       DB_PASSWORD: password
       DB_HOST: db
       DB_DATABASE_NAME: movies
+      # generated using https://gist.github.com/dopey/c69559607800d2f2f90b1b1ed4e550fb
+      SESSION_KEY: wpFddnbG0CTTpzac3pXMAKqIKAZa1oxPjcF1Z8d0CtM=
     ports:
       - 8080:8080
     # depends_on:
