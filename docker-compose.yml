@@ -3,20 +3,23 @@ services:
   frontend:
     build:
       dockerfile: ./frontend/Dockerfile
-    ports:
-      - 3000:3000
     volumes:
       - ./frontend/src:/app/src
+    ports:
+      - 3000:3000
   backend:
     build:
       dockerfile: ./backend/Dockerfile
-    ports:
-      - 8080:8080
+      target: dev
+    volumes:
+      - ./backend:/go/src/app
     environment:
       DB_USERNAME: myuser
       DB_PASSWORD: password
       DB_HOST: db
       DB_DATABASE_NAME: movies
+    ports:
+      - 8080:8080
   db:
     image: postgres:bullseye
     restart: always

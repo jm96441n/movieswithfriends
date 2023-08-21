@@ -63,6 +63,7 @@ type accountCreator interface {
 
 func SignUpHandler(logger *slog.Logger, db accountCreator) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*500)
 		defer cancel()
 
