@@ -14,7 +14,7 @@ services:
     image: postgres:bullseye
     restart: always
     volumes:
-      - ./data:/var/lib/postgresql
+      - ./_data:/var/lib/postgresql
     environment:
       POSTGRES_PASSWORD: password
       POSTGRES_USER: myuser

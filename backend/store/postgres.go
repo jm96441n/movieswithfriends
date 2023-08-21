@@ -54,6 +54,9 @@ func NewPostgesStore(creds Creds, host, dbname string) (*PGStore, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	db.Ping(ctx)
+
 	return &PGStore{db: db}, nil
 }
 

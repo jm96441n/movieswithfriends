@@ -1,6 +1,6 @@
-FROM golang:1.20 as builder
+FROM golang:1.21 as builder
 
-WORKDIR /app
+WORKDIR /go/src/app
 
 COPY go.mod go.sum ./
 
@@ -11,10 +11,9 @@ COPY ./web ./web
 COPY ./store ./store
 COPY ./templates ./templates
 
-RUN go build -o /go/bin/app
+RUN CGO_ENABLED=0 go build -o /go/bin/app
 
-FROM gcr.io/distroless/static-debian11
+FROM debian:latest
 
-COPY --from=builder /go/bin/app ./
-
-CMD ["./app"]
+COPY --from=builder /go/bin/app /
+CMD ["/app"]

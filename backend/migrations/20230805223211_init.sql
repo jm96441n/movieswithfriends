@@ -5,12 +5,11 @@ SELECT 'up SQL query';
 
 create table accounts (
     id_account INT GENERATED ALWAYS AS IDENTITY,
-    id_account bigserial primary key,
     login varchar(255) not null,
     password_hash varchar(255) not null,
     created_at timestamptz not null default clock_timestamp(),
     updated_at timestamptz,
-    PRIMARY KEY(id_account),
+    PRIMARY KEY(id_account)
 );
 
 create unique index accounts_login_uniq_idx ON accounts(LOWER(login));
