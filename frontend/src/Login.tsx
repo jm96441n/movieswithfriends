@@ -1,10 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { Form, Input, Join, Button } from "react-daisyui";
 import { useNavigate } from "@tanstack/react-router";
+import { AuthenticatedDispatchContext } from "./Context.tsx";
 
 function Login() {
   const [email, setEmail] = useState<{ email: string }>("");
   const [password, setPassword] = useState<{ password: string }>("");
+  const authenticatedDispatch = useContext(AuthenticatedDispatchContext);
 
   const navigate = useNavigate({ from: "/" });
 
@@ -25,6 +27,8 @@ function Login() {
           }),
         });
         if (response.ok) {
+          authenticatedDispatch(true);
+          localStorage.setItem("moviesauth", "true");
           navigate({ to: "/" });
         }
       } catch (error) {
