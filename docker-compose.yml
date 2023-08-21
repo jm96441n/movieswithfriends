@@ -1,8 +1,15 @@
 version: "3.0"
 services:
-  app:
+  frontend:
     build:
-      dockerfile: ./Dockerfile
+      dockerfile: ./frontend/Dockerfile
+    ports:
+      - 3000:3000
+    volumes:
+      - ./frontend/src:/app/src
+  backend:
+    build:
+      dockerfile: ./backend/Dockerfile
     ports:
       - 8080:8080
     environment:

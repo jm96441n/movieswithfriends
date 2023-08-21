@@ -81,7 +81,8 @@ func SignUpHandler(logger *slog.Logger, db accountCreator) http.HandlerFunc {
 			return
 		}
 
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		w.WriteHeader(200)
+
 		return
 	})
 }
