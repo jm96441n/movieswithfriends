@@ -1,10 +1,16 @@
 import React, { useState } from "react";
 import { Form, Input, Join, Button } from "react-daisyui";
+import { useNavigate } from "@tanstack/react-router";
 
 function Signup() {
+  const [name, setName] = useState<{ name: string }>("");
   const [email, setEmail] = useState<{ email: string }>("");
   const [password, setPassword] = useState<{ password: string }>("");
   const [partyID, setPartyID] = useState<{ partyID: string }>("");
+
+
+  const navigate = useNavigate({ from: '/login' })
+
 
   function handleOnClick(e: ChangeEvent<HTMLInputElement>) {
     e.preventDefault()
@@ -12,21 +18,22 @@ function Signup() {
       try {
         const response = await fetch("http://localhost:8080/signup", {
           method: "POST",
-          mode: 'no-cors',
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
+            name: name,
             login: email,
             password: password,
             partyID: partyID,
           })
         });
-        const body = await response.json()
-        const status = response.status
-        alert(`${status} ${body}`)
+        console.log(response.status)
+        if (response.ok) {
+          navigate({to: '/login'})
+        }
       } catch (error) {
-        alert(error);
+        console.error(error);
       }
     }
     fetchData();
@@ -36,6 +43,22 @@ function Signup() {
     <div>
       <h3>Signup</h3>
       <Form>
+        <Join>
+          <div className="columns-2">
+            <Form.Label title="Name" />
+          </div>
+          <div className="columns-1">
+            <Input
+              type="text"
+              value={name}
+              placeholder="Name"
+              className="input-bordered"
+              onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                setName(e.target.value)
+              }
+            />
+          </div>
+        </Join>
         <Join>
           <div className="columns-2">
             <Form.Label title="Email" />

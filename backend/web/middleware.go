@@ -23,11 +23,23 @@ func loggingMiddlewareBuilder(logger *slog.Logger) func(http.Handler) http.Handl
 	}
 }
 
+func corsMiddleware() func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+			w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+
+			if req.Method != "OPTIONS" {
+				next.ServeHTTP(w, req)
+			}
+		})
+	}
+}
+
 func SetupWebServer(logger *slog.Logger, router *mux.Router, db *store.PGStore, templates map[string]*template.Template) {
 	router.HandleFunc("/profiles/{id}", ProfileShowHandler(logger, db, templates[profileShowKey])).Methods("GET")
-	router.HandleFunc("/signup", SignUpHandler(logger, db)).Methods("POST")
-	router.HandleFunc("/signup", SignUpShowHandler(logger, templates[signUpKey])).Methods("GET")
-	router.HandleFunc("/login", LoginShowHandler(logger, templates[loginKey])).Methods("GET")
-	router.Use(loggingMiddlewareBuilder(logger))
+	router.HandleFunc("/signup", SignUpHandler(logger, db)).Methods("POST", "OPTIONS")
+	router.Use(loggingMiddlewareBuilder(logger), corsMiddleware())
 	// router.HandleFunc("/profile/{id}", ProfileUpdateHandler(logger)).Methods("PUT", "PATCH")
 }

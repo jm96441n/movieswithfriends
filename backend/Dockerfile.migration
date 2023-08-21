@@ -1,0 +1,15 @@
+FROM golang:1.21
+
+WORKDIR /migrations
+
+ARG GOOSE_DBSTRING
+ENV GOOSE_DBSTRING=$GOOSE_DBSTRING
+
+ARG GOOSE_DRIVER
+ENV GOOSE_DRIVER=$GOOSE_DRIVER
+
+RUN go install github.com/pressly/goose/v3/cmd/goose@latest
+
+COPY ./backend/migrations ./
+
+CMD ["goose", "up"]

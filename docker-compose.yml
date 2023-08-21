@@ -1,4 +1,4 @@
-version: "3.0"
+version: "3.9"
 services:
   frontend:
     build:
@@ -20,6 +20,17 @@ services:
       DB_DATABASE_NAME: movies
     ports:
       - 8080:8080
+    # depends_on:
+      # db:
+        # condition: service_healthy
+      # migration:
+        # condition: service_completed_successfully
+  migration:
+    build:
+      dockerfile: ./backend/Dockerfile.migration
+      args:
+        GOOSE_DBSTRING: "user=myuser password=password host=db sslmode=disable dbname=movies"
+        GOOSE_DRIVER: postgres
   db:
     image: postgres:bullseye
     restart: always
@@ -28,5 +39,11 @@ services:
     environment:
       POSTGRES_PASSWORD: password
       POSTGRES_USER: myuser
+      POSTGRES_DB: movies
     ports:
       - 5432:5432
+        #healthcheck:
+        # test: pg_isready -U myuser
+        #interval: 10s
+      # timeout: 5s
+      # retries: 5
