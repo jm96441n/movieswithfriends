@@ -44,6 +44,7 @@ func SetupWebServer(logger *slog.Logger, router *mux.Router, db *store.PGStore, 
 	router.HandleFunc("/profile", ProfileShowHandler(logger, db, sessionStore)).Methods("GET", "OPTIONS")
 	router.HandleFunc("/signup", SignUpHandler(logger, db)).Methods("POST", "OPTIONS")
 	router.HandleFunc("/login", LoginHandler(logger, db, sessionStore)).Methods("POST", "OPTIONS")
+	router.HandleFunc("/logout", LogoutHandler(logger, sessionStore))
 	router.Use(loggingMiddlewareBuilder(logger), corsMiddleware())
 	// router.HandleFunc("/profile/{id}", ProfileUpdateHandler(logger)).Methods("PUT", "PATCH")
 }

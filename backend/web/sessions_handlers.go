@@ -32,12 +32,14 @@ type User struct {
 	Authenticated bool
 }
 
+const sessionName = "moviescookie"
+
 func LoginHandler(logger *slog.Logger, db accountFinder, sessionStore sessions.Store) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*500)
 		defer cancel()
 
-		session, err := sessionStore.Get(r, "moviescookie")
+		session, err := sessionStore.Get(r, sessionName)
 		if err != nil {
 			logger.Error(err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -109,4 +111,27 @@ func authenticate(account store.Account, req LoginReq) bool {
 	}
 
 	return false
+}
+
+func LogoutHandler(logger *slog.Logger, sessionStore sessions.Store) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		session, err := sessionStore.Get(r, sessionName)
+		if err != nil {
+			logger.Error(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		session.Values["user"] = User{}
+		session.Options.MaxAge = -1
+
+		err = session.Save(r, w)
+		if err != nil {
+			logger.Error(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(200)
+	})
 }

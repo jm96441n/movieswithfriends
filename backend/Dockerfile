@@ -9,7 +9,6 @@ RUN go mod download
 COPY backend/main.go ./
 COPY backend/web ./web
 COPY backend/store ./store
-COPY backend/templates ./templates
 
 FROM base as dev-base
 

@@ -21,7 +21,7 @@ func ProfileShowHandler(logger *slog.Logger, db profileFinder, sessionStore sess
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*500)
 		defer cancel()
 		logger.Info("Received request for profile show")
-		session, err := sessionStore.Get(r, "moviescookie")
+		session, err := sessionStore.Get(r, sessionName)
 		if err != nil {
 			logger.Error(err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
