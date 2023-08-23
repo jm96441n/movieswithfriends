@@ -39,14 +39,12 @@ function Login() {
   }
 
   return (
-    <div>
-      <h3>Login</h3>
-      <Form>
-        <Join>
-          <div className="columns-2">
+    <div className="flex justify-center">
+      <div className="prose">
+        <h1>Login</h1>
+        <Form className="space-y-5">
+          <Join className="place-content-center space-x-5">
             <Form.Label title="Email" />
-          </div>
-          <div className="columns-1">
             <Input
               type="text"
               value={email}
@@ -56,13 +54,9 @@ function Login() {
                 setEmail(e.target.value)
               }
             />
-          </div>
-        </Join>
-        <Join>
-          <div className="columns-2">
+          </Join>
+          <Join className="place-content-center space-x-5">
             <Form.Label title="Password" />
-          </div>
-          <div className="columns-1">
             <Input
               type="password"
               placeholder="Password"
@@ -72,14 +66,14 @@ function Login() {
               }
               value={password}
             />
+          </Join>
+          <div className="place-content-center space-x-5">
+            <Button tag="button" color="primary" onClick={handleOnClick}>
+              Click to Login
+            </Button>
           </div>
-        </Join>
-        <div className="columns-2">
-          <Button tag="button" onClick={handleOnClick}>
-            Click to Login
-          </Button>
-        </div>
-      </Form>
+        </Form>
+      </div>
     </div>
   );
 }

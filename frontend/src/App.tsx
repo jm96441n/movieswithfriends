@@ -11,19 +11,19 @@ import Nav from "./Nav.tsx";
 function initialAuthValue() {
   const isAuthenticated = localStorage.getItem("moviesauth");
   console.log(isAuthenticated);
-  if (isAuthenticated == null || isAuthenticated === "false")  {
-    return false
+  if (isAuthenticated == null || isAuthenticated === "false") {
+    return false;
   }
-  return true
+  return true;
 }
 
 function App() {
   const [authenticated, setAuthenticated] = useState(initialAuthValue());
   return (
-    <Theme dataTheme="retro">
+    <Theme dataTheme="synthwave">
       <AuthenticatedContext.Provider value={authenticated}>
         <AuthenticatedDispatchContext.Provider value={setAuthenticated}>
-          <div className="App">
+          <div className="App h-screen">
             <Nav authenticated={authenticated} />
             <Outlet />
           </div>
