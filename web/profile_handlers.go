@@ -27,7 +27,6 @@ func ProfileShowHandler(logger *slog.Logger, db profileFinder, sessionStore sess
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		fmt.Printf("%#v\n", session)
 		user := getUser(session)
 		logger.Info(user.Login)
 		profile, err := db.GetProfile(ctx, user.Login)
@@ -36,6 +35,7 @@ func ProfileShowHandler(logger *slog.Logger, db profileFinder, sessionStore sess
 			w.WriteHeader(500)
 			return
 		}
+		logger.Info(fmt.Sprintf("%+v", profile))
 
 		body, err := json.Marshal(profile)
 		if err != nil {

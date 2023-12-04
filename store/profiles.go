@@ -2,40 +2,44 @@ package store
 
 import (
 	"context"
-	"fmt"
-	"time"
-
-	"github.com/jackc/pgx/v5"
 )
 
 type Account struct {
-	AccountID    int
+	IDAccount    int
 	Login        string
 	PasswordHash string
 	Profile      Profile
+}
+
+type Party struct {
+	IDParty int
+	Name    string
 }
 
 type Profile struct {
 	IDProfile int `db:"id_profile"`
 	Name      string
 	AccountID int
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	Parties   []Party
 }
 
-const GetProfileQuery = `SELECT id_profile, name FROM profiles
+const GetProfileQuery = `SELECT profiles.id_profile, profiles.name, parties.id_party, parties.name  FROM profiles
 JOIN accounts on accounts.id_account = profiles.id_account
-WHERE accounts.login = $1`
+JOIN profile_parties on profile_parties.id_profile = profiles.id_profile
+JOIN parties on profile_parties.id_party = parties.id_party
+WHERE accounts.login = $1;`
 
 func (pg *PGStore) GetProfile(ctx context.Context, login string) (Profile, error) {
 	rows, err := pg.db.Query(ctx, GetProfileQuery, login)
 	if err != nil {
 		return Profile{}, err
 	}
-	fmt.Println(rows)
-	profile, err := pgx.CollectOneRow(rows, pgx.RowToStructByNameLax[Profile])
-	if err != nil {
-		return Profile{}, err
+
+	profile := Profile{Parties: make([]Party, 0)}
+	for rows.Next() {
+		var party Party
+		rows.Scan(&profile.IDProfile, &profile.Name, &party.IDParty, &party.Name)
+		profile.Parties = append(profile.Parties, party)
 	}
 
 	return profile, nil
@@ -77,6 +81,6 @@ func (pg *PGStore) GetAccountByLogin(ctx context.Context, login string) (Account
 	row := pg.db.QueryRow(ctx, GetAccountByLoginQuery, login)
 	account := Account{}
 	// profile := Profile{}
-	row.Scan(&account.AccountID, &account.Login, &account.PasswordHash)
+	row.Scan(&account.IDAccount, &account.Login, &account.PasswordHash)
 	return account, nil
 }

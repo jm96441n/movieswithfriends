@@ -8,5 +8,8 @@
 !*/
 
 !Dockerfile
+!Makefile
 
 /_data/
+
+tls/**
