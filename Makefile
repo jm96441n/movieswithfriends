@@ -1,9 +1,9 @@
-.DEFAULT_GOAL := setup
+.DEFAULT_GOAL := run
 CONTAINER_NAME := movieswithfriendsdb
 
 .PHONY: setuppostgres
 setuppostgres:
-	if [  ! "$(shell docker container inspect -f '{{.State.Running}}' $(CONTAINER_NAME))" = "true" ]; then docker run -d --rm --name $(CONTAINER_NAME) -p 5432:5432 -e POSTGRES_USER="user" -e POSTGRES_PASSWORD="password" -v ./_data:/var/lib/postgresql postgres:bullseye; fi
+	if [  ! "$(shell docker container inspect -f '{{.State.Running}}' $(CONTAINER_NAME))" = "true" ]; then docker run -d --rm --name $(CONTAINER_NAME) -p 5432:5432 -e POSTGRES_USER="user" -e POSTGRES_PASSWORD="password" -e POSTGRES_DB="movies" -v ./_data:/var/lib/postgresql postgres:bullseye; fi
 
 .PHONY: setuptls
 setuptls:
@@ -11,7 +11,11 @@ setuptls:
 
 .PHONY: migrate
 migrate: setuppostgres
-	cd migrations && GOOSE_DBSTRING="user=myuser password=password host=db sslmode=disable dbname=movies" GOOSE_DRIVER="postgres" goose up
+	cd migrations && GOOSE_DBSTRING="user=user password=password host=0.0.0.0 sslmode=disable dbname=movies" GOOSE_DRIVER="postgres" goose up
 
 .PHONY: setup
 setup: setuppostgres setuptls migrate
+
+.PHONY: run
+run:
+	air

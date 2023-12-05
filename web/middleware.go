@@ -1,14 +1,10 @@
 package web
 
 import (
-	"encoding/gob"
 	"fmt"
 	"net/http"
 	"time"
 
-	"github.com/gorilla/mux"
-	"github.com/gorilla/sessions"
-	"github.com/jm96441n/movieswithfriends/store"
 	"golang.org/x/exp/slog"
 )
 
@@ -37,14 +33,4 @@ func corsMiddleware() func(http.Handler) http.Handler {
 			}
 		})
 	}
-}
-
-func SetupWebServer(logger *slog.Logger, router *mux.Router, db *store.PGStore, sessionStore sessions.Store) {
-	gob.Register(User{})
-	router.HandleFunc("/profile", ProfileShowHandler(logger, db, sessionStore)).Methods("GET", "OPTIONS")
-	router.HandleFunc("/signup", SignUpHandler(logger, db)).Methods("POST", "OPTIONS")
-	router.HandleFunc("/login", LoginHandler(logger, db, sessionStore)).Methods("POST", "OPTIONS")
-	router.HandleFunc("/logout", LogoutHandler(logger, sessionStore))
-	router.Use(loggingMiddlewareBuilder(logger), corsMiddleware())
-	// router.HandleFunc("/profile/{id}", ProfileUpdateHandler(logger)).Methods("PUT", "PATCH")
 }
