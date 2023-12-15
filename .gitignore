@@ -13,3 +13,5 @@
 /_data/
 
 tls/**
+tmp/**
+.envrc

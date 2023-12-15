@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"path/filepath"
 
 	"golang.org/x/exp/slog"
 )
@@ -12,6 +13,7 @@ import (
 type Application struct {
 	Logger        *slog.Logger
 	TemplateCache map[string]*template.Template
+	TMDBClient    *TMDBClient
 }
 
 func (a *Application) serverError(w http.ResponseWriter, r *http.Request, err error) {
@@ -26,7 +28,7 @@ func (a *Application) clientError(w http.ResponseWriter, status int) {
 	http.Error(w, http.StatusText(status), status)
 }
 
-func (a *Application) render(w http.ResponseWriter, r *http.Request, status int, page string, data TemplateData) {
+func (a *Application) render(w http.ResponseWriter, r *http.Request, status int, page string, data interface{}) {
 	ts, ok := a.TemplateCache[page]
 
 	if !ok {
@@ -41,6 +43,32 @@ func (a *Application) render(w http.ResponseWriter, r *http.Request, status int,
 		a.serverError(w, r, err)
 		return
 	}
+
+	a.Logger.Info("rendering template", slog.Any("template", page))
+	w.WriteHeader(status)
+
+	buf.WriteTo(w)
+}
+
+func (a *Application) renderPartial(w http.ResponseWriter, r *http.Request, status int, page string, data interface{}) {
+	ts, ok := a.TemplateCache[page]
+
+	fmt.Println(a.TemplateCache)
+	if !ok {
+		a.serverError(w, r, fmt.Errorf("template does not exist for page %q", page))
+	}
+
+	tmplName := filepath.Base(page)
+
+	buf := bytes.NewBuffer([]byte{})
+	// write to the buffer  to check if we have any template errors before rendering the response
+	err := ts.ExecuteTemplate(buf, tmplName, data)
+	if err != nil {
+		a.serverError(w, r, err)
+		return
+	}
+
+	a.Logger.Info("rendering template", slog.Any("template", page))
 
 	w.WriteHeader(status)
 

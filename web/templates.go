@@ -5,45 +5,65 @@ import (
 	"html/template"
 	"io/fs"
 	"net/http"
-	"path/filepath"
+	"strings"
 )
 
-type TemplateData struct {
+type BaseTemplateData struct {
 	CurrentYear int
 	Flash       string
 }
 
-func (a *Application) NewTemplateData(r *http.Request) TemplateData {
-	return TemplateData{
+type MoviesTemplateData struct {
+	BaseTemplateData
+	Movies []Movie
+	Movie  Movie
+}
+
+func (a *Application) NewTemplateData(r *http.Request) BaseTemplateData {
+	return BaseTemplateData{
+		//		Flash:       a.sessionManager.PopString(r.Context(), "flash"),
 		CurrentYear: 2023,
+	}
+}
+
+func (a *Application) NewMoviesTemplateData(r *http.Request) MoviesTemplateData {
+	return MoviesTemplateData{
+		BaseTemplateData: BaseTemplateData{
+			//			Flash:       a.sessionManager.PopString(r.Context(), "flash"),
+			CurrentYear: 2023,
+		},
 	}
 }
 
 func NewTemplateCache(filesystem embed.FS) (map[string]*template.Template, error) {
 	cache := make(map[string]*template.Template)
 
-	pages, err := fs.Glob(filesystem, "html/pages/*.gohtml")
-	if err != nil {
-		return nil, err
-	}
+	fs.WalkDir(filesystem, "html/pages", func(path string, d fs.DirEntry, err error) error {
+		if d.IsDir() {
+			return nil
+		}
+		name, _ := strings.CutPrefix(path, "html/pages/")
 
-	for _, page := range pages {
-		name := filepath.Base(page)
-
-		patterns := []string{
-			"html/base.gohtml",
-			"html/partials/*.gohtml",
-			page,
+		var patterns []string
+		if strings.Contains(name, "partials") {
+			patterns = []string{path}
+		} else {
+			patterns = []string{
+				"html/base.gohtml",
+				"html/partials/*.gohtml",
+				path,
+			}
 		}
 
 		// parse the base template file into a template set
 		ts, err := template.New(name).ParseFS(filesystem, patterns...)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		cache[name] = ts
-	}
+		return nil
+	})
 
 	return cache, nil
 }

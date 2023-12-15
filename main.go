@@ -31,6 +31,11 @@ func main() {
 	// }
 
 	// logger.Info("completed postgres store setup")
+	tmdbApiKey := os.Getenv("TMDB_API_KEY")
+	if tmdbApiKey == "" {
+		logger.Error("TMDB_API_KEY is not set")
+		os.Exit(1)
+	}
 
 	tmplCache, err := web.NewTemplateCache(ui.TemplateFS)
 	if err != nil {
@@ -38,9 +43,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	tmdbClient := web.NewTMDBClient("https://api.themoviedb.org/3", tmdbApiKey)
+
 	app := web.Application{
 		TemplateCache: tmplCache,
 		Logger:        logger,
+		TMDBClient:    tmdbClient,
 	}
 
 	tlsConfig := &tls.Config{
