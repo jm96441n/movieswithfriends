@@ -2,18 +2,26 @@ package web
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"html/template"
 	"net/http"
 	"path/filepath"
 
+	"github.com/jm96441n/movieswithfriends/store"
 	"golang.org/x/exp/slog"
 )
+
+type MoviesService interface {
+	GetMovieByTMDBID(context.Context, int) (store.Movie, error)
+	CreateMovie(context.Context, store.Movie) (store.Movie, error)
+}
 
 type Application struct {
 	Logger        *slog.Logger
 	TemplateCache map[string]*template.Template
 	TMDBClient    *TMDBClient
+	MoviesService MoviesService
 }
 
 func (a *Application) serverError(w http.ResponseWriter, r *http.Request, err error) {

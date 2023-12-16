@@ -5,7 +5,7 @@ tmp_dir = "tmp"
 [build]
   args_bin = []
   bin = "./movieswithfriends"
-  cmd = "go build ."
+  cmd = "go build ./cmd/movieswithfriends"
   delay = 1000
   exclude_dir = ["testdata", "_data", "migrations"]
   exclude_file = []

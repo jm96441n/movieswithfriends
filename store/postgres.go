@@ -48,7 +48,9 @@ func NewPostgesStore(creds Creds, host, dbname string) (*PGStore, error) {
 		return nil, ErrMissingDBDatabaseName
 	}
 
-	ctx, _ := context.WithTimeout(context.Background(), time.Second*120)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*120)
+	defer cancel()
+
 	connString := fmt.Sprintf("postgres://%s:%s@%s/%s", creds.Username, creds.Password, host, dbname)
 	db, err := pgxpool.New(ctx, connString)
 	if err != nil {

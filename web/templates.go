@@ -6,6 +6,8 @@ import (
 	"io/fs"
 	"net/http"
 	"strings"
+
+	"github.com/jm96441n/movieswithfriends/store"
 )
 
 type BaseTemplateData struct {
@@ -15,8 +17,8 @@ type BaseTemplateData struct {
 
 type MoviesTemplateData struct {
 	BaseTemplateData
-	Movies []Movie
-	Movie  Movie
+	Movies []store.Movie
+	Movie  store.Movie
 }
 
 func (a *Application) NewTemplateData(r *http.Request) BaseTemplateData {

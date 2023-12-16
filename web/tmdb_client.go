@@ -1,12 +1,14 @@
 package web
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 
 	"github.com/hashicorp/go-retryablehttp"
+	"github.com/jm96441n/movieswithfriends/store"
 )
 
 type TMDBClient struct {
@@ -16,17 +18,8 @@ type TMDBClient struct {
 }
 
 type SearchResults struct {
-	Movies []Movie `json:"results"`
-	Page   int     `json:"page"`
-}
-
-type Movie struct {
-	Title       string `json:"original_title"`
-	ReleaseDate string `json:"release_date"`
-	Overview    string `json:"overview"`
-	PosterURL   string `json:"poster_path"`
-	URL         string
-	TMDBID      int `json:"id"`
+	Movies []store.Movie `json:"results"`
+	Page   int           `json:"page"`
 }
 
 func NewTMDBClient(baseURL, apiKey string) *TMDBClient {
@@ -37,8 +30,8 @@ func NewTMDBClient(baseURL, apiKey string) *TMDBClient {
 	}
 }
 
-func (t *TMDBClient) Search(term string, page int) (SearchResults, error) {
-	req, err := t.newRequest(http.MethodGet, fmt.Sprintf("%s/search/movie?query=%s&page=%d", t.baseURL, term, page))
+func (t *TMDBClient) Search(ctx context.Context, term string, page int) (SearchResults, error) {
+	req, err := t.newRequest(ctx, http.MethodGet, fmt.Sprintf("%s/search/movie?query=%s&page=%d", t.baseURL, term, page))
 	if err != nil {
 		return SearchResults{}, err
 	}
@@ -63,30 +56,36 @@ func (t *TMDBClient) Search(term string, page int) (SearchResults, error) {
 	return result, nil
 }
 
-func (t *TMDBClient) GetMovie(id int) (Movie, error) {
-	req, err := t.newRequest(http.MethodGet, fmt.Sprintf("%s/movie/%d", t.baseURL, id))
+func (t *TMDBClient) GetMovie(ctx context.Context, id int) (store.Movie, error) {
+	req, err := t.newRequest(ctx, http.MethodGet, fmt.Sprintf("%s/movie/%d", t.baseURL, id))
 	if err != nil {
-		return Movie{}, err
+		return store.Movie{}, err
 	}
+
 	res, err := t.client.Do(req)
 	if err != nil {
-		return Movie{}, err
+		return store.Movie{}, err
 	}
+
 	defer res.Body.Close()
 	respBody, err := io.ReadAll(res.Body)
 	if err != nil {
-		return Movie{}, err
+		return store.Movie{}, err
 	}
-	result := Movie{}
+
+	result := store.Movie{}
 	err = json.Unmarshal(respBody, &result)
 	if err != nil {
-		return Movie{}, err
+		return store.Movie{}, err
 	}
+
+	result.PosterURL = fmt.Sprintf("https://image.tmdb.org/t/p/w500%s", result.PosterURL)
+
 	return result, nil
 }
 
-func (t *TMDBClient) newRequest(method, url string) (*retryablehttp.Request, error) {
-	req, err := retryablehttp.NewRequest(method, url, nil)
+func (t *TMDBClient) newRequest(ctx context.Context, method, url string) (*retryablehttp.Request, error) {
+	req, err := retryablehttp.NewRequestWithContext(ctx, method, url, nil)
 	if err != nil {
 		return nil, err
 	}

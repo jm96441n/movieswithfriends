@@ -1,6 +1,8 @@
 package web
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -8,6 +10,8 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
+	"github.com/jm96441n/movieswithfriends/store"
+	"golang.org/x/exp/slog"
 )
 
 func (a *Application) MoviesIndexHandler(w http.ResponseWriter, r *http.Request) {
@@ -16,6 +20,7 @@ func (a *Application) MoviesIndexHandler(w http.ResponseWriter, r *http.Request)
 }
 
 func (a *Application) MoviesSearchHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	body, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
 	if err != nil {
@@ -28,7 +33,7 @@ func (a *Application) MoviesSearchHandler(w http.ResponseWriter, r *http.Request
 		a.clientError(w, http.StatusBadRequest)
 	}
 
-	result, err := a.TMDBClient.Search(term, 1)
+	result, err := a.TMDBClient.Search(ctx, term, 1)
 	if err != nil {
 		a.serverError(w, r, err)
 	}
@@ -44,6 +49,7 @@ func (a *Application) MoviesSearchHandler(w http.ResponseWriter, r *http.Request
 }
 
 func (a *Application) MoviesShowHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	vars := mux.Vars(r)
 	idParams := vars["id"]
 
@@ -52,7 +58,7 @@ func (a *Application) MoviesShowHandler(w http.ResponseWriter, r *http.Request) 
 		a.clientError(w, http.StatusBadRequest)
 	}
 
-	result, err := a.TMDBClient.GetMovie(id)
+	result, err := a.GetMovie(ctx, id)
 	if err != nil {
 		a.serverError(w, r, err)
 	}
@@ -60,6 +66,36 @@ func (a *Application) MoviesShowHandler(w http.ResponseWriter, r *http.Request) 
 	templateData := a.NewMoviesTemplateData(r)
 	templateData.Movie = result
 	a.render(w, r, http.StatusOK, "movies/show.gohtml", templateData)
+}
+
+func (a *Application) GetMovie(ctx context.Context, id int) (store.Movie, error) {
+	result, err := a.MoviesService.GetMovieByTMDBID(ctx, id)
+	if err == nil {
+		a.Logger.Info("movie found in db", slog.Any("movie", result.Title))
+		return result, nil
+	}
+
+	if !errors.Is(err, store.ErrNoRecord) {
+		return store.Movie{}, fmt.Errorf("failed to retrieve movie from db: %w", err)
+	}
+	err = nil
+
+	result, err = a.TMDBClient.GetMovie(ctx, id)
+	if err != nil {
+		return store.Movie{}, err
+	}
+
+	fmt.Println(result)
+
+	_, err = a.MoviesService.CreateMovie(ctx, result)
+	if err != nil {
+		a.Logger.Error(fmt.Sprintf("Failed to create movie: %s", err), slog.Any("movie", result.Title))
+		return result, nil
+	}
+
+	a.Logger.Info("movie created in db", slog.Any("movie", result))
+
+	return result, nil
 }
 
 func formatTerm(body []byte) (string, error) {
