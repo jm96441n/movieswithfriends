@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/jm96441n/movieswithfriends/store"
@@ -31,6 +32,7 @@ func NewTMDBClient(baseURL, apiKey string) *TMDBClient {
 }
 
 func (t *TMDBClient) Search(ctx context.Context, term string, page int) (SearchResults, error) {
+	term = url.QueryEscape(term)
 	req, err := t.newRequest(ctx, http.MethodGet, fmt.Sprintf("%s/search/movie?query=%s&page=%d", t.baseURL, term, page))
 	if err != nil {
 		return SearchResults{}, err

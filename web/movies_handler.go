@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -15,27 +15,38 @@ import (
 )
 
 func (a *Application) MoviesIndexHandler(w http.ResponseWriter, r *http.Request) {
-	data := a.NewTemplateData(r)
-	a.render(w, r, http.StatusOK, "movies/index.gohtml", data)
+	queryParams := r.URL.Query()
+	templateData := a.NewMoviesTemplateData(r, "/movies")
+
+	if _, ok := queryParams["search"]; !ok {
+		a.render(w, r, http.StatusOK, "movies/index.gohtml", templateData)
+		return
+	}
+
+	ctx := r.Context()
+	templateData.SearchValue = queryParams.Get("search")
+
+	movies, err := a.searchMovies(ctx, queryParams)
+	if err != nil {
+		a.serverError(w, r, err)
+	}
+
+	templateData.Movies = movies
+	if r.Header.Get("HX-Request") != "" {
+		a.renderPartial(w, r, http.StatusOK, "movies/partials/search_results.gohtml", templateData)
+		return
+	}
+
+	a.render(w, r, http.StatusOK, "movies/index.gohtml", templateData)
 }
 
-func (a *Application) MoviesSearchHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	body, err := io.ReadAll(r.Body)
-	defer r.Body.Close()
-	if err != nil {
-		a.clientError(w, http.StatusBadRequest)
-	}
-
-	term, err := formatTerm(body)
-	if err != nil {
-		a.Logger.Error(err.Error())
-		a.clientError(w, http.StatusBadRequest)
-	}
+func (a *Application) searchMovies(ctx context.Context, queryParams url.Values) ([]store.Movie, error) {
+	// handle searching for movies
+	term := strings.TrimSpace(queryParams.Get("search"))
 
 	result, err := a.TMDBClient.Search(ctx, term, 1)
 	if err != nil {
-		a.serverError(w, r, err)
+		return nil, err
 	}
 
 	for idx := range result.Movies {
@@ -43,9 +54,7 @@ func (a *Application) MoviesSearchHandler(w http.ResponseWriter, r *http.Request
 		result.Movies[idx].PosterURL = fmt.Sprintf("https://image.tmdb.org/t/p/w500/%s", result.Movies[idx].PosterURL)
 	}
 
-	templateData := a.NewMoviesTemplateData(r)
-	templateData.Movies = result.Movies
-	a.renderPartial(w, r, http.StatusOK, "movies/partials/search_results.gohtml", templateData)
+	return result.Movies, nil
 }
 
 func (a *Application) MoviesShowHandler(w http.ResponseWriter, r *http.Request) {
@@ -63,7 +72,7 @@ func (a *Application) MoviesShowHandler(w http.ResponseWriter, r *http.Request) 
 		a.serverError(w, r, err)
 	}
 
-	templateData := a.NewMoviesTemplateData(r)
+	templateData := a.NewMoviesTemplateData(r, "/movie")
 	templateData.Movie = result
 	a.render(w, r, http.StatusOK, "movies/show.gohtml", templateData)
 }
@@ -96,15 +105,4 @@ func (a *Application) GetMovie(ctx context.Context, id int) (store.Movie, error)
 	a.Logger.Info("movie created in db", slog.Any("movie", result))
 
 	return result, nil
-}
-
-func formatTerm(body []byte) (string, error) {
-	term := string(body)
-	term, found := strings.CutPrefix(term, "search=")
-
-	if !found {
-		return "", fmt.Errorf("term not found")
-	}
-
-	return term, nil
 }

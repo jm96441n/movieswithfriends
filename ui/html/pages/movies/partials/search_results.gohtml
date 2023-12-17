@@ -1,6 +1,7 @@
+{{ define "search_results" }}
 {{- range .Movies }}
-    <a href="{{.URL}}" class="list-group-item list-group-item-action">
-      <div class="row">
+  <a href="{{.URL}}" class="list-group-item list-group-item-action">
+    <div class="row">
       <div class="col">
         <img 
           class="img-fluid thumbnail rounded" 
@@ -15,6 +16,10 @@
         <p>{{.ReleaseDate}}</p>
         <p>{{.Overview}}</p>
       </div>
-  </div>
-    </a>
+    </div>
+  </a>
 {{- end }}
+{{ end }}
+
+{{ template "search_results" . }}
+

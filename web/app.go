@@ -61,9 +61,10 @@ func (a *Application) render(w http.ResponseWriter, r *http.Request, status int,
 func (a *Application) renderPartial(w http.ResponseWriter, r *http.Request, status int, page string, data interface{}) {
 	ts, ok := a.TemplateCache[page]
 
-	fmt.Println(a.TemplateCache)
 	if !ok {
+		a.Logger.Error("template does not exist for page", slog.Any("page", page))
 		a.serverError(w, r, fmt.Errorf("template does not exist for page %q", page))
+		return
 	}
 
 	tmplName := filepath.Base(page)

@@ -20,10 +20,13 @@
     <div class ="col"></div>
     <div class ="col">
         <input class="form-control" type="search" 
-          name="search" placeholder="Begin Typing To Search Movies..." 
-          hx-post="/movies" 
+        name="search" placeholder="Begin typing to search for movies..."
+          value="{{ .SearchValue }}" 
+          hx-get="/movies" 
+          hx-push-url="true" 
           hx-trigger="input changed delay:500ms, search" 
           hx-target="#search-results" 
+          hx-params="*"
           hx-indicator=".htmx-indicator">
     </div>
     <div class ="col"></div>
@@ -32,6 +35,7 @@
     <div class ="col"></div>
     <div class ="col-10">
       <div class="list-group" id="search-results">
+        {{ template "search_results" . }}
       </div>
     </div>
     <div class ="col"></div>
