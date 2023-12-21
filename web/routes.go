@@ -17,5 +17,6 @@ func (a *Application) Routes() http.Handler {
 	// movies related routes
 	router.HandleFunc("/movies", a.MoviesIndexHandler).Methods("GET")
 	router.HandleFunc("/movies/{id}", a.MoviesShowHandler).Methods("GET")
+	router.HandleFunc("/movies/create", a.MoviesCreateHandler).Methods("POST")
 	return router
 }

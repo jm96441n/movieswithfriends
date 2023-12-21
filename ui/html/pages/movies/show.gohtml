@@ -1,18 +1,17 @@
 {{ define "title" }}{{ .Movie.Title }}{{ end }}
 
 {{ define "main" }}
-  {{ with .Movie }}
   <div class="text-center">
     <div class="row g-5">
       <div class="col-lg-5 col-xs-12">
-        <img src="{{ .PosterURL }}" class="img-thumbnail" alt="{{ .Title }}" />
+        <img src="{{ .Movie.PosterURL }}" class="img-thumbnail" alt="{{ .Movie.Title }}" />
       </div>
       <div class="col-lg-7 col-xs-12">
         <div class="row">
-          <h2>{{ .Title }}</h2>
-          <h3>{{ .Tagline }}</h3>
-          <p>{{ .ReleaseDate }}</p>
-          <h4>{{ .Overview }}</h4>
+          <h2>{{ .Movie.Title }}</h2>
+          <h3>{{ .Movie.Tagline }}</h3>
+          <p>{{ .Movie.ReleaseDate }}</p>
+          <h4>{{ .Movie.Overview }}</h4>
         </div>
         <div class="row mt-5">
           <div class="col"></div>
@@ -23,9 +22,9 @@
               </a>
 
               <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="#">Action</a></li>
-                <li><a class="dropdown-item" href="#">Another action</a></li>
-                <li><a class="dropdown-item" href="#">Something else here</a></li>
+              {{- range .Parties }}
+              <li><a class="dropdown-item" href="#">{{ .Name }}</a></li>
+              {{ end }}
               </ul>
             </div>
           </div>
@@ -37,5 +36,4 @@
       </div>
     </div>
   </div>
-  {{ end }}
 {{ end }}

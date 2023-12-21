@@ -57,6 +57,52 @@ func (a *Application) searchMovies(ctx context.Context, queryParams url.Values) 
 	return result.Movies, nil
 }
 
+func (a *Application) MoviesCreateHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	err := r.ParseForm()
+	if err != nil {
+		a.serverError(w, r, err)
+		return
+	}
+
+	idParams := r.FormValue("tmdb_id")
+
+	id, err := strconv.Atoi(idParams)
+	if err != nil {
+		a.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	result, err := a.MoviesService.GetMovieByTMDBID(ctx, id)
+	if err == nil {
+		a.Logger.Info("movie found in db", slog.Any("movie", result.Title))
+		http.Redirect(w, r, fmt.Sprintf("/movies/%d", result.ID), http.StatusSeeOther)
+		return
+	}
+
+	if !errors.Is(err, store.ErrNoRecord) {
+		a.serverError(w, r, err)
+		return
+	}
+	err = nil
+
+	result, err = a.TMDBClient.GetMovie(ctx, id)
+	if err != nil {
+		a.serverError(w, r, err)
+		return
+	}
+
+	result, err = a.MoviesService.CreateMovie(ctx, result)
+	if err != nil {
+		a.Logger.Error(fmt.Sprintf("Failed to create movie: %s", err), slog.Any("movie", result.Title))
+		a.serverError(w, r, err)
+		return
+	}
+
+	a.Logger.Info("movie created in db", slog.Any("movie", result))
+	http.Redirect(w, r, fmt.Sprintf("/movies/%d", result.ID), http.StatusSeeOther)
+}
+
 func (a *Application) MoviesShowHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	vars := mux.Vars(r)
@@ -65,44 +111,31 @@ func (a *Application) MoviesShowHandler(w http.ResponseWriter, r *http.Request) 
 	id, err := strconv.Atoi(idParams)
 	if err != nil {
 		a.clientError(w, http.StatusBadRequest)
+		return
 	}
 
-	result, err := a.GetMovie(ctx, id)
+	result, err := a.MoviesService.GetMovieByID(ctx, id)
 	if err != nil {
+		if errors.Is(err, store.ErrNoRecord) {
+			a.Logger.Error("did not find movie in db", "id", id)
+			a.clientError(w, http.StatusNotFound)
+			return
+		}
+
+		a.Logger.Error("failed to retrieve movie from db", "error", err)
 		a.serverError(w, r, err)
+		return
+	}
+
+	parties, err := a.PartiesService.GetParties(ctx)
+	if err != nil {
+		a.Logger.Error("failed to get parties", "error", err)
+		a.serverError(w, r, err)
+		return
 	}
 
 	templateData := a.NewMoviesTemplateData(r, "/movie")
 	templateData.Movie = result
+	templateData.Parties = parties
 	a.render(w, r, http.StatusOK, "movies/show.gohtml", templateData)
-}
-
-func (a *Application) GetMovie(ctx context.Context, id int) (store.Movie, error) {
-	result, err := a.MoviesService.GetMovieByTMDBID(ctx, id)
-	if err == nil {
-		a.Logger.Info("movie found in db", slog.Any("movie", result.Title))
-		return result, nil
-	}
-
-	if !errors.Is(err, store.ErrNoRecord) {
-		return store.Movie{}, fmt.Errorf("failed to retrieve movie from db: %w", err)
-	}
-	err = nil
-
-	result, err = a.TMDBClient.GetMovie(ctx, id)
-	if err != nil {
-		return store.Movie{}, err
-	}
-
-	fmt.Println(result)
-
-	_, err = a.MoviesService.CreateMovie(ctx, result)
-	if err != nil {
-		a.Logger.Error(fmt.Sprintf("Failed to create movie: %s", err), slog.Any("movie", result.Title))
-		return result, nil
-	}
-
-	a.Logger.Info("movie created in db", slog.Any("movie", result))
-
-	return result, nil
 }

@@ -22,6 +22,7 @@ type MoviesTemplateData struct {
 	SearchValue string
 	Movies      []store.Movie
 	Movie       store.Movie
+	Parties     []store.Party
 }
 
 func (a *Application) NewTemplateData(r *http.Request, path string) BaseTemplateData {

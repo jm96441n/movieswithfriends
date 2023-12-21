@@ -16,6 +16,10 @@ migrate: setuppostgres
 .PHONY: setup
 setup: setuppostgres setuptls migrate
 
+.PHONY: psql
+psql: setuppostgres
+	docker exec -it $(CONTAINER_NAME) psql -U user movieswithfriends
+
 .PHONY: run
 run:
 	air

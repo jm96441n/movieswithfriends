@@ -14,14 +14,20 @@ import (
 
 type MoviesService interface {
 	GetMovieByTMDBID(context.Context, int) (store.Movie, error)
+	GetMovieByID(context.Context, int) (store.Movie, error)
 	CreateMovie(context.Context, store.Movie) (store.Movie, error)
 }
 
+type PartiesService interface {
+	GetParties(context.Context) ([]store.Party, error)
+}
+
 type Application struct {
-	Logger        *slog.Logger
-	TemplateCache map[string]*template.Template
-	TMDBClient    *TMDBClient
-	MoviesService MoviesService
+	Logger         *slog.Logger
+	TemplateCache  map[string]*template.Template
+	TMDBClient     *TMDBClient
+	MoviesService  MoviesService
+	PartiesService PartiesService
 }
 
 func (a *Application) serverError(w http.ResponseWriter, r *http.Request, err error) {

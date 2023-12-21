@@ -1,7 +1,7 @@
 {{ define "search_results" }}
 {{- range .Movies }}
-  <a href="{{.URL}}" class="list-group-item list-group-item-action">
-    <div class="row">
+<form class="row" method="POST" action="/movies/create">
+  <input type="hidden" name="tmdb_id" value="{{.TMDBID}}" />
       <div class="col">
         <img 
           class="img-fluid thumbnail rounded" 
@@ -15,9 +15,9 @@
         <p>{{.Title}}</p> 
         <p>{{.ReleaseDate}}</p>
         <p>{{.Overview}}</p>
+        <button class="btn btn-primary" type="submit">View Details</button>
       </div>
-    </div>
-  </a>
+</form>
 {{- end }}
 {{ end }}
 
