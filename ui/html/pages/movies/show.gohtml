@@ -17,14 +17,30 @@
           <div class="col"></div>
           <div class="col">
             <div class="dropdown">
-              <a class="btn btn-primary dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <a class="btn btn-primary dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
                 Add to List
               </a>
 
               <ul class="dropdown-menu">
+              <div class="list-group">
               {{- range .Parties }}
-              <li><a class="dropdown-item" href="#">{{ .Name }}</a></li>
+                <a 
+                  class="dropdown-item list-group-item-action"
+                  hx-put="/parties/{{.ID}}"
+                  hx-target="#{{ hyphenate .Name }}"
+                  hx-indicator="#{{ hyphenate .Name }}-indicator"
+                  hx-vals='{"id_movie": {{ $.Movie.ID }}}'
+                  id="{{ hyphenate .Name }}"
+                >
+                  <li>
+                    <div class="spinner-border htmx-indicator" id="{{ hyphenate .Name }}-indicator" role="status">
+                      <span class="visually-hidden">Loading...</span>
+                    </div>
+                    {{ .Name }}
+                  </li>
+                </a>
               {{ end }}
+              </div>
               </ul>
             </div>
           </div>

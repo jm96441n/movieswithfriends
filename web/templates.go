@@ -18,11 +18,12 @@ type BaseTemplateData struct {
 }
 
 type MoviesTemplateData struct {
-	BaseTemplateData
-	SearchValue string
 	Movies      []store.Movie
 	Movie       store.Movie
+	Party       store.Party
 	Parties     []store.Party
+	SearchValue string
+	BaseTemplateData
 }
 
 func (a *Application) NewTemplateData(r *http.Request, path string) BaseTemplateData {
@@ -52,6 +53,9 @@ func navClasses(currentPath, targetPath string) string {
 
 var functions = template.FuncMap{
 	"navClasses": navClasses,
+	"hyphenate": func(s string) string {
+		return strings.ReplaceAll(strings.ToLower(s), " ", "-")
+	},
 }
 
 func NewTemplateCache(filesystem embed.FS) (map[string]*template.Template, error) {

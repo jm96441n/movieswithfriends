@@ -22,8 +22,8 @@ type Movie struct {
 var ErrNoRecord = errors.New("store: no matching record found")
 
 const (
-	findMovieByTMDBIDQuery = `SELECT title, release_date, overview, tagline, poster_url, tmdb_id FROM movies WHERE tmdb_id = $1`
-	findMovieByIDQuery     = `SELECT title, release_date, overview, tagline, poster_url, tmdb_id FROM movies WHERE id_movie = $1`
+	findMovieByTMDBIDQuery = `SELECT id_movie, title, release_date, overview, tagline, poster_url, tmdb_id FROM movies WHERE tmdb_id = $1`
+	findMovieByIDQuery     = `SELECT id_movie, title, release_date, overview, tagline, poster_url, tmdb_id FROM movies WHERE id_movie = $1`
 )
 
 // GetMovieByTMDBID returns a movie from the database by its TMDB ID
@@ -32,7 +32,7 @@ func (p *PGStore) GetMovieByTMDBID(ctx context.Context, id int) (Movie, error) {
 
 	movie := Movie{}
 	var releaseDate time.Time
-	err := row.Scan(&movie.Title, &releaseDate, &movie.Overview, &movie.Tagline, &movie.PosterURL, &movie.TMDBID)
+	err := row.Scan(&movie.ID, &movie.Title, &releaseDate, &movie.Overview, &movie.Tagline, &movie.PosterURL, &movie.TMDBID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return Movie{}, ErrNoRecord
@@ -52,7 +52,7 @@ func (p *PGStore) GetMovieByID(ctx context.Context, id int) (Movie, error) {
 
 	movie := Movie{}
 	var releaseDate time.Time
-	err := row.Scan(&movie.Title, &releaseDate, &movie.Overview, &movie.Tagline, &movie.PosterURL, &movie.TMDBID)
+	err := row.Scan(&movie.ID, &movie.Title, &releaseDate, &movie.Overview, &movie.Tagline, &movie.PosterURL, &movie.TMDBID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return Movie{}, ErrNoRecord

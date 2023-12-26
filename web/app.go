@@ -19,7 +19,9 @@ type MoviesService interface {
 }
 
 type PartiesService interface {
-	GetParties(context.Context) ([]store.Party, error)
+	GetParties(context.Context, int) ([]store.Party, error)
+	GetPartyByID(context.Context, int) (store.Party, error)
+	AddMovieToParty(context.Context, int, int) error
 }
 
 type Application struct {
