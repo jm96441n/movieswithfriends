@@ -26,7 +26,7 @@ func (p *PGStore) GetParties(ctx context.Context, idMovie int) ([]Party, error) 
 
 	for rows.Next() {
 		var party Party
-		err := rows.Scan(&party.ID, &party.Name)
+		err := rows.Scan(&party.ID, &party.Name, &party.MovieAdded)
 		if err != nil {
 			return nil, err
 		}
