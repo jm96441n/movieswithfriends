@@ -73,10 +73,10 @@ func (a *Application) MoviesCreateHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	result, err := a.MoviesService.GetMovieByTMDBID(ctx, id)
+	movie, err := a.MoviesService.GetMovieByTMDBID(ctx, id)
 	if err == nil {
-		a.Logger.Info("movie found in db", slog.Any("movie", result.Title))
-		http.Redirect(w, r, fmt.Sprintf("/movies/%d", result.ID), http.StatusSeeOther)
+		a.Logger.Info("movie found in db", slog.Any("movie", movie.Title))
+		http.Redirect(w, r, fmt.Sprintf("/movies/%d", movie.ID), http.StatusSeeOther)
 		return
 	}
 
@@ -86,21 +86,21 @@ func (a *Application) MoviesCreateHandler(w http.ResponseWriter, r *http.Request
 	}
 	err = nil
 
-	result, err = a.TMDBClient.GetMovie(ctx, id)
+	movie, err = a.TMDBClient.GetMovie(ctx, id)
 	if err != nil {
 		a.serverError(w, r, err)
 		return
 	}
 
-	result, err = a.MoviesService.CreateMovie(ctx, result)
+	movie, err = a.MoviesService.CreateMovie(ctx, movie)
 	if err != nil {
-		a.Logger.Error(fmt.Sprintf("Failed to create movie: %s", err), slog.Any("movie", result.Title))
+		a.Logger.Error(fmt.Sprintf("Failed to create movie: %s", err), slog.Any("movie", movie.Title))
 		a.serverError(w, r, err)
 		return
 	}
 
-	a.Logger.Info("movie created in db", slog.Any("movie", result))
-	http.Redirect(w, r, fmt.Sprintf("/movies/%d", result.ID), http.StatusSeeOther)
+	a.Logger.Info("movie created in db", slog.Any("movie", movie))
+	http.Redirect(w, r, fmt.Sprintf("/movies/%d", movie.ID), http.StatusSeeOther)
 }
 
 func (a *Application) MoviesShowHandler(w http.ResponseWriter, r *http.Request) {

@@ -18,6 +18,13 @@ type TMDBClient struct {
 	baseURL string
 }
 
+type trailerResults struct {
+	Results []struct {
+		Key  string `json:"key"`
+		Type string `json:"type"`
+	} `json:"results"`
+}
+
 type SearchResults struct {
 	Movies []store.Movie `json:"results"`
 	Page   int           `json:"page"`
@@ -82,6 +89,38 @@ func (t *TMDBClient) GetMovie(ctx context.Context, id int) (store.Movie, error) 
 	}
 
 	result.PosterURL = fmt.Sprintf("https://image.tmdb.org/t/p/w500%s", result.PosterURL)
+
+	req, err = t.newRequest(ctx, http.MethodGet, fmt.Sprintf("%s/movie/%d/videos", t.baseURL, id))
+	if err != nil {
+		return store.Movie{}, err
+	}
+
+	res, err = t.client.Do(req)
+	if err != nil {
+		return store.Movie{}, err
+	}
+
+	defer res.Body.Close()
+	respBody, err = io.ReadAll(res.Body)
+	if err != nil {
+		return store.Movie{}, err
+	}
+
+	trailers := trailerResults{}
+	err = json.Unmarshal(respBody, &trailers)
+	if err != nil {
+		return store.Movie{}, err
+	}
+
+	fmt.Println(trailers.Results)
+
+	for _, trailer := range trailers.Results {
+		if trailer.Type == "Trailer" {
+			result.TrailerURL = fmt.Sprintf("https://www.youtube.com/watch?v=%s", trailer.Key)
+			break
+		}
+	}
+	fmt.Println(result)
 
 	return result, nil
 }
