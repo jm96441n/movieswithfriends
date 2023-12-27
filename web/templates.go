@@ -56,6 +56,12 @@ var functions = template.FuncMap{
 	"hyphenate": func(s string) string {
 		return strings.ReplaceAll(strings.ToLower(s), " ", "-")
 	},
+	"disableClassForTrailerButton": func(s string) string {
+		if s == "" {
+			return "disabled"
+		}
+		return ""
+	},
 }
 
 func NewTemplateCache(filesystem embed.FS) (map[string]*template.Template, error) {

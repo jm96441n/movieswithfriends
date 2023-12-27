@@ -56,9 +56,13 @@
             </div>
           </div>
           <div class="col">
-            <a href="{{ .Movie.TrailerURL }}">
-              <button type="button" class="btn btn-success">Watch Trailer</button>
-            </a>
+            {{ if eq (len .Movie.TrailerURL) 0 }}
+                <button type="button" class="btn btn-secondary" disabled>Watch Trailer</button>
+            {{ else }}
+              <a href="{{ .Movie.TrailerURL }}" class="{{ disableClassForTrailerButton .Movie.TrailerURL}}">
+                <button type="button" class="btn btn-primary">Watch Trailer</button>
+              </a>
+            {{ end }}
           </div>
           <div class="col"></div>
         </div>

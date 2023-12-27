@@ -112,15 +112,12 @@ func (t *TMDBClient) GetMovie(ctx context.Context, id int) (store.Movie, error) 
 		return store.Movie{}, err
 	}
 
-	fmt.Println(trailers.Results)
-
 	for _, trailer := range trailers.Results {
 		if trailer.Type == "Trailer" {
 			result.TrailerURL = fmt.Sprintf("https://www.youtube.com/watch?v=%s", trailer.Key)
 			break
 		}
 	}
-	fmt.Println(result)
 
 	return result, nil
 }
