@@ -47,11 +47,12 @@ func main() {
 	tmdbClient := web.NewTMDBClient("https://api.themoviedb.org/3", tmdbApiKey)
 
 	app := web.Application{
-		TemplateCache:  tmplCache,
-		Logger:         logger,
-		TMDBClient:     tmdbClient,
-		MoviesService:  db,
-		PartiesService: db,
+		TemplateCache:   tmplCache,
+		Logger:          logger,
+		TMDBClient:      tmdbClient,
+		MoviesService:   db,
+		PartiesService:  db,
+		ProfilesService: db,
 	}
 
 	tlsConfig := &tls.Config{

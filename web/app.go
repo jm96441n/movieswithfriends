@@ -24,12 +24,17 @@ type PartiesService interface {
 	AddMovieToParty(context.Context, int, int) error
 }
 
+type ProfilesService interface {
+	GetProfileByID(context.Context, int) (store.Profile, error)
+}
+
 type Application struct {
-	Logger         *slog.Logger
-	TemplateCache  map[string]*template.Template
-	TMDBClient     *TMDBClient
-	MoviesService  MoviesService
-	PartiesService PartiesService
+	Logger          *slog.Logger
+	TemplateCache   map[string]*template.Template
+	TMDBClient      *TMDBClient
+	MoviesService   MoviesService
+	PartiesService  PartiesService
+	ProfilesService ProfilesService
 }
 
 func (a *Application) serverError(w http.ResponseWriter, r *http.Request, err error) {

@@ -55,3 +55,28 @@ func (p *PGStore) AddMovieToParty(ctx context.Context, idParty, idMovie int) err
 	}
 	return nil
 }
+
+const GetPartiesByProfileIDQuery = `
+  select parties.id_party, parties.name from parties
+  left join profile_parties on profile_parties.id_party = parties.id_party
+  where profile_parties.id_profile = $1
+`
+
+func (pg *PGStore) GetPartiesForProfile(ctx context.Context, id int) ([]Party, error) {
+	rows, err := pg.db.Query(ctx, GetPartiesByProfileIDQuery, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var parties []Party
+	for rows.Next() {
+		var party Party
+		err := rows.Scan(&party.ID, &party.Name)
+		if err != nil {
+			return nil, err
+		}
+		parties = append(parties, party)
+	}
+	return parties, nil
+}

@@ -26,6 +26,11 @@ type MoviesTemplateData struct {
 	BaseTemplateData
 }
 
+type ProfilesTemplateData struct {
+	Profile store.Profile
+	BaseTemplateData
+}
+
 func (a *Application) NewTemplateData(r *http.Request, path string) BaseTemplateData {
 	return BaseTemplateData{
 		//		Flash:       a.sessionManager.PopString(r.Context(), "flash"),
@@ -36,6 +41,16 @@ func (a *Application) NewTemplateData(r *http.Request, path string) BaseTemplate
 
 func (a *Application) NewMoviesTemplateData(r *http.Request, path string) MoviesTemplateData {
 	return MoviesTemplateData{
+		BaseTemplateData: BaseTemplateData{
+			//			Flash:       a.sessionManager.PopString(r.Context(), "flash"),
+			CurrentPagePath: path,
+			CurrentYear:     2023,
+		},
+	}
+}
+
+func (a *Application) NewProfilesTemplateData(r *http.Request, path string) ProfilesTemplateData {
+	return ProfilesTemplateData{
 		BaseTemplateData: BaseTemplateData{
 			//			Flash:       a.sessionManager.PopString(r.Context(), "flash"),
 			CurrentPagePath: path,
@@ -84,7 +99,7 @@ func NewTemplateCache(filesystem embed.FS) (map[string]*template.Template, error
 			}
 
 			paths := strings.Split(name, "/")
-			if len(paths) > 1 {
+			if len(paths) > 1 && partialDirExist(filesystem, paths[0]) {
 				pageGroup := paths[0]
 				patterns = append(patterns, fmt.Sprintf("html/pages/%s/partials/*.gohtml", pageGroup))
 			}
@@ -105,4 +120,9 @@ func NewTemplateCache(filesystem embed.FS) (map[string]*template.Template, error
 
 	fmt.Println(cache)
 	return cache, nil
+}
+
+func partialDirExist(filesystem fs.FS, dir string) bool {
+	_, err := fs.Stat(filesystem, fmt.Sprintf("html/pages/%s/partials", dir))
+	return err == nil
 }

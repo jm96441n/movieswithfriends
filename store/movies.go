@@ -20,8 +20,6 @@ type Movie struct {
 	TMDBID      int `json:"id"`
 }
 
-var ErrNoRecord = errors.New("store: no matching record found")
-
 const (
 	findMovieByTMDBIDQuery = `SELECT id_movie, title, release_date, overview, tagline, poster_url, tmdb_id, trailer_url FROM movies WHERE tmdb_id = $1`
 	findMovieByIDQuery     = `SELECT id_movie, title, release_date, overview, tagline, poster_url, tmdb_id, trailer_url FROM movies WHERE id_movie = $1`
