@@ -1,0 +1,19 @@
+{{ define "title"}}{{ .Party.Name }}{{ end }}
+
+{{ define "main" }}
+<div class="text-center mt-5">
+  <h2>{{ .Party.Name }}</h2> 
+  <div class="mt-5">
+  {{ range .Party.Movies }}
+    <div class="row">
+      <div class="col">
+        <p>{{ .Title }}</p>
+      </div>
+      <div class="col">
+        <p>{{.AddedBy.FirstName}} {{.AddedBy.LastName}}</p> 
+      </div>
+    </div>
+  {{ end }}
+  </div>
+</div>
+{{ end }}

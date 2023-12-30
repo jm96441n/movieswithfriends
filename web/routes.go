@@ -20,6 +20,7 @@ func (a *Application) Routes() http.Handler {
 	router.HandleFunc("/movies/create", a.MoviesCreateHandler).Methods("POST")
 
 	// parties related routes
+	router.HandleFunc("/parties/{id}", a.PartyShowHandler).Methods("GET")
 	router.HandleFunc("/parties/{id}", a.AddMovietoPartyHandler).Methods("PUT")
 
 	// profiles related routes

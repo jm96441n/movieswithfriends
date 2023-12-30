@@ -6,6 +6,7 @@ type Party struct {
 	Name       string
 	ID         int
 	MovieAdded bool
+	Movies     []Movie
 }
 
 const getPartiesQuery = `
@@ -43,6 +44,42 @@ func (p *PGStore) GetPartyByID(ctx context.Context, id int) (Party, error) {
 	if err != nil {
 		return Party{}, err
 	}
+	return party, nil
+}
+
+const getPartyByIDWithMoviesQuery = `
+  select 
+    parties.id_party, 
+    parties.name,
+    movies.id_movie, 
+    movies.title,
+    profiles.id_profile,
+    profiles.first_name,
+    profiles.last_name
+  from parties
+  join party_movies on party_movies.id_party = parties.id_party
+  join movies on movies.id_movie = party_movies.id_movie
+  join profiles on profiles.id_profile = party_movies.id_profile
+  where parties.id_party = $1
+`
+
+func (p *PGStore) GetPartyByIDWithMovies(ctx context.Context, id int) (Party, error) {
+	party := Party{Movies: make([]Movie, 0)}
+	rows, err := p.db.Query(ctx, getPartyByIDWithMoviesQuery, id)
+	if err != nil {
+		return Party{}, err
+	}
+
+	for rows.Next() {
+		var movie Movie
+		err := rows.Scan(&party.ID, &party.Name, &movie.ID, &movie.Title, &movie.AddedBy.ID, &movie.AddedBy.FirstName, &movie.AddedBy.LastName)
+		if err != nil {
+			return Party{}, err
+		}
+
+		party.Movies = append(party.Movies, movie)
+	}
+
 	return party, nil
 }
 

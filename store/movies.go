@@ -17,7 +17,8 @@ type Movie struct {
 	TrailerURL  string `json:"trailer_url"`
 	URL         string
 	ID          int
-	TMDBID      int `json:"id"`
+	TMDBID      int     `json:"id"`
+	AddedBy     Profile `json:"added_by"`
 }
 
 const (
