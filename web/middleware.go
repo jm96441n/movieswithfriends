@@ -2,10 +2,9 @@ package web
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 	"time"
-
-	"golang.org/x/exp/slog"
 )
 
 func loggingMiddlewareBuilder(logger *slog.Logger) func(http.Handler) http.Handler {

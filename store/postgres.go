@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -15,7 +16,8 @@ type Creds struct {
 }
 
 type PGStore struct {
-	db *pgxpool.Pool
+	db     *pgxpool.Pool
+	logger *slog.Logger
 }
 
 var (
@@ -39,7 +41,7 @@ func NewCreds(username, pw string) (Creds, error) {
 	}, nil
 }
 
-func NewPostgesStore(creds Creds, host, dbname string) (*PGStore, error) {
+func NewPostgesStore(creds Creds, host, dbname string, logger *slog.Logger) (*PGStore, error) {
 	if host == "" {
 		return nil, ErrMissingDBHost
 	}
@@ -59,7 +61,7 @@ func NewPostgesStore(creds Creds, host, dbname string) (*PGStore, error) {
 
 	db.Ping(ctx)
 
-	return &PGStore{db: db}, nil
+	return &PGStore{db: db, logger: logger}, nil
 }
 
 func (pg *PGStore) Ping(ctx context.Context) error {

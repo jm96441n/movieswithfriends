@@ -3,11 +3,10 @@ package main
 import (
 	"crypto/tls"
 	_ "embed"
+	"log/slog"
 	"net/http"
 	"os"
 	"time"
-
-	"golang.org/x/exp/slog"
 
 	"github.com/jm96441n/movieswithfriends/store"
 	"github.com/jm96441n/movieswithfriends/ui"
@@ -25,7 +24,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	db, err := store.NewPostgesStore(creds, os.Getenv("DB_HOST"), os.Getenv("DB_DATABASE_NAME"))
+	db, err := store.NewPostgesStore(creds, os.Getenv("DB_HOST"), os.Getenv("DB_DATABASE_NAME"), logger)
 	if err != nil {
 		logger.Error(err.Error())
 		os.Exit(1)

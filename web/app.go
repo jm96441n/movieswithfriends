@@ -5,11 +5,11 @@ import (
 	"context"
 	"fmt"
 	"html/template"
+	"log/slog"
 	"net/http"
 	"path/filepath"
 
 	"github.com/jm96441n/movieswithfriends/store"
-	"golang.org/x/exp/slog"
 )
 
 type MoviesService interface {

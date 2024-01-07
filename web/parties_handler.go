@@ -21,7 +21,7 @@ func (a *Application) PartyShowHandler(w http.ResponseWriter, r *http.Request) {
 		a.serverError(w, r, err)
 		return
 	}
-	templateData := a.NewMoviesTemplateData(r, "/parties")
+	templateData := a.NewPartiesTemplateData(r, "/parties")
 	templateData.Party = party
 	a.render(w, r, http.StatusOK, "parties/show.gohtml", templateData)
 }
@@ -60,7 +60,7 @@ func (a *Application) AddMovietoPartyHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	templateData := a.NewMoviesTemplateData(r, "/parties")
+	templateData := a.NewPartiesTemplateData(r, "/parties")
 	templateData.Party = party
 
 	a.renderPartial(w, r, http.StatusOK, "movies/partials/party_list_item.gohtml", templateData)

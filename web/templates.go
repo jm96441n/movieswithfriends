@@ -20,7 +20,6 @@ type BaseTemplateData struct {
 type MoviesTemplateData struct {
 	Movies      []store.Movie
 	Movie       store.Movie
-	Party       store.Party
 	Parties     []store.Party
 	SearchValue string
 	BaseTemplateData
@@ -28,6 +27,13 @@ type MoviesTemplateData struct {
 
 type ProfilesTemplateData struct {
 	Profile store.Profile
+	BaseTemplateData
+}
+
+type PartiesTemplateData struct {
+	Party         store.Party
+	Movies        []store.Movie
+	SelectedMovie store.Movie
 	BaseTemplateData
 }
 
@@ -51,6 +57,16 @@ func (a *Application) NewMoviesTemplateData(r *http.Request, path string) Movies
 
 func (a *Application) NewProfilesTemplateData(r *http.Request, path string) ProfilesTemplateData {
 	return ProfilesTemplateData{
+		BaseTemplateData: BaseTemplateData{
+			//			Flash:       a.sessionManager.PopString(r.Context(), "flash"),
+			CurrentPagePath: path,
+			CurrentYear:     2023,
+		},
+	}
+}
+
+func (a *Application) NewPartiesTemplateData(r *http.Request, path string) PartiesTemplateData {
+	return PartiesTemplateData{
 		BaseTemplateData: BaseTemplateData{
 			//			Flash:       a.sessionManager.PopString(r.Context(), "flash"),
 			CurrentPagePath: path,

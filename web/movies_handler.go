@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -11,7 +12,6 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/jm96441n/movieswithfriends/store"
-	"golang.org/x/exp/slog"
 )
 
 func (a *Application) MoviesIndexHandler(w http.ResponseWriter, r *http.Request) {
