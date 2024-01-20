@@ -1,88 +1,137 @@
-{{ define "title"}}{{ .Party.Name }}{{ end }}
+{{ define "title" }}{{ .Party.Name }}{{ end }}
 
 {{ define "main" }}
-<div class="text-center mt-5">
-  <h2>{{ .Party.Name }}</h2> 
-  {{ if .Party.SelectedMovie }}
-  <div class="mt-5">
-    <div class="row">
-      <div class="col-4"></div>
-      <div class="col-4">
-        <div class="card">
-          <div class="row">
-            <div class="col-4">
-              <img src="{{ .Party.SelectedMovie.PosterURL }}" class="img-fluid rounded-start" alt="">
-            </div>
-            <div class="col-8">
-              <div class="card-body">
-                <h4 class="card-title">Selected Movie:<h4> 
-                <h5 class="card-subtitle">{{ .Party.SelectedMovie.Title}}</h5>
-                <button type="button" class="btn btn-primary mt-3" hx-put="/parties/{{.Party.ID}}/movies/{{.Party.SelectedMovie.ID}}/watched" hx-target="#watched-indicator" hx-indicator="#watched-indicator">Watch Movie</button>
+  <div class="text-center mt-5">
+    <h2>{{ .Party.Name }}</h2>
+    {{ if .Party.SelectedMovie }}
+      <div class="mt-5">
+        <div class="row">
+          <div class="col-4"></div>
+          <div class="col-4">
+            <div class="card">
+              <div class="row">
+                <div class="col-4">
+                  <img
+                    src="{{ .Party.SelectedMovie.PosterURL }}"
+                    class="img-fluid rounded-start"
+                    alt=""
+                  />
+                </div>
+                <div class="col-8">
+                  <div class="card-body">
+                    <h4 class="card-title">Selected Movie:</h4>
+                    <h5 class="card-subtitle">
+                      {{ .Party.SelectedMovie.Title }}
+                    </h5>
+                    <button type="button" class="btn btn-primary mt-3">
+                      Watch Movie
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  </div>
-  {{ end }}
-  <div class="mt-5">
-    <div class="row">
-      <div class="col-2"></div>
-      <div class="col-8">
-        <ul class="nav nav-tabs" id="myTab" role="tablist">
-          <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="unwatched-tab" data-bs-toggle="tab" data-bs-target="#unwatched-tab-pane" type="button" role="tab" aria-controls="unwatched-tab-pane" aria-selected="true">Unwatched Movies</button>
-          </li>
-          <li class="nav-item" role="presentation">
-            <button class="nav-link" id="watched-tab" data-bs-toggle="tab" data-bs-target="#watched-tab-pane" type="button" role="tab" aria-controls="watched-tab-pane" aria-selected="false">Watched Movies</button>
-          </li>
-        </ul>
-        <div class="tab-content" id="myTabContent">
-          <div class="tab-pane fade show active" id="unwatched-tab-pane" role="tabpanel" aria-labelledby="unwatched-tab" tabindex="0">
-            <table class="table table-striped">
-              <thead>
-                <tr>
-                  <th scope="col">Movie</th>
-                  <th scope="col">Added By</th>
-                </tr>
-              <tbody>
-              {{ range .Party.UnwatchedMovies }}
-                <tr>
-                  <td>
-                    {{ .Title }}
-                  </td>
-                  <td>
-                    {{.AddedBy.FirstName}} {{.AddedBy.LastName}}
-                  </td>
-                </tr>
-              {{ end }}
-              </tbody>
-            </table>
+    {{ end }}
+    <div class="mt-5">
+      <div class="row">
+        <div class="col-2"></div>
+        <div class="col-8">
+          <ul class="nav nav-tabs" id="myTab" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button
+                class="nav-link active"
+                id="unwatched-tab"
+                data-bs-toggle="tab"
+                data-bs-target="#unwatched-tab-pane"
+                type="button"
+                role="tab"
+                aria-controls="unwatched-tab-pane"
+                aria-selected="true"
+              >
+                Unwatched Movies
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button
+                class="nav-link"
+                id="watched-tab"
+                data-bs-toggle="tab"
+                data-bs-target="#watched-tab-pane"
+                type="button"
+                role="tab"
+                aria-controls="watched-tab-pane"
+                aria-selected="false"
+              >
+                Watched Movies
+              </button>
+            </li>
+          </ul>
+          <div class="tab-content" id="myTabContent">
+            <div
+              class="tab-pane fade show active"
+              id="unwatched-tab-pane"
+              role="tabpanel"
+              aria-labelledby="unwatched-tab"
+              tabindex="0"
+            >
+              <table class="table table-striped">
+                <thead>
+                  <tr>
+                    <th scope="col">Movie</th>
+                    <th scope="col">Added By</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {{ range .Party.UnwatchedMovies }}
+                    <tr>
+                      <td>
+                        {{ .Title }}
+                      </td>
+                      <td>
+                        {{ .AddedBy.FirstName }}
+                        {{ .AddedBy.LastName }}
+                      </td>
+                    </tr>
+                  {{ end }}
+                </tbody>
+              </table>
+            </div>
+            <div
+              class="tab-pane fade"
+              id="watched-tab-pane"
+              role="tabpanel"
+              aria-labelledby="watched-tab"
+              tabindex="0"
+            >
+              <table class="table table-striped">
+                <thead>
+                  <tr>
+                    <th scope="col">Movie</th>
+                    <th scope="col">Added By</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {{ range .Party.WatchedMovies }}
+                    <tr>
+                      <td>
+                        {{ .Title }}
+                      </td>
+                      <td>
+                        {{ .AddedBy.FirstName }}
+                        {{ .AddedBy.LastName }}
+                      </td>
+                    </tr>
+                  {{ end }}
+                </tbody>
+              </table>
+            </div>
           </div>
-        <div class="tab-pane fade" id="watched-tab-pane" role="tabpanel" aria-labelledby="watched-tab" tabindex="0">
-          <table class="table table-striped">
-            <thead>
-              <tr>
-                <th scope="col">Movie</th>
-                <th scope="col">Added By</th>
-              </tr>
-            <tbody>
-            {{ range .Party.WatchedMovies }}
-              <tr>
-                <td>
-                  {{ .Title }}
-                </td>
-                <td>
-                  {{.AddedBy.FirstName}} {{.AddedBy.LastName}}
-                </td>
-              </tr>
-            {{ end }}
-            </tbody>
-          </table>
         </div>
       </div>
     </div>
   </div>
-</div>
 {{ end }}

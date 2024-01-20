@@ -1,25 +1,24 @@
 {{ define "search_results" }}
-{{- range .Movies }}
-<form class="row" method="POST" action="/movies/create">
-  <input type="hidden" name="tmdb_id" value="{{.TMDBID}}" />
+  {{- range .Movies }}
+    <form class="row" method="POST" action="/movies/create">
+      <input type="hidden" name="tmdb_id" value="{{ .TMDBID }}" />
       <div class="col">
-        <img 
-          class="img-fluid thumbnail rounded" 
-          style="max-width: 20%" 
-          src="{{.PosterURL}}" 
-          alt="{{.Title}} Poster" 
-          onerror="this.onerror=null;this.src='https://via.placeholder.com/200x300?text=No+Poster';" 
-      />
+        <img
+          class="img-fluid thumbnail rounded"
+          style="max-width: 20%"
+          src="{{ .PosterURL }}"
+          alt="{{ .Title }} Poster"
+          onerror="this.onerror=null;this.src='https://via.placeholder.com/200x300?text=No+Poster';"
+        />
       </div>
       <div class="col">
-        <p>{{.Title}}</p> 
-        <p>{{.ReleaseDate}}</p>
-        <p>{{.Overview}}</p>
+        <p>{{ .Title }}</p>
+        <p>{{ .ReleaseDate }}</p>
+        <p>{{ .Overview }}</p>
         <button class="btn btn-primary" type="submit">View Details</button>
       </div>
-</form>
-{{- end }}
+    </form>
+  {{- end }}
 {{ end }}
 
 {{ template "search_results" . }}
-

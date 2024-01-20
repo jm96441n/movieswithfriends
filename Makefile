@@ -1,6 +1,10 @@
 .DEFAULT_GOAL := run
 CONTAINER_NAME := movieswithfriendsdb
 
+.PHONY: setupprettier
+setupprettier:
+	npm install --save-dev prettier prettier-plugin-go-template
+
 .PHONY: setuppostgres
 setuppostgres:
 	if [  ! "$(shell docker container inspect -f '{{.State.Running}}' $(CONTAINER_NAME))" = "true" ]; then docker run -d --rm --name $(CONTAINER_NAME) -p 5432:5432 -e POSTGRES_USER="user" -e POSTGRES_PASSWORD="password" -e POSTGRES_DB="movieswithfriends" -v ./_data:/var/lib/postgresql/data postgres:bullseye && sleep 5; fi
