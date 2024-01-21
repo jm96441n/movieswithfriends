@@ -130,3 +130,47 @@ func (pg *PGStore) GetPartiesForProfile(ctx context.Context, id int) ([]Party, e
 	}
 	return parties, nil
 }
+
+const updateWatchStatusQuery = `
+  update party_movies
+  set watch_status = $1
+  where id_party = $2 and id_movie = $3
+`
+
+func (pg *PGStore) MarkMovieAsWatched(ctx context.Context, idParty, idMovie int) error {
+	pg.logger.Info("MarkMovieAsWatched", "idParty", idParty, "idMovie", idMovie)
+	return pg.updateMovieStatusInParty(ctx, idParty, idMovie, WatchStatusWatched)
+}
+
+const selectMovieForPartyQuery = `
+WITH selected_profile_id AS (
+  select id_profile 
+  from profile_parties 
+  where id_party = $1
+  order by random()
+  limit 1
+)
+  select id_movie 
+  from party_movies 
+  where id_party = $2 and id_profile = (select id_profile from selected_profile_id) AND watch_status = 'unwatched'
+  order by random()
+  limit 1;
+`
+
+func (pg *PGStore) SelectMovieForParty(ctx context.Context, idParty int) error {
+	var selectedMovieID int
+	err := pg.db.QueryRow(ctx, selectMovieForPartyQuery, idParty, idParty).Scan(&selectedMovieID)
+	if err != nil {
+		return err
+	}
+
+	return pg.updateMovieStatusInParty(ctx, idParty, selectedMovieID, WatchStatusSelected)
+}
+
+func (pg *PGStore) updateMovieStatusInParty(ctx context.Context, idParty, idMovie int, status watchStatusEnum) error {
+	_, err := pg.db.Exec(ctx, updateWatchStatusQuery, status, idParty, idMovie)
+	if err != nil {
+		return err
+	}
+	return nil
+}

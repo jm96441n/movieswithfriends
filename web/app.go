@@ -23,6 +23,8 @@ type PartiesService interface {
 	GetPartyByID(context.Context, int) (store.Party, error)
 	GetPartyByIDWithMovies(context.Context, int) (store.Party, error)
 	AddMovieToParty(context.Context, int, int) error
+	MarkMovieAsWatched(context.Context, int, int) error
+	SelectMovieForParty(context.Context, int) error
 }
 
 type ProfilesService interface {

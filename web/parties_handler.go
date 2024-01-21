@@ -65,3 +65,47 @@ func (a *Application) AddMovietoPartyHandler(w http.ResponseWriter, r *http.Requ
 
 	a.renderPartial(w, r, http.StatusOK, "movies/partials/party_list_item.gohtml", templateData)
 }
+
+func (a *Application) MarkMovieAsWatchedHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	vars := mux.Vars(r)
+	idPartyParam := vars["party_id"]
+	idMovieParam := vars["id"]
+	idMovie, err := strconv.Atoi(idMovieParam)
+	if err != nil {
+		a.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	idParty, err := strconv.Atoi(idPartyParam)
+	if err != nil {
+		a.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	err = a.PartiesService.MarkMovieAsWatched(ctx, idParty, idMovie)
+	if err != nil {
+		a.serverError(w, r, err)
+		return
+	}
+
+	http.Redirect(w, r, "/parties/"+idPartyParam, http.StatusSeeOther)
+}
+
+func (a *Application) SelectMovieForParty(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	vars := mux.Vars(r)
+	idPartyParam := vars["party_id"]
+	idParty, err := strconv.Atoi(idPartyParam)
+	if err != nil {
+		a.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	err = a.PartiesService.SelectMovieForParty(ctx, idParty)
+	if err != nil {
+		a.serverError(w, r, err)
+		return
+	}
+	http.Redirect(w, r, "/parties/"+idPartyParam, http.StatusSeeOther)
+}
