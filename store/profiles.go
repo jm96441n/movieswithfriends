@@ -8,9 +8,10 @@ import (
 )
 
 type Profile struct {
-	ID        int     `json:"id"`
-	FirstName string  `json:"first_name"`
-	LastName  string  `json:"last_name"`
+	ID        int    `json:"id"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	AccountID int
 	Parties   []Party `json:"parties"`
 }
 
@@ -36,4 +37,10 @@ func (pg *PGStore) GetProfileByID(ctx context.Context, id int) (Profile, error) 
 	profile.Parties = parties
 
 	return profile, nil
+}
+
+const insertProfileQuery = `insert into profiles (first_name, last_name, id_account) values ($1, $2, $3) returning id_profile`
+
+func (pg *PGStore) CreateProfile(ctx, firstName, lastName string, accountID int) (Profile, error) {
+	return Profile{}, nil
 }

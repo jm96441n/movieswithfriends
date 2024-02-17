@@ -3,79 +3,74 @@ package web
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
-	"golang.org/x/exp/slog"
 )
 
-type accountCreator interface {
-	CreateAccount(context.Context, string, string, []byte) error
-}
-
 type SignupReq struct {
-	Login    string
-	Password string
-	Name     string
-	PartyID  string
+	Email     string
+	Password  string
+	FirstName string
+	LastName  string
+	PartyID   string
 }
 
 type SignupResponse struct {
 	Message string
 }
 
-func SignUpHandler(logger *slog.Logger, db accountCreator) http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*500)
-		defer cancel()
+func (a *Application) SignUpShowHandler(w http.ResponseWriter, r *http.Request) {
+	data := a.NewTemplateData(r, "/signup")
+	a.render(w, r, http.StatusOK, "signup/show.gohtml", data)
+}
 
-		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			logger.Error(err.Error())
-			w.WriteHeader(500)
-			return
-		}
+func (a *Application) SignUpHandler(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*500)
+	defer cancel()
 
-		req := SignupReq{}
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		a.serverError(w, r, err)
+		return
+	}
 
-		err = json.Unmarshal(body, &req)
-		if err != nil {
-			logger.Error(err.Error())
-			w.WriteHeader(500)
-			return
-		}
+	req := SignupReq{}
 
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
-		if err != nil {
-			logger.Error(err.Error())
-			w.WriteHeader(500)
-			return
-		}
+	err = json.Unmarshal(body, &req)
+	if err != nil {
+		a.serverError(w, r, err)
+		return
+	}
 
-		err = db.CreateAccount(ctx, req.Name, req.Login, hashedPassword)
-		if err != nil {
-			logger.Error(err.Error())
-			w.WriteHeader(500)
-			return
-		}
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		a.serverError(w, r, err)
+		return
+	}
 
-		resp := SignupResponse{Message: fmt.Sprintf("Successfully signed up user %s with login %s", req.Name, req.Login)}
+	account, err = a.AccountService.CreateAccount(ctx, req.Email, req.FirstName, req.LastName, hashedPassword)
+	if err != nil {
+		a.serverError(w, r, err)
+		return
+	}
 
-		respBody, err := json.Marshal(resp)
-		if err != nil {
-			logger.Error(err.Error())
-			w.WriteHeader(500)
-			return
-		}
+	a.Logger.Info("successfully signed up user", "userName", req.FirstName, "userEmail", req.Email)
+	http.Redirect(w, r, "/profiles/1", http.StatusSeeOther)
+}
 
-		_, err = w.Write(respBody)
-		if err != nil {
-			logger.Error(err.Error())
-			w.WriteHeader(500)
-			return
-		}
-	})
+func parseSignUpForm(r *http.Request) (SignupReq, error) {
+	err := r.ParseForm()
+	if err != nil {
+		return SignupReq{}, err
+	}
+	return SignupReq{
+		Email:     r.PostForm.Get("email"),
+		Password:  r.PostForm.Get("password"),
+		FirstName: r.PostForm.Get("firstName"),
+		LastName:  r.PostForm.Get("lastName"),
+		PartyID:   r.PostForm.Get("partyID"),
+	}, nil
 }

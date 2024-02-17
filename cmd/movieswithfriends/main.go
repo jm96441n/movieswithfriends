@@ -52,6 +52,7 @@ func main() {
 		MoviesService:   db,
 		PartiesService:  db,
 		ProfilesService: db,
+		AccountService:  db,
 	}
 
 	tlsConfig := &tls.Config{

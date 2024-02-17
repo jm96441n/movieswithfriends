@@ -93,6 +93,8 @@ func (p *PGStore) GetPartyByIDWithMovies(ctx context.Context, id int) (Party, er
 		}
 	}
 
+	p.logger.Info("GetPartyByIDWithMovies", "party", party)
+
 	return party, nil
 }
 

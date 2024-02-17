@@ -31,6 +31,10 @@ type ProfilesService interface {
 	GetProfileByID(context.Context, int) (store.Profile, error)
 }
 
+type AccountService interface {
+	CreateAccount(context.Context, string, string, string, []byte) (store.Account, error)
+}
+
 type Application struct {
 	Logger          *slog.Logger
 	TemplateCache   map[string]*template.Template
@@ -38,6 +42,7 @@ type Application struct {
 	MoviesService   MoviesService
 	PartiesService  PartiesService
 	ProfilesService ProfilesService
+	AccountService  AccountService
 }
 
 func (a *Application) serverError(w http.ResponseWriter, r *http.Request, err error) {

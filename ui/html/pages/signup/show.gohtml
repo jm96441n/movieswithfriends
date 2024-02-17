@@ -1,0 +1,84 @@
+{{ define "title" }}SignUp{{ end }}
+
+{{ define "main" }}
+  <div class="row">
+    <div class="col-4"></div>
+    <div class="col-4">
+      <div class="text-center mb-4">
+        <h3>Sign Up</h3>
+      </div>
+      <form action="/signup" method="POST">
+        <div class="row g-3 mb-2 align-items-center">
+          <div class="col-2">
+            <label for="emailInput" class="col-form-label">Email</label>
+          </div>
+          <div class="col-8">
+            <input
+              type="email"
+              class="form-control"
+              id="emailInput"
+              aria-describedby="emailHelp"
+            />
+          </div>
+          <div class="col-2">
+            <i
+              id="emailHelp"
+              class="fa-solid fa-circle-question"
+              data-bs-toggle="tooltip"
+              data-bs-placement="right"
+              data-bs-title="We will never share your email"
+            ></i>
+          </div>
+        </div>
+        <div class="row g-3 align-items-center mb-2">
+          <div class="col-2">
+            <label for="inputPassword" class="col-form-label"> Password </label>
+          </div>
+          <div class="col-8">
+            <input
+              type="password"
+              id="inputPassword"
+              class="form-control"
+              aria-describedby="passwordHelp"
+            />
+          </div>
+          <div class="col-2">
+            <i
+              id="passwordHelp"
+              class="fa-solid fa-circle-question"
+              data-bs-toggle="tooltip"
+              data-bs-placement="right"
+              data-bs-title="Password must be at least 8 characters long"
+            ></i>
+          </div>
+        </div>
+        <div class="row g-3 align-items-center mb-2">
+          <div class="col-2">
+            <label for="inputFirstName" class="col-form-label">
+              First Name
+            </label>
+          </div>
+          <div class="col-8">
+            <input type="text" id="inputFirstName" class="form-control" />
+          </div>
+          <div class="col-2"></div>
+        </div>
+        <div class="row g-3 align-items-center mb-4">
+          <div class="col-2">
+            <label for="inputLastName" class="col-form-label">
+              Last Name
+            </label>
+          </div>
+          <div class="col-8">
+            <input type="text" id="inputLastName" class="form-control" />
+          </div>
+          <div class="col-2"></div>
+        </div>
+        <div class="text-center">
+          <button type="submit" class="btn btn-primary">Submit</button>
+        </div>
+      </form>
+    </div>
+    <div class="col-4"></div>
+  </div>
+{{ end }}

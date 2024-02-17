@@ -27,5 +27,9 @@ func (a *Application) Routes() http.Handler {
 
 	// profiles related routes
 	router.HandleFunc("/profiles/{id}", a.ProfileShowHandler).Methods("GET")
+
+	// sign up routes
+	router.HandleFunc("/signup", a.SignUpShowHandler).Methods("GET")
+	router.HandleFunc("/signup", a.SignUpHandler).Methods("POST")
 	return router
 }

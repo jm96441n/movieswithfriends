@@ -33,7 +33,7 @@ func (a *Application) ProfileShowHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	templateData := a.NewProfilesTemplateData(r, "/profile")
+	templateData := a.NewProfilesTemplateData(r, "/profiles/1")
 	templateData.Profile = profile
 	a.render(w, r, http.StatusOK, "profiles/show.gohtml", templateData)
 }
