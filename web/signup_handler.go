@@ -3,6 +3,7 @@ package web
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"time"
@@ -51,7 +52,7 @@ func (a *Application) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	account, err = a.AccountService.CreateAccount(ctx, req.Email, req.FirstName, req.LastName, hashedPassword)
+	_, err = a.AccountService.CreateAccount(ctx, req.Email, req.FirstName, req.LastName, hashedPassword)
 	if err != nil {
 		a.serverError(w, r, err)
 		return
@@ -73,4 +74,34 @@ func parseSignUpForm(r *http.Request) (SignupReq, error) {
 		LastName:  r.PostForm.Get("lastName"),
 		PartyID:   r.PostForm.Get("partyID"),
 	}, nil
+}
+
+func (a *Application) LoginShowHandler(w http.ResponseWriter, r *http.Request) {
+	data := a.NewTemplateData(r, "/login")
+	a.render(w, r, http.StatusOK, "login/show.gohtml", data)
+}
+
+func (a *Application) LoginHandler(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		a.serverError(w, r, err)
+		return
+	}
+
+	account, err := a.AccountService.FindAccountByEmail(r.Context(), r.PostForm.Get("email"))
+	if err != nil {
+		a.render(w, r, http.StatusUnauthorized, "login/show.gohtml", nil)
+		return
+	}
+
+	err = bcrypt.CompareHashAndPassword(account.Password, []byte(r.PostForm.Get("password")))
+	if err != nil {
+		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
+			a.render(w, r, http.StatusUnauthorized, "login/show.gohtml", nil)
+			return
+		}
+		a.render(w, r, http.StatusUnauthorized, "login/show.gohtml", nil)
+		return
+	}
+	http.Redirect(w, r, "/profiles/1", http.StatusSeeOther)
 }

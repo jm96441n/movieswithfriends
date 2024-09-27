@@ -24,6 +24,10 @@ setup: setuppostgres setuptls migrate
 psql: setuppostgres
 	docker exec -it $(CONTAINER_NAME) psql -U user movieswithfriends
 
+.PHONY: gen-session-key
+gen-session-key:
+	go run cmd/scripts/gen_session_key.go
+
 .PHONY: run
 run:
 	air

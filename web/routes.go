@@ -31,5 +31,7 @@ func (a *Application) Routes() http.Handler {
 	// sign up routes
 	router.HandleFunc("/signup", a.SignUpShowHandler).Methods("GET")
 	router.HandleFunc("/signup", a.SignUpHandler).Methods("POST")
+	router.HandleFunc("/login", a.LoginShowHandler).Methods("GET")
+	router.HandleFunc("/login", a.LoginHandler).Methods("POST")
 	return router
 }

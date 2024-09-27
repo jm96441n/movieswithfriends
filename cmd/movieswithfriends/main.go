@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/gorilla/sessions"
 	"github.com/jm96441n/movieswithfriends/store"
 	"github.com/jm96441n/movieswithfriends/ui"
 	"github.com/jm96441n/movieswithfriends/web"
@@ -45,10 +46,19 @@ func main() {
 
 	tmdbClient := web.NewTMDBClient("https://api.themoviedb.org/3", tmdbApiKey)
 
+	sessionKey := os.Getenv("SESSION_KEY")
+	if sessionKey == "" {
+		logger.Error("SESSION_KEY is not set")
+		os.Exit(1)
+	}
+
+	store = sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY")))
+
 	app := web.Application{
 		TemplateCache:   tmplCache,
 		Logger:          logger,
 		TMDBClient:      tmdbClient,
+		SessionStore:    store,
 		MoviesService:   db,
 		PartiesService:  db,
 		ProfilesService: db,

@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"path/filepath"
 
+	"github.com/gorilla/sessions"
 	"github.com/jm96441n/movieswithfriends/store"
 )
 
@@ -33,12 +34,14 @@ type ProfilesService interface {
 
 type AccountService interface {
 	CreateAccount(context.Context, string, string, string, []byte) (store.Account, error)
+	FindAccountByEmail(context.Context, string) (store.Account, error)
 }
 
 type Application struct {
 	Logger          *slog.Logger
 	TemplateCache   map[string]*template.Template
 	TMDBClient      *TMDBClient
+	SessionStore    sessions.CookieStore
 	MoviesService   MoviesService
 	PartiesService  PartiesService
 	ProfilesService ProfilesService

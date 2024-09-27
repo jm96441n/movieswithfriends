@@ -40,8 +40,16 @@
             >
           </li>
         </ul>
-        <a href="/login" class="btn btn-outline-success mx-2">Login</a>
-        <a href="/signup" class="btn btn-outline-primary mx-2">Sign Up</a>
+        <a
+          href="/login"
+          class="btn btn-outline-success mx-2 {{ navClasses "/login" .CurrentPagePath }}"
+          >Login</a
+        >
+        <a
+          href="/signup"
+          class="btn btn-outline-primary mx-2 {{ navClasses "/signup" .CurrentPagePath }}"
+          >Sign Up</a
+        >
       </div>
     </div>
   </nav>

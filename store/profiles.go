@@ -41,6 +41,12 @@ func (pg *PGStore) GetProfileByID(ctx context.Context, id int) (Profile, error) 
 
 const insertProfileQuery = `insert into profiles (first_name, last_name, id_account) values ($1, $2, $3) returning id_profile`
 
-func (pg *PGStore) CreateProfile(ctx, firstName, lastName string, accountID int) (Profile, error) {
-	return Profile{}, nil
+func (pg *PGStore) CreateProfileWithTxn(ctx context.Context, txn pgx.Tx, firstName, lastName string, accountID int) (Profile, error) {
+	profile := Profile{FirstName: firstName, LastName: lastName, AccountID: accountID}
+
+	err := txn.QueryRow(ctx, insertProfileQuery, firstName, lastName, accountID).Scan(&profile.ID)
+	if err != nil {
+		return Profile{}, err
+	}
+	return profile, nil
 }

@@ -1,16 +1,19 @@
 module github.com/jm96441n/movieswithfriends
 
-go 1.21
+go 1.23
+
+toolchain go1.23.1
 
 require (
 	github.com/gorilla/mux v1.8.0
+	github.com/gorilla/sessions v1.4.0
 	github.com/hashicorp/go-retryablehttp v0.7.5
 	github.com/jackc/pgx/v5 v5.4.3
 	golang.org/x/crypto v0.12.0
-	golang.org/x/exp v0.0.0-20230801115018-d63ba01acd4b
 )
 
 require (
+	github.com/gorilla/securecookie v1.1.2 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
