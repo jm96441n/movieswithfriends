@@ -3,14 +3,11 @@ package web
 import (
 	"net/http"
 	"strconv"
-
-	"github.com/gorilla/mux"
 )
 
 func (a *Application) PartyShowHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	vars := mux.Vars(r)
-	idParam := vars["id"]
+	idParam := r.PathValue("id")
 	id, err := strconv.Atoi(idParam)
 	if err != nil {
 		a.clientError(w, http.StatusBadRequest)
@@ -28,8 +25,7 @@ func (a *Application) PartyShowHandler(w http.ResponseWriter, r *http.Request) {
 
 func (a *Application) AddMovietoPartyHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	vars := mux.Vars(r)
-	idPartyParam := vars["id"]
+	idPartyParam := r.PathValue("id")
 	err := r.ParseForm()
 	if err != nil {
 		a.serverError(w, r, err)
@@ -68,9 +64,8 @@ func (a *Application) AddMovietoPartyHandler(w http.ResponseWriter, r *http.Requ
 
 func (a *Application) MarkMovieAsWatchedHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	vars := mux.Vars(r)
-	idPartyParam := vars["party_id"]
-	idMovieParam := vars["id"]
+	idPartyParam := r.PathValue("party_id")
+	idMovieParam := r.PathValue("id")
 	idMovie, err := strconv.Atoi(idMovieParam)
 	if err != nil {
 		a.clientError(w, http.StatusBadRequest)
@@ -94,8 +89,7 @@ func (a *Application) MarkMovieAsWatchedHandler(w http.ResponseWriter, r *http.R
 
 func (a *Application) SelectMovieForParty(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	vars := mux.Vars(r)
-	idPartyParam := vars["party_id"]
+	idPartyParam := r.PathValue("party_id")
 	idParty, err := strconv.Atoi(idPartyParam)
 	if err != nil {
 		a.clientError(w, http.StatusBadRequest)

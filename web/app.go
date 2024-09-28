@@ -41,7 +41,7 @@ type Application struct {
 	Logger          *slog.Logger
 	TemplateCache   map[string]*template.Template
 	TMDBClient      *TMDBClient
-	SessionStore    sessions.CookieStore
+	SessionStore    *sessions.CookieStore
 	MoviesService   MoviesService
 	PartiesService  PartiesService
 	ProfilesService ProfilesService

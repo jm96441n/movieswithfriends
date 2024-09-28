@@ -52,13 +52,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	store = sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY")))
+	sessionStore := sessions.NewCookieStore([]byte(sessionKey))
 
 	app := web.Application{
 		TemplateCache:   tmplCache,
 		Logger:          logger,
 		TMDBClient:      tmdbClient,
-		SessionStore:    store,
+		SessionStore:    sessionStore,
 		MoviesService:   db,
 		PartiesService:  db,
 		ProfilesService: db,

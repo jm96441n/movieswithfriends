@@ -7,8 +7,8 @@ import (
 	"time"
 )
 
-func loggingMiddlewareBuilder(logger *slog.Logger) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
+func loggingMiddlewareBuilder(logger *slog.Logger) func(http.HandlerFunc) http.HandlerFunc {
+	return func(next http.HandlerFunc) http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			cur := time.Now()
 			logger.Info(fmt.Sprintf("Starting %s request for %s", req.Method, req.URL.Path))
@@ -19,8 +19,16 @@ func loggingMiddlewareBuilder(logger *slog.Logger) func(http.Handler) http.Handl
 	}
 }
 
-func corsMiddleware() func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
+func authenticatedMiddleware() func(http.HandlerFunc) http.HandlerFunc {
+	return func(next http.HandlerFunc) http.HandlerFunc {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			next.ServeHTTP(w, req)
+		})
+	}
+}
+
+func corsMiddleware() func(http.HandlerFunc) http.HandlerFunc {
+	return func(next http.HandlerFunc) http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
 			w.Header().Set("Access-Control-Allow-Credentials", "true")

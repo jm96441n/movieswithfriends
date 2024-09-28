@@ -10,7 +10,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gorilla/mux"
 	"github.com/jm96441n/movieswithfriends/store"
 )
 
@@ -105,8 +104,7 @@ func (a *Application) MoviesCreateHandler(w http.ResponseWriter, r *http.Request
 
 func (a *Application) MoviesShowHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	vars := mux.Vars(r)
-	idParams := vars["id"]
+	idParams := r.PathValue("id")
 
 	id, err := strconv.Atoi(idParams)
 	if err != nil {

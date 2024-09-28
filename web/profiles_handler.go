@@ -5,14 +5,12 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/gorilla/mux"
 	"github.com/jm96441n/movieswithfriends/store"
 )
 
 func (a *Application) ProfileShowHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	vars := mux.Vars(r)
-	idParam := vars["id"]
+	idParam := r.PathValue("id")
 
 	id, err := strconv.Atoi(idParam)
 	if err != nil {

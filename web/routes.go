@@ -2,36 +2,127 @@ package web
 
 import (
 	"net/http"
-
-	"github.com/gorilla/mux"
+	"slices"
 )
 
+type route struct {
+	path               string
+	handler            http.HandlerFunc
+	authenticatedRoute bool
+}
+
 func (a *Application) Routes() http.Handler {
-	router := mux.NewRouter()
+	router := http.NewServeMux()
+
+	movieRoutes := a.movieRoutes()
+	partyRoutes := a.partyRoutes()
+	sessionRoutes := a.sessionRoutes()
+	profileRoutes := a.profileRoutes()
+
+	routes := make([]route, 0, len(movieRoutes)+len(partyRoutes)+len(sessionRoutes)+len(profileRoutes)+1) // +1 for home route
+
+	homeRoute := route{
+		path:               "/",
+		handler:            a.HomeHandler,
+		authenticatedRoute: false,
+	}
+
+	routes = append(routes, homeRoute)
+	routes = slices.Concat(routes, movieRoutes, partyRoutes, sessionRoutes, profileRoutes)
+
+	authenticatorMW := authenticatedMiddleware()
+	loggingMW := loggingMiddlewareBuilder(a.Logger)
+
+	for _, r := range routes {
+		handlerFunc := loggingMW(r.handler)
+		if r.authenticatedRoute {
+			handlerFunc = authenticatorMW(r.handler)
+		}
+		router.HandleFunc(r.path, handlerFunc)
+	}
 
 	//	fileServer := http.FileServer(http.FS(ui.TemplateFS))
 	//	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", fileServer))
 
-	router.HandleFunc("/", a.HomeHandler)
-
-	// movies related routes
-	router.HandleFunc("/movies", a.MoviesIndexHandler).Methods("GET")
-	router.HandleFunc("/movies/{id}", a.MoviesShowHandler).Methods("GET")
-	router.HandleFunc("/movies/create", a.MoviesCreateHandler).Methods("POST")
-
-	// parties related routes
-	router.HandleFunc("/parties/{id}", a.PartyShowHandler).Methods("GET")
-	router.HandleFunc("/parties/{id}", a.AddMovietoPartyHandler).Methods("PUT")
-	router.HandleFunc("/parties/{party_id}/movies/{id}", a.MarkMovieAsWatchedHandler).Methods("POST")
-	router.HandleFunc("/parties/{party_id}/movies", a.SelectMovieForParty).Methods("POST")
-
-	// profiles related routes
-	router.HandleFunc("/profiles/{id}", a.ProfileShowHandler).Methods("GET")
-
-	// sign up routes
-	router.HandleFunc("/signup", a.SignUpShowHandler).Methods("GET")
-	router.HandleFunc("/signup", a.SignUpHandler).Methods("POST")
-	router.HandleFunc("/login", a.LoginShowHandler).Methods("GET")
-	router.HandleFunc("/login", a.LoginHandler).Methods("POST")
 	return router
+}
+
+func (a *Application) movieRoutes() []route {
+	return []route{
+		{
+			path:               "GET /movies",
+			handler:            a.MoviesIndexHandler,
+			authenticatedRoute: false,
+		},
+		{
+			path:               "GET /movies/{id}",
+			handler:            a.MoviesShowHandler,
+			authenticatedRoute: false,
+		},
+		{
+			path:               "POST /movies/create",
+			handler:            a.MoviesCreateHandler,
+			authenticatedRoute: false,
+		},
+	}
+}
+
+func (a *Application) partyRoutes() []route {
+	return []route{
+		{
+			path:               "GET /parties/{id}",
+			handler:            a.PartyShowHandler,
+			authenticatedRoute: true,
+		},
+		{
+			path:               "PUT /parties/{id}",
+			handler:            a.AddMovietoPartyHandler,
+			authenticatedRoute: true,
+		},
+		{
+			path:               "POST /parties/{party_id}/movies/{id}",
+			handler:            a.MarkMovieAsWatchedHandler,
+			authenticatedRoute: true,
+		},
+		{
+			path:               "POST /parties/{party_id}/movies",
+			handler:            a.SelectMovieForParty,
+			authenticatedRoute: true,
+		},
+	}
+}
+
+func (a *Application) sessionRoutes() []route {
+	return []route{
+		{
+			path:               "GET /signup",
+			handler:            a.SignUpShowHandler,
+			authenticatedRoute: false,
+		},
+		{
+			path:               "POST /signup",
+			handler:            a.SignUpHandler,
+			authenticatedRoute: false,
+		},
+		{
+			path:               "GET /login",
+			handler:            a.LoginShowHandler,
+			authenticatedRoute: false,
+		},
+		{
+			path:               "POST /login",
+			handler:            a.LoginHandler,
+			authenticatedRoute: false,
+		},
+	}
+}
+
+func (a *Application) profileRoutes() []route {
+	return []route{
+		{
+			path:               "GET /profiles/{id}",
+			handler:            a.ProfileShowHandler,
+			authenticatedRoute: true,
+		},
+	}
 }
