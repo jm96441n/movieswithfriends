@@ -30,14 +30,16 @@ func (a *Application) Routes() http.Handler {
 	routes = append(routes, homeRoute)
 	routes = slices.Concat(routes, movieRoutes, partyRoutes, sessionRoutes, profileRoutes)
 
-	authenticatorMW := authenticatedMiddleware()
+	authenticatorMW := a.authenticateMiddleware()
+	requireAuthMW := a.authenticatedMiddleware()
 	loggingMW := loggingMiddlewareBuilder(a.Logger)
 
 	for _, r := range routes {
-		handlerFunc := loggingMW(r.handler)
+		handlerFunc := r.handler
 		if r.authenticatedRoute {
-			handlerFunc = authenticatorMW(r.handler)
+			handlerFunc = requireAuthMW(handlerFunc)
 		}
+		handlerFunc = loggingMW(authenticatorMW(handlerFunc))
 		router.HandleFunc(r.path, handlerFunc)
 	}
 

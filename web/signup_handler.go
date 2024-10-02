@@ -2,9 +2,9 @@ package web
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"io"
+	"fmt"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -12,11 +12,11 @@ import (
 )
 
 type SignupReq struct {
-	Email     string
-	Password  string
-	FirstName string
-	LastName  string
-	PartyID   string
+	Email     string `json:"email"`
+	Password  string `json:"password"`
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+	PartyID   string `json:"partyID"`
 }
 
 type SignupResponse struct {
@@ -29,19 +29,16 @@ func (a *Application) SignUpShowHandler(w http.ResponseWriter, r *http.Request) 
 }
 
 func (a *Application) SignUpHandler(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*500)
+	var err error
+	ctx, cancel := context.WithTimeout(r.Context(), time.Millisecond*500)
+	r.WithContext(ctx)
+
 	defer cancel()
+	defer r.Body.Close()
 
-	body, err := io.ReadAll(r.Body)
+	req, err := parseSignUpForm(r)
 	if err != nil {
-		a.serverError(w, r, err)
-		return
-	}
-
-	req := SignupReq{}
-
-	err = json.Unmarshal(body, &req)
-	if err != nil {
+		a.Logger.Error("error parsing signup form", slog.Any("error", err))
 		a.serverError(w, r, err)
 		return
 	}
@@ -59,7 +56,7 @@ func (a *Application) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	a.Logger.Info("successfully signed up user", "userName", req.FirstName, "userEmail", req.Email)
-	http.Redirect(w, r, "/profiles/1", http.StatusSeeOther)
+	http.Redirect(w, r, "/login", http.StatusSeeOther)
 }
 
 func parseSignUpForm(r *http.Request) (SignupReq, error) {
@@ -68,11 +65,11 @@ func parseSignUpForm(r *http.Request) (SignupReq, error) {
 		return SignupReq{}, err
 	}
 	return SignupReq{
-		Email:     r.PostForm.Get("email"),
-		Password:  r.PostForm.Get("password"),
-		FirstName: r.PostForm.Get("firstName"),
-		LastName:  r.PostForm.Get("lastName"),
-		PartyID:   r.PostForm.Get("partyID"),
+		Email:     r.FormValue("email"),
+		Password:  r.FormValue("password"),
+		FirstName: r.FormValue("firstName"),
+		LastName:  r.FormValue("lastName"),
+		PartyID:   r.FormValue("partyID"),
 	}, nil
 }
 
@@ -84,24 +81,44 @@ func (a *Application) LoginShowHandler(w http.ResponseWriter, r *http.Request) {
 func (a *Application) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
+		a.Logger.Error("error parsing form", slog.Any("error", err))
 		a.serverError(w, r, err)
 		return
 	}
 
-	account, err := a.AccountService.FindAccountByEmail(r.Context(), r.PostForm.Get("email"))
+	account, err := a.AccountService.FindAccountByEmail(r.Context(), r.FormValue("email"))
 	if err != nil {
-		a.render(w, r, http.StatusUnauthorized, "login/show.gohtml", nil)
+		a.Logger.Error("error finding account by email", slog.Any("error", err), slog.String("email", r.FormValue("email")))
+		data := a.NewTemplateData(r, "/signup")
+		a.render(w, r, http.StatusUnauthorized, "login/show.gohtml", data)
 		return
 	}
 
 	err = bcrypt.CompareHashAndPassword(account.Password, []byte(r.PostForm.Get("password")))
 	if err != nil {
+		data := a.NewTemplateData(r, "/signup")
 		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
-			a.render(w, r, http.StatusUnauthorized, "login/show.gohtml", nil)
+			a.Logger.Error("error comparing password", slog.Any("error", err))
+			a.render(w, r, http.StatusUnauthorized, "login/show.gohtml", data)
 			return
 		}
-		a.render(w, r, http.StatusUnauthorized, "login/show.gohtml", nil)
+		a.Logger.Error("error comparing password", slog.Any("error", err))
+		a.render(w, r, http.StatusUnauthorized, "login/show.gohtml", data)
 		return
 	}
-	http.Redirect(w, r, "/profiles/1", http.StatusSeeOther)
+	session, err := a.SessionStore.Get(r, sessionName)
+	if err != nil {
+		a.serverError(w, r, err)
+		return
+	}
+	session.Values["accountID"] = account.ID
+	session.Values["profileID"] = account.Profile.ID
+
+	err = session.Save(r, w)
+	if err != nil {
+		a.serverError(w, r, err)
+		return
+	}
+
+	http.Redirect(w, r, fmt.Sprintf("/profiles/%d", account.Profile.ID), http.StatusSeeOther)
 }

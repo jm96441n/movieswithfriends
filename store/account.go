@@ -48,11 +48,15 @@ func (pg *PGStore) CreateAccount(ctx context.Context, email, firstName, lastName
 
 var ErrNotFound = errors.New("not found")
 
-const findAccountByEmail = `select id_account, email, password from accounts where email = $1`
+const findAccountByEmail = `
+select accounts.id_account, accounts.email, accounts.password, profiles.id_profile from accounts 
+join profiles on profiles.id_account = accounts.id_account
+where accounts.email = $1
+`
 
 func (pg *PGStore) FindAccountByEmail(ctx context.Context, email string) (Account, error) {
 	var account Account
-	err := pg.db.QueryRow(ctx, findAccountByEmail, email).Scan(&account.ID, &account.Email, &account.Password)
+	err := pg.db.QueryRow(ctx, findAccountByEmail, email).Scan(&account.ID, &account.Email, &account.Password, &account.Profile.ID)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return Account{}, ErrNotFound
@@ -60,4 +64,14 @@ func (pg *PGStore) FindAccountByEmail(ctx context.Context, email string) (Accoun
 		return Account{}, err
 	}
 	return account, nil
+}
+
+const accountExistsQuery = `SELECT EXISTS(select true from accounts where id_account = $1)`
+
+func (pg *PGStore) AccountExists(ctx context.Context, id int) (bool, error) {
+	var exists bool
+
+	err := pg.db.QueryRow(ctx, accountExistsQuery, id).Scan(&exists)
+
+	return exists, err
 }

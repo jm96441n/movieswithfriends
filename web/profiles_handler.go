@@ -2,6 +2,8 @@ package web
 
 import (
 	"errors"
+	"fmt"
+	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -14,6 +16,7 @@ func (a *Application) ProfileShowHandler(w http.ResponseWriter, r *http.Request)
 
 	id, err := strconv.Atoi(idParam)
 	if err != nil {
+		a.Logger.Error("failed to convert id to int", slog.Any("error", err))
 		a.clientError(w, http.StatusBadRequest)
 		return
 	}
@@ -30,8 +33,9 @@ func (a *Application) ProfileShowHandler(w http.ResponseWriter, r *http.Request)
 		a.serverError(w, r, err)
 		return
 	}
+	fmt.Println(profile)
 
-	templateData := a.NewProfilesTemplateData(r, "/profiles/1")
+	templateData := a.NewProfilesTemplateData(r, fmt.Sprintf("/profiles/%d", idParam))
 	templateData.Profile = profile
 	a.render(w, r, http.StatusOK, "profiles/show.gohtml", templateData)
 }

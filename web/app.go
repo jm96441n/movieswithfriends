@@ -35,6 +35,7 @@ type ProfilesService interface {
 type AccountService interface {
 	CreateAccount(context.Context, string, string, string, []byte) (store.Account, error)
 	FindAccountByEmail(context.Context, string) (store.Account, error)
+	AccountExists(context.Context, int) (bool, error)
 }
 
 type Application struct {
