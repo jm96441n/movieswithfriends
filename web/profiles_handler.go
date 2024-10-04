@@ -2,29 +2,24 @@ package web
 
 import (
 	"errors"
-	"fmt"
-	"log/slog"
 	"net/http"
-	"strconv"
 
 	"github.com/jm96441n/movieswithfriends/store"
 )
 
 func (a *Application) ProfileShowHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	idParam := r.PathValue("id")
 
-	id, err := strconv.Atoi(idParam)
+	profileID, err := a.getProfileIDFromSession(r)
 	if err != nil {
-		a.Logger.Error("failed to convert id to int", slog.Any("error", err))
-		a.clientError(w, http.StatusBadRequest)
+		a.serverError(w, r, err)
 		return
 	}
 
-	profile, err := a.ProfilesService.GetProfileByID(ctx, id)
+	profile, err := a.ProfilesService.GetProfileByID(ctx, profileID)
 	if err != nil {
 		if errors.Is(err, store.ErrNoRecord) {
-			a.Logger.Error("did not find profoile in db", "id", id)
+			a.Logger.Error("did not find profile in db", "profileID", profileID)
 			a.clientError(w, http.StatusNotFound)
 			return
 		}
@@ -33,9 +28,8 @@ func (a *Application) ProfileShowHandler(w http.ResponseWriter, r *http.Request)
 		a.serverError(w, r, err)
 		return
 	}
-	fmt.Println(profile)
 
-	templateData := a.NewProfilesTemplateData(r, fmt.Sprintf("/profiles/%d", idParam))
+	templateData := a.NewProfilesTemplateData(r, "/profile")
 	templateData.Profile = profile
 	a.render(w, r, http.StatusOK, "profiles/show.gohtml", templateData)
 }

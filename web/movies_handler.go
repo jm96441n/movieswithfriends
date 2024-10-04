@@ -112,6 +112,12 @@ func (a *Application) MoviesShowHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	profileID, err := a.getProfileIDFromSession(r)
+	if err != nil {
+		a.serverError(w, r, err)
+		return
+	}
+
 	result, err := a.MoviesService.GetMovieByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, store.ErrNoRecord) {
@@ -125,7 +131,7 @@ func (a *Application) MoviesShowHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	parties, err := a.PartiesService.GetParties(ctx, id)
+	parties, err := a.PartiesService.GetPartiesByProfile(ctx, id, profileID)
 	if err != nil {
 		a.Logger.Error("failed to get parties", "error", err)
 		a.serverError(w, r, err)

@@ -15,12 +15,14 @@ type Profile struct {
 	Parties   []Party `json:"parties"`
 }
 
-const GetProfileByIDQuery = `select id_profile, first_name, last_name from profiles where id_profile = $1`
+const GetProfileByIDQuery = `
+  select profiles.id_profile, profiles.first_name, profiles.last_name from profiles 
+  where profiles.id_profile = $1`
 
-func (pg *PGStore) GetProfileByID(ctx context.Context, id int) (Profile, error) {
+func (pg *PGStore) GetProfileByID(ctx context.Context, profileID int) (Profile, error) {
 	profile := Profile{}
 
-	err := pg.db.QueryRow(ctx, GetProfileByIDQuery, id).Scan(&profile.ID, &profile.FirstName, &profile.LastName)
+	err := pg.db.QueryRow(ctx, GetProfileByIDQuery, profileID).Scan(&profile.ID, &profile.FirstName, &profile.LastName)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return Profile{}, ErrNoRecord
@@ -29,7 +31,7 @@ func (pg *PGStore) GetProfileByID(ctx context.Context, id int) (Profile, error) 
 		return Profile{}, err
 	}
 
-	parties, err := pg.GetPartiesForProfile(ctx, id)
+	parties, err := pg.GetPartiesForProfile(ctx, profileID)
 	if err != nil {
 		return Profile{}, err
 	}

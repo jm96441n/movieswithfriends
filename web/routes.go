@@ -116,13 +116,18 @@ func (a *Application) sessionRoutes() []route {
 			handler:            a.LoginHandler,
 			authenticatedRoute: false,
 		},
+		{
+			path:               "POST /logout",
+			handler:            a.LogoutHandler,
+			authenticatedRoute: false,
+		},
 	}
 }
 
 func (a *Application) profileRoutes() []route {
 	return []route{
 		{
-			path:               "GET /profiles/{id}",
+			path:               "GET /profile",
 			handler:            a.ProfileShowHandler,
 			authenticatedRoute: true,
 		},

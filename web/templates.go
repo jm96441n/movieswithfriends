@@ -14,6 +14,7 @@ import (
 type BaseTemplateData struct {
 	CurrentPagePath string
 	Flash           string
+	IsAuthenticated bool
 	CurrentYear     int
 }
 
@@ -38,40 +39,33 @@ type PartiesTemplateData struct {
 }
 
 func (a *Application) NewTemplateData(r *http.Request, path string) BaseTemplateData {
-	return BaseTemplateData{
-		//		Flash:       a.sessionManager.PopString(r.Context(), "flash"),
-		CurrentPagePath: path,
-		CurrentYear:     2023,
-	}
+	return newBaseTemplateData(r, path)
 }
 
 func (a *Application) NewMoviesTemplateData(r *http.Request, path string) MoviesTemplateData {
 	return MoviesTemplateData{
-		BaseTemplateData: BaseTemplateData{
-			//			Flash:       a.sessionManager.PopString(r.Context(), "flash"),
-			CurrentPagePath: path,
-			CurrentYear:     2023,
-		},
+		BaseTemplateData: newBaseTemplateData(r, path),
 	}
 }
 
 func (a *Application) NewProfilesTemplateData(r *http.Request, path string) ProfilesTemplateData {
 	return ProfilesTemplateData{
-		BaseTemplateData: BaseTemplateData{
-			//			Flash:       a.sessionManager.PopString(r.Context(), "flash"),
-			CurrentPagePath: path,
-			CurrentYear:     2023,
-		},
+		BaseTemplateData: newBaseTemplateData(r, path),
 	}
 }
 
 func (a *Application) NewPartiesTemplateData(r *http.Request, path string) PartiesTemplateData {
 	return PartiesTemplateData{
-		BaseTemplateData: BaseTemplateData{
-			//			Flash:       a.sessionManager.PopString(r.Context(), "flash"),
-			CurrentPagePath: path,
-			CurrentYear:     2023,
-		},
+		BaseTemplateData: newBaseTemplateData(r, path),
+	}
+}
+
+func newBaseTemplateData(r *http.Request, path string) BaseTemplateData {
+	return BaseTemplateData{
+		//			Flash:       a.sessionManager.PopString(r.Context(), "flash"),
+		CurrentPagePath: path,
+		CurrentYear:     2024,
+		IsAuthenticated: isAuthenticated(r.Context()),
 	}
 }
 

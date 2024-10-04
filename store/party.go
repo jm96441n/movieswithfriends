@@ -14,11 +14,14 @@ type Party struct {
 const getPartiesQuery = `
 with filtered_party_movies as(select * from party_movies where id_movie = $1)select parties.id_party, parties.name, movies.id_movie is not null as is_movie
   from parties
-  left outer join filtered_party_movies on filtered_party_movies.id_party = parties.id_party left outer join movies on filtered_party_movies.id_movie = movies.id_movie;
+  join profile_parties on profile_parties.id_party = parties.id_party
+  left outer join filtered_party_movies on filtered_party_movies.id_party = parties.id_party 
+  left outer join movies on filtered_party_movies.id_movie = movies.id_movie
+  where profile_parties.id_profile = $2;
 `
 
-func (p *PGStore) GetParties(ctx context.Context, idMovie int) ([]Party, error) {
-	rows, err := p.db.Query(ctx, getPartiesQuery, idMovie)
+func (p *PGStore) GetPartiesByProfile(ctx context.Context, idMovie int, idProfile int) ([]Party, error) {
+	rows, err := p.db.Query(ctx, getPartiesQuery, idMovie, idProfile)
 	if err != nil {
 		return nil, err
 	}
@@ -63,13 +66,14 @@ const getPartyByIDWithMoviesQuery = `
   from parties
   join party_movies on party_movies.id_party = parties.id_party
   join movies on movies.id_movie = party_movies.id_movie
-  join profiles on profiles.id_profile = party_movies.id_profile
+  join profile_parties on profile_parties.id_party = parties.id_party
+  join profiles on profiles.id_profile = profile_parties.id_profile
   where parties.id_party = $1;
 `
 
-func (p *PGStore) GetPartyByIDWithMovies(ctx context.Context, id int) (Party, error) {
+func (p *PGStore) GetPartyByIDWithMovies(ctx context.Context, partyID int) (Party, error) {
 	party := Party{UnwatchedMovies: make([]Movie, 0), WatchedMovies: make([]Movie, 0)}
-	rows, err := p.db.Query(ctx, getPartyByIDWithMoviesQuery, id)
+	rows, err := p.db.Query(ctx, getPartyByIDWithMoviesQuery, partyID)
 	if err != nil {
 		p.logger.Error(err.Error(), "query", getPartyByIDWithMoviesQuery)
 		return Party{}, err
@@ -93,7 +97,7 @@ func (p *PGStore) GetPartyByIDWithMovies(ctx context.Context, id int) (Party, er
 		}
 	}
 
-	p.logger.Info("GetPartyByIDWithMovies", "party", party)
+	p.logger.Info("GetPartyByIDWithMovies", "party", party, "partyID", partyID)
 
 	return party, nil
 }

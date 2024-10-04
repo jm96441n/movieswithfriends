@@ -3,6 +3,7 @@ package web
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"html/template"
 	"log/slog"
@@ -13,6 +14,8 @@ import (
 	"github.com/jm96441n/movieswithfriends/store"
 )
 
+var ErrFailedToGetProfileIDFromSession = errors.New("failed to get profile id from session")
+
 type MoviesService interface {
 	GetMovieByTMDBID(context.Context, int) (store.Movie, error)
 	GetMovieByID(context.Context, int) (store.Movie, error)
@@ -20,7 +23,7 @@ type MoviesService interface {
 }
 
 type PartiesService interface {
-	GetParties(context.Context, int) ([]store.Party, error)
+	GetPartiesByProfile(context.Context, int, int) ([]store.Party, error)
 	GetPartyByID(context.Context, int) (store.Party, error)
 	GetPartyByIDWithMovies(context.Context, int) (store.Party, error)
 	AddMovieToParty(context.Context, int, int) error
@@ -107,4 +110,20 @@ func (a *Application) renderPartial(w http.ResponseWriter, r *http.Request, stat
 	w.WriteHeader(status)
 
 	buf.WriteTo(w)
+}
+
+func (a *Application) getProfileIDFromSession(r *http.Request) (int, error) {
+	session, err := a.SessionStore.Get(r, sessionName)
+	if err != nil {
+		a.Logger.Error("failed to get session", slog.Any("error", err))
+		return 0, nil
+	}
+
+	sessionProfileID := session.Values["profileID"]
+	profileID, ok := sessionProfileID.(int)
+	if !ok {
+		return 0, ErrFailedToGetProfileIDFromSession
+	}
+
+	return profileID, nil
 }
