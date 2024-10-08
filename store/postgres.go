@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/url"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -37,7 +38,7 @@ func NewCreds(username, pw string) (Creds, error) {
 	}
 	return Creds{
 		Username: username,
-		Password: pw,
+		Password: url.QueryEscape(pw),
 	}, nil
 }
 

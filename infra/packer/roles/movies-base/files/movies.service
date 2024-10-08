@@ -1,0 +1,14 @@
+[Unit]
+Description=movieswithfriends
+
+[Service]
+Type=simple
+User=web
+EnvironmentFile=/etc/movies/env
+PassEnvironment=DB_USERNAME DB_PASSWORD DB_HOST DB_DATABASE_NAME TLS_CERT_LOCATION TLS_KEY_LOCATION ADDR TMDB_API_KEY SESSION_KEY
+Restart=always
+RestartSec=5s
+ExecStart=/usr/local/bin/app
+
+[Install]
+WantedBy=multi-user.target

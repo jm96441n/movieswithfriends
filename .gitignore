@@ -16,3 +16,7 @@ tls/**
 tmp/**
 .envrc
 .git
+**/**/secret.pass
+
+**/**/*.tfstate*
+

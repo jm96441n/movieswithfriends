@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/rand"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"log"
@@ -15,6 +16,5 @@ func main() {
 		log.Fatalf("could not generate secure key: %v", err)
 		return
 	}
-
-	fmt.Printf("Your Secure Key: %q\n", string(k))
+	fmt.Printf("export SESSION_KEY=%q\n", base64.URLEncoding.EncodeToString(k))
 }

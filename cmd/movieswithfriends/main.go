@@ -1,8 +1,11 @@
 package main
 
 import (
+	"crypto/rand"
 	"crypto/tls"
 	_ "embed"
+	"io"
+	"log"
 	"log/slog"
 	"net/http"
 	"os"
@@ -14,12 +17,25 @@ import (
 	"github.com/jm96441n/movieswithfriends/web"
 )
 
+const length = 32
+
 func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 
 	logger.Info("setting up postgres store")
+	dbUser := os.Getenv("DB_USERNAME")
+	if dbUser == "" {
+		logger.Error("DB_USERNAME is not set")
+		os.Exit(1)
+	}
 
-	creds, err := store.NewCreds(os.Getenv("DB_USERNAME"), os.Getenv("DB_PASSWORD"))
+	dbPassword := os.Getenv("DB_PASSWORD")
+	if dbPassword == "" {
+		logger.Error("DB_PASSWORD is not set")
+		os.Exit(1)
+	}
+
+	creds, err := store.NewCreds(dbUser, dbPassword)
 	if err != nil {
 		logger.Error(err.Error())
 		os.Exit(1)
@@ -46,10 +62,18 @@ func main() {
 
 	tmdbClient := web.NewTMDBClient("https://api.themoviedb.org/3", tmdbApiKey)
 
-	sessionKey := os.Getenv("SESSION_KEY")
-	if sessionKey == "" {
+	// TODO: this will log everyone out on a deploy, modify this to not do that
+	sessionKey := make([]byte, length)
+	sessionKeyVar := os.Getenv("SESSION_KEY")
+	if sessionKeyVar == "" {
 		logger.Error("SESSION_KEY is not set")
-		os.Exit(1)
+
+		if _, err := io.ReadFull(rand.Reader, sessionKey); err != nil {
+			log.Fatalf("could not generate secure key: %v", err)
+			os.Exit(1)
+		}
+	} else {
+		sessionKey = []byte(sessionKeyVar)
 	}
 
 	sessionStore := sessions.NewCookieStore([]byte(sessionKey))
@@ -69,8 +93,24 @@ func main() {
 		CurvePreferences: []tls.CurveID{tls.X25519, tls.CurveP256},
 	}
 
-	addr := ":4000"
+	addr := os.Getenv("ADDR")
+	if addr == "" {
+		logger.Info("ADDR is not set, defaulting to :443")
+		addr = ":4000"
+	}
 
+	tlsCert := os.Getenv("TLS_CERT_LOCATION")
+	if tlsCert == "" {
+		logger.Error("TLS_CERT_LOCATION is not set")
+		os.Exit(1)
+	}
+
+	tlsKey := os.Getenv("TLS_KEY_LOCATION")
+	if tlsKey == "" {
+		logger.Error("TLS_KEY_LOCATION is not set")
+		os.Exit(1)
+	}
+	// binding.pry
 	server := http.Server{
 		Addr:         addr,
 		Handler:      app.Routes(),
@@ -83,7 +123,7 @@ func main() {
 
 	logger.Info("starting server", slog.String("addr", addr))
 
-	err = server.ListenAndServeTLS("./tls/cert.pem", "./tls/key.pem")
+	err = server.ListenAndServeTLS(tlsCert, tlsKey)
 	logger.Error(err.Error())
 	os.Exit(1)
 }

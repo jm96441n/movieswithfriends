@@ -15,7 +15,7 @@ setuptls:
 
 .PHONY: migrate
 migrate: setuppostgres
-	cd migrations && GOOSE_DBSTRING="user=user password=password host=0.0.0.0 sslmode=disable dbname=movieswithfriends" GOOSE_DRIVER="postgres" goose up && cd ..
+	cd migrations && GOOSE_DBSTRING="user=$DB_USERNAME password=$DB_PASSWORD host=$DB_HOST sslmode=disable dbname=moviesdatabase" GOOSE_DRIVER="postgres" goose up && cd ..
 
 .PHONY: setup
 setup: setuppostgres setuptls migrate
