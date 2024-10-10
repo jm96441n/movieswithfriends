@@ -113,7 +113,10 @@ func (a *Application) MoviesShowHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	profileID, err := a.getProfileIDFromSession(r)
-	if err != nil {
+	if errors.Is(err, ErrFailedToGetProfileIDFromSession) {
+		a.Logger.Debug("profileID is not in session")
+	} else if err != nil {
+		a.Logger.Error("failed to get profile id from session", slog.Any("error", err))
 		a.serverError(w, r, err)
 		return
 	}
