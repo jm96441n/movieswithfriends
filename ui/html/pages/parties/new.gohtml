@@ -1,0 +1,41 @@
+{{ define "title" }}Create Party{{ end }}
+
+{{ define "main" }}
+  <div class="row">
+    <div class="col-4"></div>
+    <div class="col-4">
+      <div class="text-center mb-4">
+        <h3>Create A New Party</h3>
+      </div>
+      <form action="/parties" method="POST">
+        <div class="row g-3 mb-2 align-items-center">
+          <div class="col-2">
+            <label for="name" class="col-form-label">Name</label>
+          </div>
+          <div class="col-8">
+            <input
+              type="name"
+              class="form-control"
+              id="name"
+              name="name"
+              aria-describedby="nameHelp"
+            />
+          </div>
+          <div class="col-2">
+            <i
+              id="nameHelp"
+              class="fa-solid fa-circle-question"
+              data-bs-toggle="tooltip"
+              data-bs-placement="right"
+              data-bs-title="Name for the party"
+            ></i>
+          </div>
+        </div>
+        <div class="text-center">
+          <button type="submit" class="btn btn-primary">Submit</button>
+        </div>
+      </form>
+    </div>
+    <div class="col-4"></div>
+  </div>
+{{ end }}

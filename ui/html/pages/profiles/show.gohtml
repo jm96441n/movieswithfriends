@@ -1,24 +1,43 @@
 {{ define "title" }}Profile Page{{ end }}
 
 {{ define "main" }}
-  <div class="row mt-5">
-    <div class="col-md-3 text-center">
-      <h2>User Info:</h2>
-      <p>First Name: {{ .Profile.FirstName }}</p>
-      <p>Last Name: {{ .Profile.LastName }}</p>
-    </div>
+<div class="row mt-5">
+  <div class="col-md-3 text-center">
+    <h2>User Info:</h2>
+    <p>First Name: {{ .Profile.FirstName }}</p>
+    <p>Last Name: {{ .Profile.LastName }}</p>
+  </div>
 
-    <div class="col text-center">
-      <h2>Movie Parties You're In:</h2>
-      {{ range .Profile.Parties }}
-        <div class="row">
-          <a href="/parties/{{ .ID }}">
-            <button class="btn btn-primary">
-              {{ .Name }}
-            </button>
-          </a>
+  <div class="col text-center">
+    <h2>Movie Parties You're In:</h2>
+    <div class="row mb-5">
+    {{ range .Profile.Parties }}
+      <div class="row my-2">
+        <a href="/parties/{{ .ID }}">
+          <button class="btn btn-primary">
+            {{ .Name }}
+          </button>
+        </a>
+      </div>
+    {{ end }}
+    </div>
+    <div class="row mt-5">
+    <h2>Join a New Party:</h2>
+    <div class="col-4"></div>
+    <div class="col-4">
+      <form action="/parties" method="post">
+        <div class="input-group mb-3">
+          <input
+            type="text"
+            class="form-control"
+            placeholder="Party ID"
+            aria-label="Party ID"
+            name="name"
+          />
+          <button class="btn btn-primary" type="submit">Join</button>
         </div>
-      {{ end }}
+      </form>
     </div>
   </div>
+</div>
 {{ end }}

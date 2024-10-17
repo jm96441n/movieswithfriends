@@ -22,13 +22,18 @@ type MoviesService interface {
 	CreateMovie(context.Context, store.Movie) (store.Movie, error)
 }
 
-type PartiesService interface {
-	GetPartiesByProfile(context.Context, int, int) ([]store.Party, error)
+type PartiesStoreService interface {
+	GetPartiesByProfileForCurrentMovie(context.Context, int, int) ([]store.Party, error)
+	GetPartiesForProfile(context.Context, int) ([]store.Party, error)
 	GetPartyByID(context.Context, int) (store.Party, error)
 	GetPartyByIDWithMovies(context.Context, int) (store.Party, error)
 	AddMovieToParty(context.Context, int, int) error
 	MarkMovieAsWatched(context.Context, int, int) error
 	SelectMovieForParty(context.Context, int) error
+}
+
+type PartyService interface {
+	CreateParty(context.Context, int, string) (int, error)
 }
 
 type ProfilesService interface {
@@ -42,14 +47,15 @@ type AccountService interface {
 }
 
 type Application struct {
-	Logger          *slog.Logger
-	TemplateCache   map[string]*template.Template
-	TMDBClient      *TMDBClient
-	SessionStore    *sessions.CookieStore
-	MoviesService   MoviesService
-	PartiesService  PartiesService
-	ProfilesService ProfilesService
-	AccountService  AccountService
+	Logger              *slog.Logger
+	TemplateCache       map[string]*template.Template
+	TMDBClient          *TMDBClient
+	SessionStore        *sessions.CookieStore
+	MoviesService       MoviesService
+	PartyService        PartyService
+	PartiesStoreService PartiesStoreService
+	ProfilesService     ProfilesService
+	AccountService      AccountService
 }
 
 func (a *Application) serverError(w http.ResponseWriter, r *http.Request, err error) {

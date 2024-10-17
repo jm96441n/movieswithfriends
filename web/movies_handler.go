@@ -134,7 +134,7 @@ func (a *Application) MoviesShowHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	parties, err := a.PartiesService.GetPartiesByProfile(ctx, id, profileID)
+	parties, err := a.PartiesStoreService.GetPartiesByProfileForCurrentMovie(ctx, id, profileID)
 	if err != nil {
 		a.Logger.Error("failed to get parties", "error", err)
 		a.serverError(w, r, err)

@@ -72,6 +72,11 @@ func (a *Application) movieRoutes() []route {
 func (a *Application) partyRoutes() []route {
 	return []route{
 		{
+			path:               "GET /parties/new",
+			handler:            a.NewPartyHandler,
+			authenticatedRoute: true,
+		},
+		{
 			path:               "GET /parties/{id}",
 			handler:            a.PartyShowHandler,
 			authenticatedRoute: true,
@@ -89,6 +94,11 @@ func (a *Application) partyRoutes() []route {
 		{
 			path:               "POST /parties/{party_id}/movies",
 			handler:            a.SelectMovieForParty,
+			authenticatedRoute: true,
+		},
+		{
+			path:               "POST /parties",
+			handler:            a.CreatePartyHandler,
 			authenticatedRoute: true,
 		},
 	}

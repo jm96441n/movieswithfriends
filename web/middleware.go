@@ -12,6 +12,7 @@ type contextKey string
 
 const (
 	isAuthenticatedContextKey = contextKey("isAuthenticated")
+	partiesForNavContextKey   = contextKey("partiesForNav")
 	sessionName               = "moviesWithFriendsCookie"
 )
 
@@ -32,9 +33,12 @@ func (a *Application) authenticateMiddleware() func(http.HandlerFunc) http.Handl
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			session, err := a.SessionStore.Get(req, sessionName)
 			if err != nil {
-				a.Logger.Error("failed to get session", slog.Any("error", err))
-				a.serverError(w, req, err)
-				return
+				a.Logger.Debug("failed to get session, trying to create a new one", slog.Any("error", err))
+				session, err = a.SessionStore.New(req, sessionName)
+				if err != nil {
+					a.serverError(w, req, err)
+					return
+				}
 			}
 
 			accountID := session.Values["accountID"]
@@ -55,7 +59,23 @@ func (a *Application) authenticateMiddleware() func(http.HandlerFunc) http.Handl
 			}
 
 			if exists {
+				profileID := session.Values["profileID"].(int)
+				partiesForProfile, err := a.PartiesStoreService.GetPartiesForProfile(req.Context(), profileID)
+				if err != nil {
+					a.Logger.Error("error fetching parties for profile", slog.Any("error", err))
+					a.serverError(w, req, err)
+					return
+				}
+				partiesForNav := make([]partyNav, 0, len(partiesForProfile))
+				for _, p := range partiesForProfile {
+					partiesForNav = append(partiesForNav, partyNav{
+						ID:   p.ID,
+						Name: p.Name,
+					})
+				}
+
 				ctx := context.WithValue(req.Context(), isAuthenticatedContextKey, true)
+				ctx = context.WithValue(ctx, partiesForNavContextKey, partiesForNav)
 				req = req.WithContext(ctx)
 			}
 

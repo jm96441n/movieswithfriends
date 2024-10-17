@@ -1,17 +1,95 @@
 package store
 
-import "context"
+import (
+	"context"
+	"errors"
+
+	"github.com/jackc/pgx/v5/pgconn"
+)
 
 type Party struct {
-	Name            string
 	ID              int
+	Name            string
+	ShortID         string
 	MovieAdded      bool
 	UnwatchedMovies []Movie
 	SelectedMovie   *Movie
 	WatchedMovies   []Movie
 }
 
-const getPartiesQuery = `
+const (
+	createPartyQuery        = `INSERT INTO parties (name, short_id) VALUES ($1, $2) returning id_party;`
+	createPartyProfileQuery = `INSERT INTO profile_parties (id_profile, id_party) VALUES ($1, $2);`
+)
+
+var (
+	ErrDuplicatePartyName    = errors.New("party name already exists")
+	ErrDuplicatePartyShortID = errors.New("party short id already exists")
+)
+
+func (p *PGStore) CreateParty(ctx context.Context, idProfile int, name, shortID string) (int, error) {
+	txn, err := p.db.Begin(ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	defer txn.Rollback(ctx)
+
+	var id int
+
+	err = txn.QueryRow(ctx, createPartyQuery, name, shortID).Scan(&id)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			if pgErr.Code == pgUniqueViolationCode {
+				if pgErr.ConstraintName == "idx_parties_short_id" {
+					return 0, ErrDuplicatePartyShortID
+				}
+			}
+		}
+		return 0, err
+	}
+
+	_, err = txn.Exec(ctx, createPartyProfileQuery, idProfile, id)
+	if err != nil {
+		return 0, err
+	}
+
+	err = txn.Commit(ctx)
+	if err != nil {
+		return 0, err
+	}
+	return id, nil
+}
+
+const getPartiesQueryForProfile = `
+  select parties.id_party, parties.name from parties
+  join profile_parties on profile_parties.id_party = parties.id_party
+  where profile_parties.id_profile = $1;
+`
+
+func (p *PGStore) GetPartiesByProfile(ctx context.Context, idProfile int) ([]Party, error) {
+	rows, err := p.db.Query(ctx, getPartiesQueryForProfile, idProfile)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var parties []Party
+
+	for rows.Next() {
+		var party Party
+		err := rows.Scan(&party.ID, &party.Name)
+		if err != nil {
+			return nil, err
+		}
+		parties = append(parties, party)
+	}
+	return parties, nil
+}
+
+const getPartiesQueryForMovie = `
 with filtered_party_movies as(select * from party_movies where id_movie = $1)select parties.id_party, parties.name, movies.id_movie is not null as is_movie
   from parties
   join profile_parties on profile_parties.id_party = parties.id_party
@@ -20,8 +98,8 @@ with filtered_party_movies as(select * from party_movies where id_movie = $1)sel
   where profile_parties.id_profile = $2;
 `
 
-func (p *PGStore) GetPartiesByProfile(ctx context.Context, idMovie int, idProfile int) ([]Party, error) {
-	rows, err := p.db.Query(ctx, getPartiesQuery, idMovie, idProfile)
+func (p *PGStore) GetPartiesByProfileForCurrentMovie(ctx context.Context, idMovie int, idProfile int) ([]Party, error) {
+	rows, err := p.db.Query(ctx, getPartiesQueryForMovie, idMovie, idProfile)
 	if err != nil {
 		return nil, err
 	}

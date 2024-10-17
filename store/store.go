@@ -12,3 +12,5 @@ const (
 	WatchStatusSelected  watchStatusEnum = "selected"
 	WatchStatusWatched   watchStatusEnum = "watched"
 )
+
+const pgUniqueViolationCode = "23505"

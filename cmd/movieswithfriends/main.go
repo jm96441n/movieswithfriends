@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/gorilla/sessions"
+	"github.com/jm96441n/movieswithfriends/partymgmt"
 	"github.com/jm96441n/movieswithfriends/store"
 	"github.com/jm96441n/movieswithfriends/ui"
 	"github.com/jm96441n/movieswithfriends/web"
@@ -79,14 +80,15 @@ func main() {
 	sessionStore := sessions.NewCookieStore([]byte(sessionKey))
 
 	app := web.Application{
-		TemplateCache:   tmplCache,
-		Logger:          logger,
-		TMDBClient:      tmdbClient,
-		SessionStore:    sessionStore,
-		MoviesService:   db,
-		PartiesService:  db,
-		ProfilesService: db,
-		AccountService:  db,
+		TemplateCache:       tmplCache,
+		Logger:              logger,
+		TMDBClient:          tmdbClient,
+		SessionStore:        sessionStore,
+		MoviesService:       db,
+		PartyService:        &partymgmt.PartyService{DB: db},
+		PartiesStoreService: db,
+		ProfilesService:     db,
+		AccountService:      db,
 	}
 
 	tlsConfig := &tls.Config{
@@ -95,7 +97,7 @@ func main() {
 
 	addr := os.Getenv("ADDR")
 	if addr == "" {
-		logger.Info("ADDR is not set, defaulting to :443")
+		logger.Info("ADDR is not set, defaulting to :4000")
 		addr = ":4000"
 	}
 

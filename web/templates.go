@@ -11,11 +11,17 @@ import (
 	"github.com/jm96441n/movieswithfriends/store"
 )
 
+type partyNav struct {
+	ID   int
+	Name string
+}
+
 type BaseTemplateData struct {
-	CurrentPagePath string
-	Flash           string
-	IsAuthenticated bool
-	CurrentYear     int
+	CurrentPagePath    string
+	Flash              string
+	IsAuthenticated    bool
+	CurrentYear        int
+	CurrentUserParties []partyNav
 }
 
 type MoviesTemplateData struct {
@@ -61,11 +67,19 @@ func (a *Application) NewPartiesTemplateData(r *http.Request, path string) Parti
 }
 
 func newBaseTemplateData(r *http.Request, path string) BaseTemplateData {
+	authed := isAuthenticated(r.Context())
+
+	var partiesForNav []partyNav
+	if authed {
+		partiesForNav = r.Context().Value(partiesForNavContextKey).([]partyNav)
+	}
+
 	return BaseTemplateData{
 		//			Flash:       a.sessionManager.PopString(r.Context(), "flash"),
-		CurrentPagePath: path,
-		CurrentYear:     2024,
-		IsAuthenticated: isAuthenticated(r.Context()),
+		CurrentPagePath:    path,
+		CurrentYear:        2024,
+		IsAuthenticated:    authed,
+		CurrentUserParties: partiesForNav,
 	}
 }
 
