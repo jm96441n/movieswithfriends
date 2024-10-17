@@ -57,6 +57,7 @@ func (a *Application) PartyShowHandler(w http.ResponseWriter, r *http.Request) {
 		a.clientError(w, http.StatusBadRequest)
 		return
 	}
+
 	party, err := a.PartiesStoreService.GetPartyByIDWithMovies(ctx, id)
 	if err != nil {
 		logger.Error("failed to get party by ID with movies", slog.Any("error", err))

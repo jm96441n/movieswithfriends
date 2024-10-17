@@ -3,6 +3,7 @@ package partymgmt
 import (
 	"context"
 	"errors"
+	"math/rand"
 
 	"github.com/jm96441n/movieswithfriends/store"
 )
@@ -18,7 +19,7 @@ type PartyService struct {
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
 func (s *PartyService) CreateParty(ctx context.Context, idProfile int, name string) (int, error) {
-	// successFullyCreated := false
+	successFullyCreated := false
 	var (
 		id  int
 		err error
@@ -33,8 +34,12 @@ func (s *PartyService) CreateParty(ctx context.Context, idProfile int, name stri
 			return 0, err
 		}
 
-		// successFullyCreated = true
+		successFullyCreated = true
 		break
+	}
+
+	if !successFullyCreated {
+		return 0, errors.New("failed to create party")
 	}
 
 	return id, nil
@@ -42,6 +47,9 @@ func (s *PartyService) CreateParty(ctx context.Context, idProfile int, name stri
 
 // generate a random 6 character string
 func generateRandomString() string {
-	// generate a random string
-	return ""
+	b := make([]byte, 6)
+	for i := range b {
+		b[i] = charset[rand.Intn(len(charset))]
+	}
+	return string(b)
 }

@@ -24,6 +24,7 @@ type BaseTemplateData struct {
 	CurrentUserParties []partyNav
 }
 
+// TODO: refactor out references to store from here
 type MoviesTemplateData struct {
 	Movies      []store.Movie
 	Movie       store.Movie

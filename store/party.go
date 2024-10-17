@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Party struct {
@@ -15,6 +16,13 @@ type Party struct {
 	UnwatchedMovies []Movie
 	SelectedMovie   *Movie
 	WatchedMovies   []Movie
+}
+
+type PartyMovie struct {
+	ID          pgtype.Int8
+	Title       pgtype.Text
+	PosterURL   pgtype.Text
+	WatchStatus pgtype.Text
 }
 
 const (
@@ -119,11 +127,11 @@ func (p *PGStore) GetPartiesByProfileForCurrentMovie(ctx context.Context, idMovi
 	return parties, nil
 }
 
-const getPartyByIDQuery = `select id_party, name from parties where id_party = $1`
+const getPartyByIDQuery = `select id_party, name, short_id from parties where id_party = $1`
 
 func (p *PGStore) GetPartyByID(ctx context.Context, id int) (Party, error) {
 	party := Party{}
-	err := p.db.QueryRow(ctx, getPartyByIDQuery, id).Scan(&party.ID, &party.Name)
+	err := p.db.QueryRow(ctx, getPartyByIDQuery, id).Scan(&party.ID, &party.Name, &party.ShortID)
 	if err != nil {
 		return Party{}, err
 	}
@@ -134,6 +142,7 @@ const getPartyByIDWithMoviesQuery = `
   select
     parties.id_party, 
     parties.name,
+    parties.short_id,
     movies.id_movie, 
     movies.title,
     movies.poster_url,
@@ -142,10 +151,10 @@ const getPartyByIDWithMoviesQuery = `
     profiles.last_name,
     party_movies.watch_status
   from parties
-  join party_movies on party_movies.id_party = parties.id_party
-  join movies on movies.id_movie = party_movies.id_movie
-  join profile_parties on profile_parties.id_party = parties.id_party
-  join profiles on profiles.id_profile = profile_parties.id_profile
+  left join party_movies on party_movies.id_party = parties.id_party
+  left join movies on movies.id_movie = party_movies.id_movie
+  left join profile_parties on profile_parties.id_party = parties.id_party
+  left join profiles on profiles.id_profile = profile_parties.id_profile
   where parties.id_party = $1;
 `
 
@@ -158,21 +167,38 @@ func (p *PGStore) GetPartyByIDWithMovies(ctx context.Context, partyID int) (Part
 	}
 
 	for rows.Next() {
-		var movie Movie
-		err := rows.Scan(&party.ID, &party.Name, &movie.ID, &movie.Title, &movie.PosterURL, &movie.AddedBy.ID, &movie.AddedBy.FirstName, &movie.AddedBy.LastName, &movie.WatchStatus)
+		var (
+			pm      PartyMovie
+			profile Profile
+		)
+		err := rows.Scan(&party.ID, &party.Name, &party.ShortID, &pm.ID, &pm.Title, &pm.PosterURL, &profile.ID, &profile.FirstName, &profile.LastName, &pm.WatchStatus)
 		if err != nil {
 			p.logger.Error(err.Error(), "query", getPartyByIDWithMoviesQuery)
 			return Party{}, err
 		}
 
-		switch movie.WatchStatus {
-		case WatchStatusUnwatched:
-			party.UnwatchedMovies = append(party.UnwatchedMovies, movie)
-		case WatchStatusSelected:
-			party.SelectedMovie = &movie
-		case WatchStatusWatched:
-			party.WatchedMovies = append(party.WatchedMovies, movie)
+		if pm.ID.Valid {
+			movie := Movie{
+				ID:          int(pm.ID.Int64),
+				Title:       pm.Title.String,
+				PosterURL:   pm.PosterURL.String,
+				WatchStatus: watchStatusEnum(pm.WatchStatus.String),
+				AddedBy:     profile,
+			}
+			switch movie.WatchStatus {
+			case WatchStatusUnwatched:
+				party.UnwatchedMovies = append(party.UnwatchedMovies, movie)
+			case WatchStatusSelected:
+				party.SelectedMovie = &movie
+			case WatchStatusWatched:
+				party.WatchedMovies = append(party.WatchedMovies, movie)
+			}
 		}
+	}
+
+	if err := rows.Err(); err != nil {
+		p.logger.Error(err.Error(), "query", getPartyByIDWithMoviesQuery)
+		return Party{}, err
 	}
 
 	p.logger.Info("GetPartyByIDWithMovies", "party", party, "partyID", partyID)
