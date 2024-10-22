@@ -143,7 +143,6 @@ func NewTemplateCache(filesystem embed.FS) (map[string]*template.Template, error
 		return nil
 	})
 
-	fmt.Println(cache)
 	return cache, nil
 }
 

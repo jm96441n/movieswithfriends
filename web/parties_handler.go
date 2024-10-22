@@ -58,7 +58,7 @@ func (a *Application) PartyShowHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	party, err := a.PartiesStoreService.GetPartyByIDWithMovies(ctx, id)
+	party, err := a.PartiesRepository.GetPartyByIDWithMovies(ctx, id)
 	if err != nil {
 		logger.Error("failed to get party by ID with movies", slog.Any("error", err))
 		a.serverError(w, r, err)
@@ -90,13 +90,13 @@ func (a *Application) AddMovietoPartyHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	err = a.PartiesStoreService.AddMovieToParty(ctx, idParty, idMovie)
+	err = a.PartiesRepository.AddMovieToParty(ctx, idParty, idMovie)
 	if err != nil {
 		a.serverError(w, r, err)
 		return
 	}
 
-	party, err := a.PartiesStoreService.GetPartyByID(ctx, idParty)
+	party, err := a.PartiesRepository.GetPartyByID(ctx, idParty)
 	if err != nil {
 		a.serverError(w, r, err)
 		return
@@ -124,7 +124,7 @@ func (a *Application) MarkMovieAsWatchedHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	err = a.PartiesStoreService.MarkMovieAsWatched(ctx, idParty, idMovie)
+	err = a.PartiesRepository.MarkMovieAsWatched(ctx, idParty, idMovie)
 	if err != nil {
 		a.serverError(w, r, err)
 		return
@@ -142,7 +142,7 @@ func (a *Application) SelectMovieForParty(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	err = a.PartiesStoreService.SelectMovieForParty(ctx, idParty)
+	err = a.PartiesRepository.SelectMovieForParty(ctx, idParty)
 	if err != nil {
 		a.serverError(w, r, err)
 		return

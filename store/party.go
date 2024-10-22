@@ -138,6 +138,19 @@ func (p *PGStore) GetPartyByID(ctx context.Context, id int) (Party, error) {
 	return party, nil
 }
 
+const getPartyByShortIDQuery = `select id_party, name, short_id from parties where short_id = $1`
+
+func (p *PGStore) GetPartyByShortID(ctx context.Context, shortID string) (Party, error) {
+	party := Party{}
+
+	err := p.db.QueryRow(ctx, getPartyByShortIDQuery, shortID).Scan(&party.ID, &party.Name, &party.ShortID)
+	if err != nil {
+		return Party{}, err
+	}
+
+	return party, nil
+}
+
 const getPartyByIDWithMoviesQuery = `
   select
     parties.id_party, 

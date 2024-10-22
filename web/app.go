@@ -34,6 +34,7 @@ type PartiesStoreService interface {
 
 type PartyService interface {
 	CreateParty(context.Context, int, string) (int, error)
+	AddFriendToParty(context.Context, int, string) error
 }
 
 type ProfilesService interface {
@@ -47,15 +48,15 @@ type AccountService interface {
 }
 
 type Application struct {
-	Logger              *slog.Logger
-	TemplateCache       map[string]*template.Template
-	TMDBClient          *TMDBClient
-	SessionStore        *sessions.CookieStore
-	MoviesService       MoviesService
-	PartyService        PartyService
-	PartiesStoreService PartiesStoreService
-	ProfilesService     ProfilesService
-	AccountService      AccountService
+	Logger            *slog.Logger
+	TemplateCache     map[string]*template.Template
+	TMDBClient        *TMDBClient
+	SessionStore      *sessions.CookieStore
+	MoviesService     MoviesService
+	PartyService      PartyService
+	PartiesRepository PartiesStoreService
+	ProfilesService   ProfilesService
+	AccountService    AccountService
 }
 
 func (a *Application) serverError(w http.ResponseWriter, r *http.Request, err error) {

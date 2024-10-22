@@ -1,0 +1,14 @@
+{{ define "party_list" }}
+  {{- range .Profile.Parties }}
+    <div class="row my-2">
+      <a href="/parties/{{ .ID }}">
+        <button class="btn btn-primary">
+          {{ .Name }}
+        </button>
+      </a>
+    </div>
+  {{- end }}
+{{ end }}
+
+
+{{ template "party_list" . }}

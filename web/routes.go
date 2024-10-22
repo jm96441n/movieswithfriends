@@ -101,6 +101,11 @@ func (a *Application) partyRoutes() []route {
 			handler:            a.CreatePartyHandler,
 			authenticatedRoute: true,
 		},
+		{
+			path:               "POST /profile_parties",
+			handler:            a.AddFriendToPartyHandler,
+			authenticatedRoute: true,
+		},
 	}
 }
 

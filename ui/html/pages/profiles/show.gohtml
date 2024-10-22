@@ -10,31 +10,30 @@
 
   <div class="col text-center">
     <h2>Movie Parties You're In:</h2>
-    <div class="row mb-5">
-    {{ range .Profile.Parties }}
-      <div class="row my-2">
-        <a href="/parties/{{ .ID }}">
-          <button class="btn btn-primary">
-            {{ .Name }}
-          </button>
-        </a>
-      </div>
-    {{ end }}
+    <div class="row mb-5" id="party_list">
+    {{ template "party_list" . }}
     </div>
     <div class="row mt-5">
     <h2>Join a New Party:</h2>
     <div class="col-4"></div>
     <div class="col-4">
-      <form action="/parties" method="post">
+      <form action="/profile_parties" method="post">
         <div class="input-group mb-3">
           <input
             type="text"
             class="form-control"
             placeholder="Party ID"
             aria-label="Party ID"
-            name="name"
+            name="party_short_id"
           />
-          <button class="btn btn-primary" type="submit">Join</button>
+          <button
+            class="btn btn-primary"
+            type="submit"
+            hx-post="/profile_parties"
+            hx-target="#party_list"
+          >
+            Join
+          </button>
         </div>
       </form>
     </div>

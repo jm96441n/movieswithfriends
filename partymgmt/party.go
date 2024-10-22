@@ -10,6 +10,8 @@ import (
 
 type partyStore interface {
 	CreateParty(context.Context, int, string, string) (int, error)
+	GetPartyByShortID(context.Context, string) (store.Party, error)
+	CreateProfileParty(context.Context, int, int) error
 }
 
 type PartyService struct {
@@ -17,6 +19,19 @@ type PartyService struct {
 }
 
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+func (s *PartyService) AddFriendToParty(ctx context.Context, idProfile int, shortID string) error {
+	party, err := s.DB.GetPartyByShortID(ctx, shortID)
+	if err != nil {
+		return err
+	}
+
+	err = s.DB.CreateProfileParty(ctx, idProfile, party.ID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
 func (s *PartyService) CreateParty(ctx context.Context, idProfile int, name string) (int, error) {
 	successFullyCreated := false

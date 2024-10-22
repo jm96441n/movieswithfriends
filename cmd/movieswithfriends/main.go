@@ -80,15 +80,15 @@ func main() {
 	sessionStore := sessions.NewCookieStore([]byte(sessionKey))
 
 	app := web.Application{
-		TemplateCache:       tmplCache,
-		Logger:              logger,
-		TMDBClient:          tmdbClient,
-		SessionStore:        sessionStore,
-		MoviesService:       db,
-		PartyService:        &partymgmt.PartyService{DB: db},
-		PartiesStoreService: db,
-		ProfilesService:     db,
-		AccountService:      db,
+		TemplateCache:     tmplCache,
+		Logger:            logger,
+		TMDBClient:        tmdbClient,
+		SessionStore:      sessionStore,
+		MoviesService:     db,
+		PartyService:      &partymgmt.PartyService{DB: db},
+		PartiesRepository: db,
+		ProfilesService:   db,
+		AccountService:    db,
 	}
 
 	tlsConfig := &tls.Config{
