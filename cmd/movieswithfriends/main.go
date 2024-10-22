@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/gorilla/sessions"
+	"github.com/jm96441n/movieswithfriends/identityaccess"
 	"github.com/jm96441n/movieswithfriends/partymgmt"
 	"github.com/jm96441n/movieswithfriends/store"
 	"github.com/jm96441n/movieswithfriends/ui"
@@ -88,7 +89,10 @@ func main() {
 		PartyService:      &partymgmt.PartyService{DB: db},
 		PartiesRepository: db,
 		ProfilesService:   db,
-		AccountService:    db,
+		Auth: &identityaccess.Authenticator{
+			Logger:            logger,
+			AccountRepository: db,
+		},
 	}
 
 	tlsConfig := &tls.Config{

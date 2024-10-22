@@ -6,16 +6,8 @@ import (
 	"net/http"
 	"time"
 
-	"golang.org/x/crypto/bcrypt"
+	"github.com/jm96441n/movieswithfriends/identityaccess"
 )
-
-type SignupReq struct {
-	Email     string `json:"email"`
-	Password  string `json:"password"`
-	FirstName string `json:"firstName"`
-	LastName  string `json:"lastName"`
-	PartyID   string `json:"partyID"`
-}
 
 type SignupResponse struct {
 	Message string
@@ -41,13 +33,7 @@ func (a *Application) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
-	if err != nil {
-		a.serverError(w, r, err)
-		return
-	}
-
-	_, err = a.AccountService.CreateAccount(ctx, req.Email, req.FirstName, req.LastName, hashedPassword)
+	_, err = a.Auth.CreateAccount(ctx, req)
 	if err != nil {
 		a.serverError(w, r, err)
 		return
@@ -57,12 +43,12 @@ func (a *Application) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/login", http.StatusSeeOther)
 }
 
-func parseSignUpForm(r *http.Request) (SignupReq, error) {
+func parseSignUpForm(r *http.Request) (identityaccess.SignupReq, error) {
 	err := r.ParseForm()
 	if err != nil {
-		return SignupReq{}, err
+		return identityaccess.SignupReq{}, err
 	}
-	return SignupReq{
+	return identityaccess.SignupReq{
 		Email:     r.FormValue("email"),
 		Password:  r.FormValue("password"),
 		FirstName: r.FormValue("firstName"),

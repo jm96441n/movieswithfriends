@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"golang.org/x/crypto/bcrypt"
+	"github.com/jm96441n/movieswithfriends/identityaccess"
 )
 
 func (a *Application) LoginShowHandler(w http.ResponseWriter, r *http.Request) {
@@ -21,26 +21,16 @@ func (a *Application) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	account, err := a.AccountService.FindAccountByEmail(r.Context(), r.FormValue("email"))
+	account, err := a.Auth.Authenticate(r.Context(), r.FormValue("email"), r.FormValue("password"))
 	if err != nil {
-		a.Logger.Error("error finding account by email", slog.Any("error", err), slog.String("email", r.FormValue("email")))
-		data := a.NewTemplateData(r, "/signup")
-		a.render(w, r, http.StatusUnauthorized, "login/show.gohtml", data)
+		if errors.Is(err, identityaccess.ErrInvalidCredentials) {
+			a.clientError(w, http.StatusUnauthorized)
+			return
+		}
+		a.serverError(w, r, err)
 		return
 	}
 
-	err = bcrypt.CompareHashAndPassword(account.Password, []byte(r.PostForm.Get("password")))
-	if err != nil {
-		data := a.NewTemplateData(r, "/signup")
-		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
-			a.Logger.Error("error comparing password", slog.Any("error", err))
-			a.render(w, r, http.StatusUnauthorized, "login/show.gohtml", data)
-			return
-		}
-		a.Logger.Error("error comparing password", slog.Any("error", err))
-		a.render(w, r, http.StatusUnauthorized, "login/show.gohtml", data)
-		return
-	}
 	session, err := a.SessionStore.Get(r, sessionName)
 	if err != nil {
 		a.serverError(w, r, err)

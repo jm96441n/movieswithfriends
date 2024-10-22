@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 
 	"github.com/gorilla/sessions"
+	"github.com/jm96441n/movieswithfriends/identityaccess"
 	"github.com/jm96441n/movieswithfriends/store"
 )
 
@@ -41,10 +42,10 @@ type ProfilesService interface {
 	GetProfileByID(context.Context, int) (store.Profile, error)
 }
 
-type AccountService interface {
-	CreateAccount(context.Context, string, string, string, []byte) (store.Account, error)
-	FindAccountByEmail(context.Context, string) (store.Account, error)
+type Authenticator interface {
+	CreateAccount(context.Context, identityaccess.SignupReq) (store.Account, error)
 	AccountExists(context.Context, int) (bool, error)
+	Authenticate(context.Context, string, string) (store.Account, error)
 }
 
 type Application struct {
@@ -56,7 +57,7 @@ type Application struct {
 	PartyService      PartyService
 	PartiesRepository PartiesStoreService
 	ProfilesService   ProfilesService
-	AccountService    AccountService
+	Auth              Authenticator
 }
 
 func (a *Application) serverError(w http.ResponseWriter, r *http.Request, err error) {

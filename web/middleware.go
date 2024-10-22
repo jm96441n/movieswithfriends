@@ -51,7 +51,7 @@ func (a *Application) authenticateMiddleware() func(http.HandlerFunc) http.Handl
 
 			id := accountID.(int)
 
-			exists, err := a.AccountService.AccountExists(req.Context(), id)
+			exists, err := a.Auth.AccountExists(req.Context(), id)
 			if err != nil {
 				a.Logger.Error("error fetching id", slog.Any("error", err))
 				a.serverError(w, req, err)
