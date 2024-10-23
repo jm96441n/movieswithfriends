@@ -32,13 +32,12 @@ func (a *Application) AddFriendToPartyHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	parties, err := a.PartiesRepository.GetPartiesForProfile(ctx, friendID)
-	if err != nil {
-		a.Logger.Error("failed to get parties for profile", slog.Any("error", err))
-		a.serverError(w, r, err)
-	}
-
 	if r.Header.Get("HX-Request") != "" {
+		parties, err := a.PartiesRepository.GetPartiesForProfile(ctx, friendID)
+		if err != nil {
+			a.Logger.Error("failed to get parties for profile", slog.Any("error", err))
+			a.serverError(w, r, err)
+		}
 		templateData := a.NewProfilesTemplateData(r, "/profile")
 		templateData.Profile.Parties = parties
 

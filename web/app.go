@@ -17,10 +17,8 @@ import (
 
 var ErrFailedToGetProfileIDFromSession = errors.New("failed to get profile id from session")
 
-type MoviesService interface {
-	GetMovieByTMDBID(context.Context, int) (store.Movie, error)
+type MovieRepository interface {
 	GetMovieByID(context.Context, int) (store.Movie, error)
-	CreateMovie(context.Context, store.Movie) (store.Movie, error)
 }
 
 type PartiesStoreService interface {
@@ -42,6 +40,11 @@ type ProfilesService interface {
 	GetProfileByID(context.Context, int) (store.Profile, error)
 }
 
+type MoviesService interface {
+	SearchMovies(context.Context, string) ([]store.Movie, error)
+	CreateMovie(context.Context, int) (*store.Movie, error)
+}
+
 type Authenticator interface {
 	CreateAccount(context.Context, identityaccess.SignupReq) (store.Account, error)
 	AccountExists(context.Context, int) (bool, error)
@@ -51,9 +54,9 @@ type Authenticator interface {
 type Application struct {
 	Logger            *slog.Logger
 	TemplateCache     map[string]*template.Template
-	TMDBClient        *TMDBClient
 	SessionStore      *sessions.CookieStore
 	MoviesService     MoviesService
+	MoviesRepository  MovieRepository
 	PartyService      PartyService
 	PartiesRepository PartiesStoreService
 	ProfilesService   ProfilesService

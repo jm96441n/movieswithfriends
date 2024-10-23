@@ -28,18 +28,18 @@ const (
 )
 
 // GetMovieByTMDBID returns a movie from the database by its TMDB ID
-func (p *PGStore) GetMovieByTMDBID(ctx context.Context, id int) (Movie, error) {
+func (p *PGStore) GetMovieByTMDBID(ctx context.Context, id int) (*Movie, error) {
 	row := p.db.QueryRow(ctx, findMovieByTMDBIDQuery, id)
 
-	movie := Movie{}
+	movie := &Movie{}
 	var releaseDate time.Time
 	err := row.Scan(&movie.ID, &movie.Title, &releaseDate, &movie.Overview, &movie.Tagline, &movie.PosterURL, &movie.TMDBID, &movie.TrailerURL)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return Movie{}, ErrNoRecord
+			return nil, ErrNoRecord
 		}
 
-		return Movie{}, err
+		return nil, err
 	}
 
 	movie.ReleaseDate = releaseDate.Format("2006-01-02")
@@ -70,15 +70,15 @@ func (p *PGStore) GetMovieByID(ctx context.Context, id int) (Movie, error) {
 const insertMovieQuery = `INSERT INTO movies(title, release_date, overview, tagline, poster_url, tmdb_id, trailer_url) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id_movie`
 
 // CreateMovie creates a movie in the database
-func (p *PGStore) CreateMovie(ctx context.Context, movie Movie) (Movie, error) {
+func (p *PGStore) CreateMovie(ctx context.Context, movie *Movie) (*Movie, error) {
 	releaseDate, err := time.Parse("2006-01-02", movie.ReleaseDate)
 	if err != nil {
-		return Movie{}, err
+		return nil, err
 	}
 
 	err = p.db.QueryRow(ctx, insertMovieQuery, movie.Title, releaseDate, movie.Overview, movie.Tagline, movie.PosterURL, movie.TMDBID, movie.TrailerURL).Scan(&movie.ID)
 	if err != nil {
-		return Movie{}, err
+		return nil, err
 	}
 
 	return movie, nil

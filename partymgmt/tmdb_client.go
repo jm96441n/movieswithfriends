@@ -1,4 +1,4 @@
-package web
+package partymgmt
 
 import (
 	"context"
@@ -65,51 +65,51 @@ func (t *TMDBClient) Search(ctx context.Context, term string, page int) (SearchR
 	return result, nil
 }
 
-func (t *TMDBClient) GetMovie(ctx context.Context, id int) (store.Movie, error) {
+func (t *TMDBClient) GetMovie(ctx context.Context, id int) (*store.Movie, error) {
 	req, err := t.newRequest(ctx, http.MethodGet, fmt.Sprintf("%s/movie/%d", t.baseURL, id))
 	if err != nil {
-		return store.Movie{}, err
+		return nil, err
 	}
 
 	res, err := t.client.Do(req)
 	if err != nil {
-		return store.Movie{}, err
+		return nil, err
 	}
 
 	defer res.Body.Close()
 	respBody, err := io.ReadAll(res.Body)
 	if err != nil {
-		return store.Movie{}, err
+		return nil, err
 	}
 
-	result := store.Movie{}
-	err = json.Unmarshal(respBody, &result)
+	result := &store.Movie{}
+	err = json.Unmarshal(respBody, result)
 	if err != nil {
-		return store.Movie{}, err
+		return nil, err
 	}
 
 	result.PosterURL = fmt.Sprintf("https://image.tmdb.org/t/p/w500%s", result.PosterURL)
 
 	req, err = t.newRequest(ctx, http.MethodGet, fmt.Sprintf("%s/movie/%d/videos", t.baseURL, id))
 	if err != nil {
-		return store.Movie{}, err
+		return nil, err
 	}
 
 	res, err = t.client.Do(req)
 	if err != nil {
-		return store.Movie{}, err
+		return nil, err
 	}
 
 	defer res.Body.Close()
 	respBody, err = io.ReadAll(res.Body)
 	if err != nil {
-		return store.Movie{}, err
+		return nil, err
 	}
 
 	trailers := trailerResults{}
 	err = json.Unmarshal(respBody, &trailers)
 	if err != nil {
-		return store.Movie{}, err
+		return nil, err
 	}
 
 	for _, trailer := range trailers.Results {

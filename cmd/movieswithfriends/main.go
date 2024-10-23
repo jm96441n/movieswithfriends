@@ -62,9 +62,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	tmdbClient := web.NewTMDBClient("https://api.themoviedb.org/3", tmdbApiKey)
+	tmdbClient := partymgmt.NewTMDBClient("https://api.themoviedb.org/3", tmdbApiKey)
 
-	// TODO: this will log everyone out on a deploy, modify this to not do that
 	sessionKey := make([]byte, length)
 	sessionKeyVar := os.Getenv("SESSION_KEY")
 	if sessionKeyVar == "" {
@@ -83,9 +82,9 @@ func main() {
 	app := web.Application{
 		TemplateCache:     tmplCache,
 		Logger:            logger,
-		TMDBClient:        tmdbClient,
 		SessionStore:      sessionStore,
-		MoviesService:     db,
+		MoviesService:     partymgmt.NewMovieService(tmdbClient, logger, db),
+		MoviesRepository:  db,
 		PartyService:      &partymgmt.PartyService{DB: db},
 		PartiesRepository: db,
 		ProfilesService:   db,
