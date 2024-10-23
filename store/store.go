@@ -5,12 +5,12 @@ import "errors"
 // errors
 var ErrNoRecord = errors.New("store: no matching record found")
 
-type watchStatusEnum string
+type WatchStatusEnum string
 
 const (
-	WatchStatusUnwatched watchStatusEnum = "unwatched"
-	WatchStatusSelected  watchStatusEnum = "selected"
-	WatchStatusWatched   watchStatusEnum = "watched"
+	WatchStatusUnwatched WatchStatusEnum = "unwatched"
+	WatchStatusSelected  WatchStatusEnum = "selected"
+	WatchStatusWatched   WatchStatusEnum = "watched"
 )
 
 const pgUniqueViolationCode = "23505"
