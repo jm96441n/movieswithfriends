@@ -35,6 +35,7 @@ type MoviesTemplateData struct {
 
 type ProfilesTemplateData struct {
 	Profile store.Profile
+	Parties []store.Party
 	BaseTemplateData
 }
 

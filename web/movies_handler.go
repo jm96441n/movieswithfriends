@@ -72,7 +72,7 @@ func (a *Application) MoviesShowHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	profileID, err := a.getProfileIDFromSession(r)
+	memberID, err := a.getProfileIDFromSession(r)
 	if errors.Is(err, ErrFailedToGetProfileIDFromSession) {
 		a.Logger.Debug("profileID is not in session")
 	} else if err != nil {
@@ -94,7 +94,7 @@ func (a *Application) MoviesShowHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	parties, err := a.PartiesRepository.GetPartiesByMemberIDForCurrentMovie(ctx, id, profileID)
+	parties, err := a.PartiesRepository.GetPartiesByMemberIDForCurrentMovie(ctx, id, memberID)
 	if err != nil {
 		a.Logger.Error("failed to get parties", "error", err)
 		a.serverError(w, r, err)

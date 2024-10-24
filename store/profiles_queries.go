@@ -12,7 +12,6 @@ type Profile struct {
 	FirstName string `json:"first_name"`
 	LastName  string `json:"last_name"`
 	AccountID int
-	Parties   []Party `json:"parties"`
 }
 
 const GetProfileByIDQuery = `
@@ -30,14 +29,6 @@ func (pg *PGStore) GetProfileByID(ctx context.Context, profileID int) (Profile, 
 
 		return Profile{}, err
 	}
-
-	// TODO: don't do this here
-	parties, err := pg.GetPartiesForMember(ctx, profileID)
-	if err != nil {
-		return Profile{}, err
-	}
-
-	profile.Parties = parties
 
 	return profile, nil
 }

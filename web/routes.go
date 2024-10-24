@@ -103,7 +103,7 @@ func (a *Application) partyRoutes() []route {
 		},
 		{
 			path:               "POST /profile_parties",
-			handler:            a.AddFriendToPartyHandler,
+			handler:            a.AddMemberToPartyHandler,
 			authenticatedRoute: true,
 		},
 	}

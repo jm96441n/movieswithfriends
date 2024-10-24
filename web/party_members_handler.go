@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-func (a *Application) AddFriendToPartyHandler(w http.ResponseWriter, r *http.Request) {
+func (a *Application) AddMemberToPartyHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	err := r.ParseForm()
@@ -39,7 +39,7 @@ func (a *Application) AddFriendToPartyHandler(w http.ResponseWriter, r *http.Req
 			a.serverError(w, r, err)
 		}
 		templateData := a.NewProfilesTemplateData(r, "/profile")
-		templateData.Profile.Parties = parties
+		templateData.Parties = parties
 
 		a.renderPartial(w, r, http.StatusOK, "profiles/partials/party_list.gohtml", templateData)
 		return
