@@ -30,11 +30,6 @@ const (
 	createPartyMemberQuery = `INSERT INTO party_members (id_member, id_party, owner) VALUES ($1, $2, true);`
 )
 
-var (
-	ErrDuplicatePartyName    = errors.New("party name already exists")
-	ErrDuplicatePartyShortID = errors.New("party short id already exists")
-)
-
 func (p *PGStore) CreateParty(ctx context.Context, idMember int, name, shortID string) (int, error) {
 	txn, err := p.db.Begin(ctx)
 	if err != nil {

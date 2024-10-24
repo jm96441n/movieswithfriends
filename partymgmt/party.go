@@ -3,6 +3,7 @@ package partymgmt
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"math/rand"
 
 	"github.com/jm96441n/movieswithfriends/store"
@@ -14,9 +15,13 @@ type partyStore interface {
 	CreatePartyMember(context.Context, int, int) error
 }
 
+// TOOD: should this exist? maybe just pass db to functions that need it
 type PartyService struct {
-	DB partyStore
+	Logger *slog.Logger
+	DB     partyStore
 }
+
+var ErrMemberExistsInParty = errors.New("member already exists in party")
 
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
@@ -27,6 +32,10 @@ func (s *PartyService) AddFriendToParty(ctx context.Context, idMember int, short
 	}
 
 	err = s.DB.CreatePartyMember(ctx, idMember, party.ID)
+	if errors.Is(err, store.ErrMemberPartyCombinationNotUnique) {
+		return errors.Join(ErrMemberExistsInParty, err)
+	}
+
 	if err != nil {
 		return err
 	}

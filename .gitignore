@@ -20,3 +20,6 @@ tmp/**
 
 **/**/*.tfstate*
 
+cover.html
+cover.out
+
