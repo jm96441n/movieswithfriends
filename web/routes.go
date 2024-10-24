@@ -18,8 +18,9 @@ func (a *Application) Routes() http.Handler {
 	partyRoutes := a.partyRoutes()
 	sessionRoutes := a.sessionRoutes()
 	profileRoutes := a.profileRoutes()
+	partyMemberRoutes := a.partyMemberRoutes()
 
-	routes := make([]route, 0, len(movieRoutes)+len(partyRoutes)+len(sessionRoutes)+len(profileRoutes)+1) // +1 for home route
+	routes := make([]route, 0, len(movieRoutes)+len(partyRoutes)+len(sessionRoutes)+len(profileRoutes)+len(partyMemberRoutes)+1) // +1 for home route
 
 	homeRoute := route{
 		path:               "/",
@@ -28,7 +29,7 @@ func (a *Application) Routes() http.Handler {
 	}
 
 	routes = append(routes, homeRoute)
-	routes = slices.Concat(routes, movieRoutes, partyRoutes, sessionRoutes, profileRoutes)
+	routes = slices.Concat(routes, movieRoutes, partyRoutes, sessionRoutes, profileRoutes, partyMemberRoutes)
 
 	authenticatorMW := a.authenticateMiddleware()
 	requireAuthMW := a.authenticatedMiddleware()
@@ -101,8 +102,13 @@ func (a *Application) partyRoutes() []route {
 			handler:            a.CreatePartyHandler,
 			authenticatedRoute: true,
 		},
+	}
+}
+
+func (a *Application) partyMemberRoutes() []route {
+	return []route{
 		{
-			path:               "POST /profile_parties",
+			path:               "POST /party_members",
 			handler:            a.AddMemberToPartyHandler,
 			authenticatedRoute: true,
 		},
