@@ -13,11 +13,12 @@ create table party_movies (
     CONSTRAINT fk_party_movies_parties FOREIGN KEY(id_party) REFERENCES parties(id_party),
     CONSTRAINT fk_party_movies_movies FOREIGN KEY(id_movie) REFERENCES movies(id_movie)
 );
+alter table party_movies add CONSTRAINT unique_movie_per_party UNIQUE(id_party, id_movie);
 
 -- +goose Down
 -- +goose StatementBegin
 SELECT 'down SQL query';
 -- +goose StatementEnd
-
+alter table party_movies drop CONSTRAINT unique_movie_per_party;
 drop table if exists party_movies;
 

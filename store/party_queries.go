@@ -26,8 +26,8 @@ type PartyMovie struct {
 }
 
 const (
-	createPartyQuery        = `INSERT INTO parties (name, short_id) VALUES ($1, $2) returning id_party;`
-	createPartyProfileQuery = `INSERT INTO profile_parties (id_profile, id_party) VALUES ($1, $2);`
+	createPartyQuery       = `INSERT INTO parties (name, short_id) VALUES ($1, $2) returning id_party;`
+	createPartyMemberQuery = `INSERT INTO party_members (id_member, id_party, owner) VALUES ($1, $2, true);`
 )
 
 var (
@@ -35,7 +35,7 @@ var (
 	ErrDuplicatePartyShortID = errors.New("party short id already exists")
 )
 
-func (p *PGStore) CreateParty(ctx context.Context, idProfile int, name, shortID string) (int, error) {
+func (p *PGStore) CreateParty(ctx context.Context, idMember int, name, shortID string) (int, error) {
 	txn, err := p.db.Begin(ctx)
 	if err != nil {
 		return 0, err
@@ -58,7 +58,7 @@ func (p *PGStore) CreateParty(ctx context.Context, idProfile int, name, shortID 
 		return 0, err
 	}
 
-	_, err = txn.Exec(ctx, createPartyProfileQuery, idProfile, id)
+	_, err = txn.Exec(ctx, createPartyMemberQuery, idMember, id)
 	if err != nil {
 		return 0, err
 	}
@@ -70,14 +70,14 @@ func (p *PGStore) CreateParty(ctx context.Context, idProfile int, name, shortID 
 	return id, nil
 }
 
-const getPartiesQueryForProfile = `
+const getPartiesQueryForMember = `
   select parties.id_party, parties.name from parties
-  join profile_parties on profile_parties.id_party = parties.id_party
-  where profile_parties.id_profile = $1;
+  join party_members on party_members.id_party = parties.id_party
+  where party_members.id_member = $1;
 `
 
-func (p *PGStore) GetPartiesByProfile(ctx context.Context, idProfile int) ([]Party, error) {
-	rows, err := p.db.Query(ctx, getPartiesQueryForProfile, idProfile)
+func (p *PGStore) GetPartiesByMemberID(ctx context.Context, idMember int) ([]Party, error) {
+	rows, err := p.db.Query(ctx, getPartiesQueryForMember, idMember)
 	if err != nil {
 		return nil, err
 	}
@@ -100,14 +100,14 @@ func (p *PGStore) GetPartiesByProfile(ctx context.Context, idProfile int) ([]Par
 const getPartiesQueryForMovie = `
 with filtered_party_movies as(select * from party_movies where id_movie = $1)select parties.id_party, parties.name, movies.id_movie is not null as is_movie
   from parties
-  join profile_parties on profile_parties.id_party = parties.id_party
+  join party_members on party_members.id_party = parties.id_party
   left outer join filtered_party_movies on filtered_party_movies.id_party = parties.id_party 
   left outer join movies on filtered_party_movies.id_movie = movies.id_movie
-  where profile_parties.id_profile = $2;
+  where party_members.id_member = $2;
 `
 
-func (p *PGStore) GetPartiesByProfileForCurrentMovie(ctx context.Context, idMovie int, idProfile int) ([]Party, error) {
-	rows, err := p.db.Query(ctx, getPartiesQueryForMovie, idMovie, idProfile)
+func (p *PGStore) GetPartiesByMemberIDForCurrentMovie(ctx context.Context, idMovie int, idMember int) ([]Party, error) {
+	rows, err := p.db.Query(ctx, getPartiesQueryForMovie, idMovie, idMember)
 	if err != nil {
 		return nil, err
 	}
@@ -166,8 +166,8 @@ const getPartyByIDWithMoviesQuery = `
   from parties
   left join party_movies on party_movies.id_party = parties.id_party
   left join movies on movies.id_movie = party_movies.id_movie
-  left join profile_parties on profile_parties.id_party = parties.id_party
-  left join profiles on profiles.id_profile = profile_parties.id_profile
+  left join party_members on party_members.id_party = parties.id_party
+  left join profiles on profiles.id_profile = party_members.id_profile
   where parties.id_party = $1;
 `
 
@@ -195,7 +195,7 @@ func (p *PGStore) GetPartyByIDWithMovies(ctx context.Context, partyID int) (Part
 				ID:          int(pm.ID.Int64),
 				Title:       pm.Title.String,
 				PosterURL:   pm.PosterURL.String,
-				WatchStatus: watchStatusEnum(pm.WatchStatus.String),
+				WatchStatus: WatchStatusEnum(pm.WatchStatus.String),
 				AddedBy:     profile,
 			}
 			switch movie.WatchStatus {
@@ -229,14 +229,14 @@ func (p *PGStore) AddMovieToParty(ctx context.Context, idParty, idMovie int) err
 	return nil
 }
 
-const GetPartiesByProfileIDQuery = `
+const GetPartiesByMemberIDQuery = `
   select parties.id_party, parties.name from parties
-  left join profile_parties on profile_parties.id_party = parties.id_party
-  where profile_parties.id_profile = $1
+  left join party_members on party_members.id_party = parties.id_party
+  where party_members.id_member = $1
 `
 
-func (pg *PGStore) GetPartiesForProfile(ctx context.Context, id int) ([]Party, error) {
-	rows, err := pg.db.Query(ctx, GetPartiesByProfileIDQuery, id)
+func (pg *PGStore) GetPartiesForMember(ctx context.Context, id int) ([]Party, error) {
+	rows, err := pg.db.Query(ctx, GetPartiesByMemberIDQuery, id)
 	if err != nil {
 		return nil, err
 	}
@@ -266,16 +266,16 @@ func (pg *PGStore) MarkMovieAsWatched(ctx context.Context, idParty, idMovie int)
 }
 
 const selectMovieForPartyQuery = `
-WITH selected_profile_id AS (
-  select id_profile 
-  from profile_parties 
+WITH selected_member_id AS (
+  select id_member 
+  from party_members 
   where id_party = $1
   order by random()
   limit 1
 )
   select id_movie 
   from party_movies 
-  where id_party = $2 and id_profile = (select id_profile from selected_profile_id) AND watch_status = 'unwatched'
+  where id_party = $2 and id_member = (select id_member from selected_member_id) AND watch_status = 'unwatched'
   order by random()
   limit 1;
 `
@@ -290,7 +290,7 @@ func (pg *PGStore) SelectMovieForParty(ctx context.Context, idParty int) error {
 	return pg.updateMovieStatusInParty(ctx, idParty, selectedMovieID, WatchStatusSelected)
 }
 
-func (pg *PGStore) updateMovieStatusInParty(ctx context.Context, idParty, idMovie int, status watchStatusEnum) error {
+func (pg *PGStore) updateMovieStatusInParty(ctx context.Context, idParty, idMovie int, status WatchStatusEnum) error {
 	_, err := pg.db.Exec(ctx, updateWatchStatusQuery, status, idParty, idMovie)
 	if err != nil {
 		return err

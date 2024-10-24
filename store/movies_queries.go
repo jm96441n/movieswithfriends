@@ -18,8 +18,9 @@ type Movie struct {
 	URL         string
 	ID          int
 	TMDBID      int `json:"id"`
-	WatchStatus watchStatusEnum
-	AddedBy     Profile `json:"added_by"`
+	WatchStatus WatchStatusEnum
+	// TODO: don't directly reference Profile here
+	AddedBy Profile `json:"added_by"`
 }
 
 const (

@@ -25,20 +25,6 @@ type MovieService struct {
 	tmdbClient       movieFetcher
 }
 
-type Movie struct {
-	Title       string `json:"title"`
-	ReleaseDate string `json:"release_date"`
-	Overview    string `json:"overview"`
-	Tagline     string `json:"tagline"`
-	PosterURL   string `json:"poster_path"`
-	TrailerURL  string `json:"trailer_url"`
-	URL         string
-	ID          int
-	TMDBID      int `json:"id"`
-	WatchStatus store.WatchStatusEnum
-	AddedBy     store.Profile `json:"added_by"`
-}
-
 func NewMovieService(client *TMDBClient, logger *slog.Logger, moviesRepository moviesRepository) *MovieService {
 	return &MovieService{
 		tmdbClient:       client,

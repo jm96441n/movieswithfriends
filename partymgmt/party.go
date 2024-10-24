@@ -11,7 +11,7 @@ import (
 type partyStore interface {
 	CreateParty(context.Context, int, string, string) (int, error)
 	GetPartyByShortID(context.Context, string) (store.Party, error)
-	CreateProfileParty(context.Context, int, int) error
+	CreatePartyMember(context.Context, int, int) error
 }
 
 type PartyService struct {
@@ -20,20 +20,20 @@ type PartyService struct {
 
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
-func (s *PartyService) AddFriendToParty(ctx context.Context, idProfile int, shortID string) error {
+func (s *PartyService) AddFriendToParty(ctx context.Context, idMember int, shortID string) error {
 	party, err := s.DB.GetPartyByShortID(ctx, shortID)
 	if err != nil {
 		return err
 	}
 
-	err = s.DB.CreateProfileParty(ctx, idProfile, party.ID)
+	err = s.DB.CreatePartyMember(ctx, idMember, party.ID)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *PartyService) CreateParty(ctx context.Context, idProfile int, name string) (int, error) {
+func (s *PartyService) CreateParty(ctx context.Context, idMember int, name string) (int, error) {
 	successFullyCreated := false
 	var (
 		id  int
@@ -41,7 +41,7 @@ func (s *PartyService) CreateParty(ctx context.Context, idProfile int, name stri
 	)
 	for i := 0; i < 5; i++ {
 		shortID := generateRandomString()
-		id, err = s.DB.CreateParty(ctx, idProfile, name, shortID)
+		id, err = s.DB.CreateParty(ctx, idMember, name, shortID)
 		if errors.Is(err, store.ErrDuplicatePartyShortID) {
 			continue
 		}
