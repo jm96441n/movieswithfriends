@@ -159,7 +159,6 @@ const getPartyByIDWithMoviesQuery = `
     movies.id_movie, 
     movies.title,
     movies.poster_url,
-    profiles.id_profile,
     profiles.first_name,
     profiles.last_name,
     party_movies.watch_status
@@ -182,9 +181,9 @@ func (p *PGStore) GetPartyByIDWithMovies(ctx context.Context, partyID int) (Part
 	for rows.Next() {
 		var (
 			pm      PartyMovie
-			profile Profile
+			addedBy FullName
 		)
-		err := rows.Scan(&party.ID, &party.Name, &party.ShortID, &pm.ID, &pm.Title, &pm.PosterURL, &profile.ID, &profile.FirstName, &profile.LastName, &pm.WatchStatus)
+		err := rows.Scan(&party.ID, &party.Name, &party.ShortID, &pm.ID, &pm.Title, &pm.PosterURL, &addedBy.FirstName, &addedBy.LastName, &pm.WatchStatus)
 		if err != nil {
 			p.logger.Error(err.Error(), "query", getPartyByIDWithMoviesQuery)
 			return Party{}, err
@@ -196,7 +195,7 @@ func (p *PGStore) GetPartyByIDWithMovies(ctx context.Context, partyID int) (Part
 				Title:       pm.Title.String,
 				PosterURL:   pm.PosterURL.String,
 				WatchStatus: WatchStatusEnum(pm.WatchStatus.String),
-				AddedBy:     profile,
+				AddedBy:     addedBy,
 			}
 			switch movie.WatchStatus {
 			case WatchStatusUnwatched:

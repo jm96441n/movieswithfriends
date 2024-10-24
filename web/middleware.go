@@ -60,7 +60,7 @@ func (a *Application) authenticateMiddleware() func(http.HandlerFunc) http.Handl
 
 			if exists {
 				profileID := session.Values["profileID"].(int)
-				partiesForProfile, err := a.PartiesRepository.GetPartiesForProfile(req.Context(), profileID)
+				partiesForProfile, err := a.PartiesRepository.GetPartiesForMember(req.Context(), profileID)
 				if err != nil {
 					a.Logger.Error("error fetching parties for profile", slog.Any("error", err))
 					a.serverError(w, req, err)

@@ -31,7 +31,8 @@ func (pg *PGStore) GetProfileByID(ctx context.Context, profileID int) (Profile, 
 		return Profile{}, err
 	}
 
-	parties, err := pg.GetPartiesForProfile(ctx, profileID)
+	// TODO: don't do this here
+	parties, err := pg.GetPartiesForMember(ctx, profileID)
 	if err != nil {
 		return Profile{}, err
 	}

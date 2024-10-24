@@ -22,8 +22,8 @@ type MovieRepository interface {
 }
 
 type PartiesStoreService interface {
-	GetPartiesByProfileForCurrentMovie(context.Context, int, int) ([]store.Party, error)
-	GetPartiesForProfile(context.Context, int) ([]store.Party, error)
+	GetPartiesByMemberIDForCurrentMovie(context.Context, int, int) ([]store.Party, error)
+	GetPartiesForMember(context.Context, int) ([]store.Party, error)
 	GetPartyByID(context.Context, int) (store.Party, error)
 	GetPartyByIDWithMovies(context.Context, int) (store.Party, error)
 	AddMovieToParty(context.Context, int, int) error

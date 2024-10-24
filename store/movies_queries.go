@@ -8,6 +8,11 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+type FullName struct {
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+}
+
 type Movie struct {
 	Title       string `json:"title"`
 	ReleaseDate string `json:"release_date"`
@@ -19,8 +24,7 @@ type Movie struct {
 	ID          int
 	TMDBID      int `json:"id"`
 	WatchStatus WatchStatusEnum
-	// TODO: don't directly reference Profile here
-	AddedBy Profile `json:"added_by"`
+	AddedBy     FullName `json:"added_by"`
 }
 
 const (
