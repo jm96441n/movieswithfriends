@@ -20,5 +20,5 @@ func (p *PGStore) CreatePartyMember(ctx context.Context, idMember, idParty int) 
 		}
 		return err
 	}
-	return err
+	return nil
 }

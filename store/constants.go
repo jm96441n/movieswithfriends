@@ -18,4 +18,4 @@ const (
 	WatchStatusWatched   WatchStatusEnum = "watched"
 )
 
-const pgUniqueViolationCode = "23505"
+const pgUniqueViolationCode = "23503"
