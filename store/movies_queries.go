@@ -88,3 +88,81 @@ func (p *PGStore) CreateMovie(ctx context.Context, movie *Movie) (*Movie, error)
 
 	return movie, nil
 }
+
+const getMoviesForPartyQuery = `
+SELECT *
+FROM (
+    SELECT 
+      movies.id_movie,
+      movies.title,
+      movies.poster_url,
+      profiles.first_name,
+      profiles.last_name,
+      party_movies.watch_status,
+           ROW_NUMBER() OVER (PARTITION BY party_movies.watch_status ORDER BY party_movies.created_at DESC) as rn
+    FROM movies
+    INNER JOIN party_movies ON movies.id_movie = party_movies.id_movie
+    JOIN party_members ON party_members.id_party = party_movies.id_party
+    JOIN profiles ON profiles.id_profile = party_members.id_member
+    WHERE party_movies.id_party = $1
+) t
+WHERE rn <= 10;
+`
+
+type MoviesByStatus struct {
+	UnwatchedMovies []*Movie
+	SelectedMovie   *Movie
+	WatchedMovies   []*Movie
+}
+
+// GetMoviesForParty returns a paginated list of movies for a party grouped by watchStatus
+func (p *PGStore) GetMoviesForParty(ctx context.Context, idParty, offset int) (MoviesByStatus, error) {
+	movies := MoviesByStatus{
+		UnwatchedMovies: []*Movie{},
+		WatchedMovies:   []*Movie{},
+	}
+	rows, err := p.db.Query(ctx, getMoviesForPartyQuery, idParty)
+	if err != nil {
+		return MoviesByStatus{}, err
+	}
+
+	defer rows.Close()
+	for rows.Next() {
+		var (
+			addedBy FullName
+			rn      int
+			movie   = &Movie{}
+		)
+		err := rows.Scan(
+			&movie.ID,
+			&movie.Title,
+			&movie.PosterURL,
+			&addedBy.FirstName,
+			&addedBy.LastName,
+			&movie.WatchStatus,
+			&rn,
+		)
+		if err != nil {
+			p.logger.Error(err.Error(), "query", getMoviesForPartyQuery)
+			return MoviesByStatus{}, err
+		}
+
+		switch movie.WatchStatus {
+		case WatchStatusUnwatched:
+			movies.UnwatchedMovies = append(movies.UnwatchedMovies, movie)
+		case WatchStatusSelected:
+			movies.SelectedMovie = movie
+		case WatchStatusWatched:
+			movies.WatchedMovies = append(movies.WatchedMovies, movie)
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		p.logger.Error(err.Error(), "query", getMoviesForPartyQuery)
+		return MoviesByStatus{}, err
+	}
+
+	p.logger.Info("GetPartyByIDWithMovies", "partyID", idParty)
+
+	return movies, nil
+}

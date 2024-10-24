@@ -40,9 +40,10 @@ type ProfilesTemplateData struct {
 }
 
 type PartiesTemplateData struct {
-	Party         store.Party
-	Movies        []store.Movie
-	SelectedMovie store.Movie
+	Party           store.Party
+	WatchedMovies   []*store.Movie
+	UnwatchedMovies []*store.Movie
+	SelectedMovie   *store.Movie
 	BaseTemplateData
 }
 

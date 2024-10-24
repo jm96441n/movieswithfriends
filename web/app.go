@@ -19,13 +19,13 @@ var ErrFailedToGetProfileIDFromSession = errors.New("failed to get profile id fr
 
 type MovieRepository interface {
 	GetMovieByID(context.Context, int) (store.Movie, error)
+	GetMoviesForParty(context.Context, int, int) (store.MoviesByStatus, error)
 }
 
 type PartiesStoreService interface {
 	GetPartiesByMemberIDForCurrentMovie(context.Context, int, int) ([]store.Party, error)
 	GetPartiesForMember(context.Context, int) ([]store.Party, error)
 	GetPartyByID(context.Context, int) (store.Party, error)
-	GetPartyByIDWithMovies(context.Context, int) (store.Party, error)
 	AddMovieToParty(context.Context, int, int) error
 	MarkMovieAsWatched(context.Context, int, int) error
 	SelectMovieForParty(context.Context, int) error

@@ -58,14 +58,26 @@ func (a *Application) PartyShowHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	party, err := a.PartiesRepository.GetPartyByIDWithMovies(ctx, id)
+	party, err := a.PartiesRepository.GetPartyByID(ctx, id)
 	if err != nil {
-		logger.Error("failed to get party by ID with movies", slog.Any("error", err))
+		logger.Error("failed to get party by ID", slog.Any("error", err))
 		a.serverError(w, r, err)
 		return
 	}
+
+	movies, err := a.MoviesRepository.GetMoviesForParty(ctx, party.ID, 0)
+	if err != nil {
+		logger.Error("failed to get movies for party", slog.Any("error", err))
+		a.serverError(w, r, err)
+		return
+	}
+
 	templateData := a.NewPartiesTemplateData(r, "/parties")
 	templateData.Party = party
+	templateData.WatchedMovies = movies.WatchedMovies
+	templateData.UnwatchedMovies = movies.UnwatchedMovies
+	templateData.SelectedMovie = movies.SelectedMovie
+
 	a.render(w, r, http.StatusOK, "parties/show.gohtml", templateData)
 }
 
