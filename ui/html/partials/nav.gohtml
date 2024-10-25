@@ -57,7 +57,7 @@
                   {{- range .CurrentUserParties }}
                     <a
                       class="dropdown-item list-group-item-action"
-                      id="{{ hyphenate .Name }}"
+                      id="{{ hyphenate .Name }}-party-nav-bar"
                       href="/parties/{{ .ID }}"
                     >
                       <li>

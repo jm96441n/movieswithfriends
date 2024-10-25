@@ -1,8 +1,12 @@
 package web
 
 import (
+	"io/fs"
+	"log"
 	"net/http"
 	"slices"
+
+	"github.com/jm96441n/movieswithfriends/ui"
 )
 
 type route struct {
@@ -44,9 +48,14 @@ func (a *Application) Routes() http.Handler {
 		router.HandleFunc(r.path, handlerFunc)
 	}
 
-	//	fileServer := http.FileServer(http.FS(ui.TemplateFS))
-	//	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", fileServer))
+	fsys, err := fs.Sub(ui.TemplateFS, "static")
+	if err != nil {
+		log.Fatal(err)
+	}
 
+	// Create a file server handler
+	fileServer := http.FileServer(http.FS(fsys))
+	router.Handle("/static/", http.StripPrefix("/static", fileServer))
 	return router
 }
 

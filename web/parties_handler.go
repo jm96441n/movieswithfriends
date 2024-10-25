@@ -90,6 +90,13 @@ func (a *Application) AddMovietoPartyHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	idAddedBy, err := a.getProfileIDFromSession(r)
+	if err != nil {
+		a.Logger.Error("failed to get profile ID from session", slog.Any("error", err))
+		a.serverError(w, r, err)
+		return
+	}
+
 	idMovie, err := strconv.Atoi(r.FormValue("id_movie"))
 	if err != nil {
 		a.clientError(w, http.StatusBadRequest)
@@ -102,7 +109,7 @@ func (a *Application) AddMovietoPartyHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	err = a.PartiesRepository.AddMovieToParty(ctx, idParty, idMovie)
+	err = a.PartiesRepository.AddMovieToParty(ctx, idParty, idMovie, idAddedBy)
 	if err != nil {
 		a.serverError(w, r, err)
 		return

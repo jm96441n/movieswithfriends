@@ -1,13 +1,26 @@
 {{ define "title" }}Home{{ end }}
 {{ define "main" }}
-  <div class="text-center">
-    <div class="row">
-      <div class="col"></div>
-      <div class="col">
-        <h1>Home</h1>
-        <p>Home sweet home.</p>
+  <div class="position-relative">
+    <!-- Image container with overlay -->
+    <div class="vh-100 w-100">
+      <img src="/static/images/hero.jpg" class="w-100 h-100 object-fit-cover" alt="Hero background">
+      <div class="position-absolute top-0 start-0 w-100 h-100 bg-dark opacity-50"></div>
+    </div>
+
+    <!-- Content -->
+    <div class="position-absolute top-50 start-50 translate-middle text-white text-center w-100">
+      <div class="container">
+        <div class="row justify-content-center">
+          <div class="col-lg-8">
+            <h1 class="display-4 fw-bold mb-3">Movies With Friends</h1>
+            <p class="lead mb-4">Add Movies to a shared watchlist and then randomly pick one to watch.</p>
+            <div class="d-flex justify-content-center gap-3">
+              <a href="/signup" class="btn btn-primary btn-lg px-4">Sign Up</a>
+              <a href="#" class="btn btn-outline-light btn-lg px-4">Learn More</a>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="col"></div>
     </div>
   </div>
 {{ end }}

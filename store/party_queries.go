@@ -146,10 +146,10 @@ func (p *PGStore) GetPartyByShortID(ctx context.Context, shortID string) (Party,
 	return party, nil
 }
 
-const AddMovietoPartyQuery = `insert into party_movies (id_party, id_movie) values ($1, $2)`
+const AddMovietoPartyQuery = `insert into party_movies (id_party, id_movie, id_added_by) values ($1, $2, $3)`
 
-func (p *PGStore) AddMovieToParty(ctx context.Context, idParty, idMovie int) error {
-	_, err := p.db.Exec(ctx, AddMovietoPartyQuery, idParty, idMovie)
+func (p *PGStore) AddMovieToParty(ctx context.Context, idParty, idMovie, id_added_by int) error {
+	_, err := p.db.Exec(ctx, AddMovietoPartyQuery, idParty, idMovie, id_added_by)
 	if err != nil {
 		return err
 	}

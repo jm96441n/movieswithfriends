@@ -26,7 +26,7 @@ type PartiesStoreService interface {
 	GetPartiesByMemberIDForCurrentMovie(context.Context, int, int) ([]store.Party, error)
 	GetPartiesForMember(context.Context, int) ([]store.Party, error)
 	GetPartyByID(context.Context, int) (store.Party, error)
-	AddMovieToParty(context.Context, int, int) error
+	AddMovieToParty(context.Context, int, int, int) error
 	MarkMovieAsWatched(context.Context, int, int) error
 	SelectMovieForParty(context.Context, int) error
 }

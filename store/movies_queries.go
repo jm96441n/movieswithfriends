@@ -102,8 +102,7 @@ FROM (
            ROW_NUMBER() OVER (PARTITION BY party_movies.watch_status ORDER BY party_movies.created_at DESC) as rn
     FROM movies
     INNER JOIN party_movies ON movies.id_movie = party_movies.id_movie
-    JOIN party_members ON party_members.id_party = party_movies.id_party
-    JOIN profiles ON profiles.id_profile = party_members.id_member
+    JOIN profiles ON party_movies.id_added_by = profiles.id_profile
     WHERE party_movies.id_party = $1
 ) t
 WHERE rn <= 10;
@@ -129,16 +128,15 @@ func (p *PGStore) GetMoviesForParty(ctx context.Context, idParty, offset int) (M
 	defer rows.Close()
 	for rows.Next() {
 		var (
-			addedBy FullName
-			rn      int
-			movie   = &Movie{}
+			rn    int
+			movie = &Movie{}
 		)
 		err := rows.Scan(
 			&movie.ID,
 			&movie.Title,
 			&movie.PosterURL,
-			&addedBy.FirstName,
-			&addedBy.LastName,
+			&movie.AddedBy.FirstName,
+			&movie.AddedBy.LastName,
 			&movie.WatchStatus,
 			&rn,
 		)
