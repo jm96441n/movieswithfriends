@@ -15,13 +15,13 @@ type Profile struct {
 }
 
 const GetProfileByIDQuery = `
-  select profiles.id_profile, profiles.first_name, profiles.last_name from profiles 
+  select profiles.id_profile, profiles.first_name, profiles.last_name, profiles.id_account from profiles
   where profiles.id_profile = $1`
 
 func (pg *PGStore) GetProfileByID(ctx context.Context, profileID int) (Profile, error) {
 	profile := Profile{}
 
-	err := pg.db.QueryRow(ctx, GetProfileByIDQuery, profileID).Scan(&profile.ID, &profile.FirstName, &profile.LastName)
+	err := pg.db.QueryRow(ctx, GetProfileByIDQuery, profileID).Scan(&profile.ID, &profile.FirstName, &profile.LastName, &profile.AccountID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return Profile{}, ErrNoRecord
