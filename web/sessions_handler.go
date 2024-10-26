@@ -38,6 +38,8 @@ func (a *Application) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	session.Values["accountID"] = account.ID
 	session.Values["profileID"] = account.Profile.ID
+	session.Values["fullName"] = account.Profile.FirstName + " " + account.Profile.LastName
+	session.Values["email"] = account.Email
 
 	err = session.Save(r, w)
 	if err != nil {

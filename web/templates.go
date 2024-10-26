@@ -22,6 +22,8 @@ type BaseTemplateData struct {
 	IsAuthenticated    bool
 	CurrentYear        int
 	CurrentUserParties []partyNav
+	FullName           string
+	UserEmail          string
 }
 
 // TODO: refactor out references to store from here
@@ -72,9 +74,15 @@ func (a *Application) NewPartiesTemplateData(r *http.Request, path string) Parti
 func newBaseTemplateData(r *http.Request, path string) BaseTemplateData {
 	authed := isAuthenticated(r.Context())
 
-	var partiesForNav []partyNav
+	var (
+		partiesForNav []partyNav
+		fullName      string
+		email         string
+	)
 	if authed {
 		partiesForNav = r.Context().Value(partiesForNavContextKey).([]partyNav)
+		fullName = r.Context().Value(fullNameContextKey).(string)
+		email = r.Context().Value(emailContextKey).(string)
 	}
 
 	return BaseTemplateData{
@@ -83,6 +91,8 @@ func newBaseTemplateData(r *http.Request, path string) BaseTemplateData {
 		CurrentYear:        2024,
 		IsAuthenticated:    authed,
 		CurrentUserParties: partiesForNav,
+		FullName:           fullName,
+		UserEmail:          email,
 	}
 }
 

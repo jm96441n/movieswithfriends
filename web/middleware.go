@@ -13,6 +13,8 @@ type contextKey string
 const (
 	isAuthenticatedContextKey = contextKey("isAuthenticated")
 	partiesForNavContextKey   = contextKey("partiesForNav")
+	fullNameContextKey        = contextKey("fulName")
+	emailContextKey           = contextKey("email")
 	sessionName               = "moviesWithFriendsCookie"
 )
 
@@ -76,6 +78,9 @@ func (a *Application) authenticateMiddleware() func(http.HandlerFunc) http.Handl
 
 				ctx := context.WithValue(req.Context(), isAuthenticatedContextKey, true)
 				ctx = context.WithValue(ctx, partiesForNavContextKey, partiesForNav)
+				// TODO: fix this
+				ctx = context.WithValue(ctx, emailContextKey, "john@jmaguire.tech")
+				ctx = context.WithValue(ctx, fullNameContextKey, "John Maguire")
 				req = req.WithContext(ctx)
 			}
 

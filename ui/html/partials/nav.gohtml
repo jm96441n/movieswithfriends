@@ -1,109 +1,115 @@
 {{ define "nav" }}
-  <nav class="navbar navbar-expand-lg navbar-light bg-light">
-    <div class="container-fluid">
-      <a class="navbar-brand" href="/home">MoviesWithFriends</a>
-      <button
-        class="navbar-toggler"
-        type="button"
-        data-bs-toggle="collapse"
-        data-bs-target="#navbarSupportedContent"
-        aria-controls="navbarSupportedContent"
-        aria-expanded="false"
-        aria-label="Toggle navigation"
-      >
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="navbarSupportedContent">
-        <ul id="topnav" class="navbar-nav me-auto mb-2 mb-lg-0">
-          <li class="nav-item">
-            <a
-              class="nav-link {{ navClasses "/" .CurrentPagePath }}"
-              aria-current="page"
-              href="/"
-              >Home</a
-            >
-          </li>
-          <li class="nav-item">
-            <a
-              class="nav-link {{ navClasses "/movies" .CurrentPagePath }}"
-              href="/movies"
-              >Search</a
-            >
-          </li>
-          {{- if .IsAuthenticated -}}
-            <li class="nav-item">
-              <a
-                class="nav-link {{ navClasses "/profile" .CurrentPagePath }}"
-                href="/profile"
-                tabindex="-1"
-                aria-disabled="true"
-                >Profile</a
-              >
-            </li>
-            <li class="nav-item">
-              <div class="dropdown">
-                <a
-                  class="nav-link dropdown-toggle"
-                  href="#"
-                  role="button"
-                  data-bs-toggle="dropdown"
-                  data-bs-auto-close="outside"
-                  aria-expanded="false"
-                >
-                  Parties 
-                </a>
-                <ul class="dropdown-menu">
-                  <div class="list-group">
-                  {{- range .CurrentUserParties }}
-                    <a
-                      class="dropdown-item list-group-item-action"
-                      id="{{ hyphenate .Name }}-party-nav-bar"
-                      href="/parties/{{ .ID }}"
-                    >
-                      <li>
-                        {{ .Name }}
-                      </li>
-                    </a>
-                  {{- end}}
-                    <div class="dropdown-divider"></div>
-                    <a
-                      class="dropdown-item list-group-item-action btn btn-primary"
-                      id="create-party-button"
-                      href="/parties/new"
-                    >
-                      <li>
-                        Create New Party
-                      </li>
-                    </a>
-                  </div>
-                </ul>
-              </div>
-            </li>
-          {{- end -}}
-        </ul>
-        {{- if .IsAuthenticated -}}
-          <form action="/logout" method="post">
-            <button
-              href="/logout"
-              class="btn btn-outline-primary mx-2"
-              type="submit"
-            >
-              Logout
+    <!-- Main Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom sticky-top">
+        <div class="container">
+            <!-- Brand -->
+            <a class="navbar-brand d-flex align-items-center gap-2" href="#">
+                <i class="fas fa-film text-primary"></i>
+                <span class="fw-bold">MoviesWithFriends</span>
+            </a>
+
+            <!-- Mobile Toggle -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
+                <span class="navbar-toggler-icon"></span>
             </button>
-          </form>
-        {{- else -}}
-          <a
-            href="/login"
-            class="btn btn-outline-success mx-2 {{ navClasses "/login" .CurrentPagePath }}"
-            >Login</a
-          >
-          <a
-            href="/signup"
-            class="btn btn-outline-primary mx-2 {{ navClasses "/signup" .CurrentPagePath }}"
-            >Sign Up</a
-          >
-        {{- end -}}
-      </div>
-    </div>
-  </nav>
+
+            <!-- Navigation Items -->
+            <div class="collapse navbar-collapse" id="navbarContent">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <!-- <li class="nav-item"> -->
+                        <!-- <a class="nav-link active" href="/home"> -->
+                            <!-- <i class="fas fa-home me-1"></i>Home -->
+                        <!-- </a> -->
+                    <!-- </li> -->
+                    <li class="nav-item">
+                        <a class="nav-link {{ navClasses "/movies" .CurrentPagePath }}" href="/movies">
+                            <i class="fas fa-search me-1"></i>Search
+                        </a>
+                    </li>
+                    <!-- Parties Dropdown -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                            <i class="fas fa-users me-1"></i>Parties
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item" href="#">
+                                    <i class="fas fa-calendar-alt me-2"></i>My Parties
+                                </a>
+                            </li>
+                            <!-- <li> -->
+                                <!-- <a class="dropdown-item" href="#"> -->
+                                    <!-- <i class="fas fa-inbox me-2"></i>Invitations -->
+                                    <!-- <span class="badge bg-primary rounded-pill ms-2">2</span> -->
+                                <!-- </a> -->
+                            <!-- </li> -->
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="#">
+                                    <i class="fas fa-plus me-2"></i>Create New Party
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="#">
+                                    <i class="fas fa-users me-2"></i>Join Party
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <!-- User Menu (right side) -->
+                <div class="d-flex align-items-center">
+                    <!-- Notification Badge 
+                    <div class="me-3">
+                        <a href="#" class="btn btn-link text-dark position-relative p-0">
+                            <i class="fas fa-bell fa-lg"></i>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                2
+                            </span>
+                        </a>
+                    </div>
+                    -->
+                    <!-- User Dropdown -->
+                    <div class="dropdown">
+                        <button class="btn btn-link text-dark text-decoration-none p-0 d-flex align-items-center" data-bs-toggle="dropdown">
+                            <i class="fas fa-user-circle" width="32" height="32" alt=""></i>
+                            <i class="fas fa-chevron-down ms-2 small"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <div class="dropdown-item-text">
+                                    <div class="fw-bold">{{ .FullName }}</div>
+                                    <div class="small text-muted">{{ .UserEmail }}</div>
+                                </div>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="/profile">
+                                    <i class="fas fa-cog me-2"></i>Settings
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="#">
+                                    <i class="fas fa-question-circle me-2"></i>Help
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                              <form action="/logout" method="post">
+                                <button
+                                  href="/logout"
+                                  class="dropdown-item text-danger"
+                                  type="submit"
+                                >
+                                  <i class="fas fa-sign-out-alt me-2"></i>Sign Out
+                                </button>
+                              </form>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
 {{ end }}
