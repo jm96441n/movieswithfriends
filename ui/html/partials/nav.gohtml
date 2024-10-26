@@ -26,6 +26,8 @@
                             <i class="fas fa-search me-1"></i>Search
                         </a>
                     </li>
+
+                    {{ if .IsAuthenticated }}
                     <!-- Parties Dropdown -->
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
@@ -56,6 +58,7 @@
                             </li>
                         </ul>
                     </li>
+                    {{ end }}
                 </ul>
 
                 <!-- User Menu (right side) -->
@@ -77,6 +80,7 @@
                             <i class="fas fa-chevron-down ms-2 small"></i>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
+                            {{ if .IsAuthenticated }}
                             <li>
                                 <div class="dropdown-item-text">
                                     <div class="fw-bold">{{ .FullName }}</div>
@@ -106,6 +110,18 @@
                                 </button>
                               </form>
                             </li>
+                            {{ else }}
+                            <li>
+                              <a class="dropdown-item" href="/login">
+                                <i class="fas fa-sign-in-alt me-2"></i>Sign In
+                              </a>
+                            </li>
+                            <li>
+                              <a class="dropdown-item" href="/signup">
+                                <i class="fas fa-user-plus me-1"></i>Sign Up
+                              </a>
+                            </li>
+                            {{ end }}
                         </ul>
                     </div>
                 </div>

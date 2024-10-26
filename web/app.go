@@ -51,6 +51,10 @@ type Authenticator interface {
 	Authenticate(context.Context, string, string) (store.Account, error)
 }
 
+type AccountRepository interface {
+	GetAccountAndProfileInfo(context.Context, int) (store.Account, error)
+}
+
 type Application struct {
 	Logger            *slog.Logger
 	TemplateCache     map[string]*template.Template
@@ -61,6 +65,7 @@ type Application struct {
 	PartiesRepository PartiesStoreService
 	ProfilesService   ProfilesService
 	Auth              Authenticator
+	AccountRepository AccountRepository
 }
 
 func (a *Application) serverError(w http.ResponseWriter, r *http.Request, err error) {

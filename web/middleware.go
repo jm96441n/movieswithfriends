@@ -76,11 +76,17 @@ func (a *Application) authenticateMiddleware() func(http.HandlerFunc) http.Handl
 					})
 				}
 
+				account, err := a.AccountRepository.GetAccountAndProfileInfo(req.Context(), id)
+				if err != nil {
+					a.Logger.Error("error fetching account info", slog.Any("error", err))
+					a.serverError(w, req, err)
+					return
+				}
+
 				ctx := context.WithValue(req.Context(), isAuthenticatedContextKey, true)
 				ctx = context.WithValue(ctx, partiesForNavContextKey, partiesForNav)
-				// TODO: fix this
-				ctx = context.WithValue(ctx, emailContextKey, "john@jmaguire.tech")
-				ctx = context.WithValue(ctx, fullNameContextKey, "John Maguire")
+				ctx = context.WithValue(ctx, emailContextKey, account.Email)
+				ctx = context.WithValue(ctx, fullNameContextKey, account.Profile.FirstName+" "+account.Profile.LastName)
 				req = req.WithContext(ctx)
 			}
 

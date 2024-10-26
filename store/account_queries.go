@@ -75,3 +75,21 @@ func (pg *PGStore) AccountExists(ctx context.Context, id int) (bool, error) {
 
 	return exists, err
 }
+
+const getAccountAndProfileInfoQuery = `
+select accounts.email, profiles.first_name, profiles.last_name from accounts
+join profiles on profiles.id_account = accounts.id_account
+where accounts.id_account = $1
+`
+
+func (pg *PGStore) GetAccountAndProfileInfo(ctx context.Context, id int) (Account, error) {
+	var account Account
+	err := pg.db.QueryRow(ctx, getAccountAndProfileInfoQuery, id).Scan(&account.Email, &account.Profile.FirstName, &account.Profile.LastName)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return Account{}, ErrNotFound
+		}
+		return Account{}, err
+	}
+	return account, nil
+}
