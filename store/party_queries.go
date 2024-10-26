@@ -202,14 +202,14 @@ WITH selected_member_id AS (
 )
   select id_movie 
   from party_movies 
-  where id_party = $2 and id_member = (select id_member from selected_member_id) AND watch_status = 'unwatched'
+  where id_party = $1 and id_added_by = (select id_member from selected_member_id) AND watch_status = 'unwatched'
   order by random()
   limit 1;
 `
 
 func (pg *PGStore) SelectMovieForParty(ctx context.Context, idParty int) error {
 	var selectedMovieID int
-	err := pg.db.QueryRow(ctx, selectMovieForPartyQuery, idParty, idParty).Scan(&selectedMovieID)
+	err := pg.db.QueryRow(ctx, selectMovieForPartyQuery, idParty).Scan(&selectedMovieID)
 	if err != nil {
 		return err
 	}

@@ -24,6 +24,9 @@
                     <h5 class="card-subtitle">
                       {{ .SelectedMovie.Title }}
                     </h5>
+                    <p class="card-text">
+                      <strong>Added By:</strong> {{ .SelectedMovie.AddedBy.FirstName }} {{ .SelectedMovie.AddedBy.LastName }}
+                    </p>
                     <form
                       method="POST"
                       action="/parties/{{ .Party.ID }}/movies/{{ .SelectedMovie.ID }}"
@@ -50,7 +53,7 @@
                         action="/parties/{{ .Party.ID }}/movies"
                       >
                         <button type="submit" class="btn btn-primary mt-3 mb-3">
-                          !
+                          Pick Us A Movie!
                         </button>
                       </form>
                     {{- end }}
