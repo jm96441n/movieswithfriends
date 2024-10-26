@@ -1,96 +1,92 @@
 {{ define "title" }}SignUp{{ end }}
-
 {{ define "main" }}
-  <div class="row">
-    <div class="col-4"></div>
-    <div class="col-4">
-      <div class="text-center mb-4">
-        <h3>Sign Up</h3>
-      </div>
-      <form action="/signup" method="POST">
-        <div class="row g-3 mb-2 align-items-center">
-          <div class="col-2">
-            <label for="emailInput" class="col-form-label">Email</label>
-          </div>
-          <div class="col-8">
-            <input
-              type="email"
-              class="form-control"
-              id="emailInput"
-              name="email"
-              aria-describedby="emailHelp"
-            />
-          </div>
-          <div class="col-2">
-            <i
-              id="emailHelp"
-              class="fa-solid fa-circle-question"
-              data-bs-toggle="tooltip"
-              data-bs-placement="right"
-              data-bs-title="We will never share your email"
-            ></i>
-          </div>
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-5">
+                <!-- Logo and Title -->
+                <div class="text-center mb-4">
+                    <div class="display-6 text-primary mb-2">
+                        <i class="fas fa-film"></i>
+                    </div>
+                    <h1 class="h3 mb-3 fw-bold">Create Your Account</h1>
+                    <p class="text-muted">Join Movies With Friends and start planning your next movie night!</p>
+                </div>
+
+                <!-- Sign Up Form -->
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <form action="/signup" method="POST">
+                            <!-- Name Fields -->
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label for="firstName" class="form-label">First Name</label>
+                                    <input type="text" name="firstName" class="form-control" id="firstName" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="lastName" class="form-label">Last Name</label>
+                                    <input type="text" name="lastName" class="form-control" id="lastName" required>
+                                </div>
+                            </div>
+
+                            <!-- Email Field -->
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email Address</label>
+                                <input type="email" name="email" class="form-control" id="email" required>
+                            </div>
+
+                            <!-- Password Field -->
+                            <div class="mb-4">
+                                <label for="password" class="form-label">Password</label>
+                                <div class="input-group">
+                                    <input type="password" name="password" class="form-control" id="password" required
+                                           pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
+                                           title="Must contain at least one number and one uppercase and lowercase letter, and at least 8 or more characters">
+                                    <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                        <i class="far fa-eye"></i>
+                                    </button>
+                                </div>
+                                <div class="form-text mt-2">
+                                    Password must contain:
+                                    <ul class="mb-0 small">
+                                        <li>At least 8 characters</li>
+                                        <li>At least one uppercase letter</li>
+                                        <li>At least one lowercase letter</li>
+                                        <li>At least one number</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <button type="submit" class="btn btn-primary w-100 mb-3">
+                                Create Account
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Login Link -->
+                <div class="text-center mt-4">
+                    Already have an account? <a href="#" class="text-decoration-none">Log in</a>
+                </div>
+            </div>
         </div>
-        <div class="row g-3 align-items-center mb-2">
-          <div class="col-2">
-            <label for="inputPassword" class="col-form-label"> Password </label>
-          </div>
-          <div class="col-8">
-            <input
-              type="password"
-              id="inputPassword"
-              class="form-control"
-              aria-describedby="passwordHelp"
-              name="password"
-            />
-          </div>
-          <div class="col-2">
-            <i
-              id="passwordHelp"
-              class="fa-solid fa-circle-question"
-              data-bs-toggle="tooltip"
-              data-bs-placement="right"
-              data-bs-title="Password must be at least 8 characters long"
-            ></i>
-          </div>
-        </div>
-        <div class="row g-3 align-items-center mb-2">
-          <div class="col-2">
-            <label for="inputFirstName" class="col-form-label">
-              First Name
-            </label>
-          </div>
-          <div class="col-8">
-            <input 
-              type="text"
-              id="inputFirstName"
-              class="form-control"
-              name="firstName"
-            />
-          </div>
-          <div class="col-2"></div>
-        </div>
-        <div class="row g-3 align-items-center mb-4">
-          <div class="col-2">
-            <label for="inputLastName" class="col-form-label">
-              Last Name
-            </label>
-          </div>
-          <div class="col-8">
-            <input
-              type="text"
-              id="inputLastName"
-              class="form-control"
-              name="lastName"
-            />
-          </div>
-          <div class="col-2"></div>
-        </div>
-        <div class="text-center">
-          <button type="submit" class="btn btn-primary">Submit</button>
-        </div>
-      </form>
     </div>
-    <div class="col-4"></div>
-  </div>
+
+    <script>
+        // Toggle password visibility
+        document.getElementById('togglePassword').addEventListener('click', function() {
+            const password = document.getElementById('password');
+            const icon = this.querySelector('i');
+            
+            if (password.type === 'password') {
+                password.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                password.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        });
+    </script>
 {{ end }}

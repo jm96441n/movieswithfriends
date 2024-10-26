@@ -2,6 +2,7 @@ package web
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
@@ -33,6 +34,8 @@ func (a *Application) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fmt.Println("req: ", req)
+
 	_, err = a.Auth.CreateAccount(ctx, req)
 	if err != nil {
 		a.serverError(w, r, err)
@@ -48,6 +51,7 @@ func parseSignUpForm(r *http.Request) (identityaccess.SignupReq, error) {
 	if err != nil {
 		return identityaccess.SignupReq{}, err
 	}
+
 	return identityaccess.SignupReq{
 		Email:     r.FormValue("email"),
 		Password:  r.FormValue("password"),

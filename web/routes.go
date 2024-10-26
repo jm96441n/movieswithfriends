@@ -18,22 +18,25 @@ type route struct {
 func (a *Application) Routes() http.Handler {
 	router := http.NewServeMux()
 
+	staticRoutes := a.staticRoutes()
 	movieRoutes := a.movieRoutes()
 	partyRoutes := a.partyRoutes()
 	sessionRoutes := a.sessionRoutes()
 	profileRoutes := a.profileRoutes()
 	partyMemberRoutes := a.partyMemberRoutes()
 
-	routes := make([]route, 0, len(movieRoutes)+len(partyRoutes)+len(sessionRoutes)+len(profileRoutes)+len(partyMemberRoutes)+1) // +1 for home route
+	// allocate capacity for all routes
+	routes := make([]route, 0, len(staticRoutes)+len(movieRoutes)+len(partyRoutes)+len(sessionRoutes)+len(profileRoutes)+len(partyMemberRoutes))
 
-	homeRoute := route{
-		path:               "/",
-		handler:            a.HomeHandler,
-		authenticatedRoute: false,
-	}
-
-	routes = append(routes, homeRoute)
-	routes = slices.Concat(routes, movieRoutes, partyRoutes, sessionRoutes, profileRoutes, partyMemberRoutes)
+	routes = slices.Concat(
+		routes,
+		staticRoutes,
+		movieRoutes,
+		partyRoutes,
+		sessionRoutes,
+		profileRoutes,
+		partyMemberRoutes,
+	)
 
 	authenticatorMW := a.authenticateMiddleware()
 	requireAuthMW := a.authenticatedMiddleware()
@@ -57,6 +60,16 @@ func (a *Application) Routes() http.Handler {
 	fileServer := http.FileServer(http.FS(fsys))
 	router.Handle("/static/", http.StripPrefix("/static", fileServer))
 	return router
+}
+
+func (a *Application) staticRoutes() []route {
+	return []route{
+		{
+			path:               "/",
+			handler:            a.HomeHandler,
+			authenticatedRoute: false,
+		},
+	}
 }
 
 func (a *Application) movieRoutes() []route {

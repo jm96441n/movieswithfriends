@@ -1,48 +1,85 @@
 {{ define "title" }}Login{{ end }}
-
 {{ define "main" }}
-  <div class="row">
-    <div class="col-4"></div>
-    <div class="col-4">
-      <div class="text-center mb-4">
-        <h3>Login</h3>
-      </div>
-      <form action="/login" method="POST">
-        <div class="row g-3 mb-2 align-items-center">
-          <div class="col-2">
-            <label for="emailInput" class="col-form-label">Email</label>
-          </div>
-          <div class="col-8">
-            <input
-              type="email"
-              class="form-control"
-              id="emailInput"
-              aria-describedby="emailHelp"
-              name="email"
-            />
-          </div>
-          <div class="col-2"></div>
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-5">
+                <!-- Logo and Title -->
+                <div class="text-center mb-4">
+                    <div class="display-6 text-primary mb-2">
+                        <i class="fas fa-film"></i>
+                    </div>
+                    <h1 class="h3 mb-3 fw-bold">Welcome Back!</h1>
+                    <p class="text-muted">Sign in to plan your next movie night</p>
+                </div>
+
+                <!-- Login Form -->
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <form action="/login" method="POST">
+                            <!-- Email Field -->
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email Address</label>
+                                <input type="email" name="email" class="form-control" id="email" required>
+                            </div>
+
+                            <!-- Password Field -->
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <label for="password" class="form-label">Password</label>
+                                    <a href="#" class="text-decoration-none small">Forgot password?</a>
+                                </div>
+                                <div class="input-group">
+                                    <input type="password" name="password" class="form-control" id="password" required>
+                                    <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                        <i class="far fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- TODO: Add when implemented Remember Me
+                            <div class="mb-4">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="rememberMe">
+                                    <label class="form-check-label" for="rememberMe">
+                                        Keep me signed in
+                                    </label>
+                                </div>
+                            </div>
+                             -->
+                            <!-- Submit Button -->
+                            <button type="submit" class="btn btn-primary w-100 mb-3">
+                                Sign In
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Sign Up Link -->
+                <div class="text-center mt-4">
+                    <p class="mb-0">
+                        Don't have an account? 
+                        <a href="/signup" class="text-decoration-none">Sign up</a>
+                    </p>
+                </div>
+            </div>
         </div>
-        <div class="row g-3 align-items-center mb-2">
-          <div class="col-2">
-            <label for="inputPassword" class="col-form-label"> Password </label>
-          </div>
-          <div class="col-8">
-            <input
-              type="password"
-              id="inputPassword"
-              class="form-control"
-              aria-describedby="passwordHelp"
-              name="password"
-            />
-          </div>
-          <div class="col-2"></div>
-        </div>
-        <div class="text-center">
-          <button type="submit" class="btn btn-primary">Login</button>
-        </div>
-      </form>
     </div>
-    <div class="col-4"></div>
-  </div>
+
+    <script>
+        // Toggle password visibility
+        document.getElementById('togglePassword').addEventListener('click', function() {
+            const password = document.getElementById('password');
+            const icon = this.querySelector('i');
+            
+            if (password.type === 'password') {
+                password.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                password.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        });
+    </script>
 {{ end }}
