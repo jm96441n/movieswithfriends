@@ -91,7 +91,7 @@ func main() {
 		MoviesRepository:  db,
 		PartyService:      &partymgmt.PartyService{DB: db},
 		PartiesRepository: db,
-		ProfilesService:   db,
+		ProfilesService:   identityaccess.NewProfileService(db),
 		Auth: &identityaccess.Authenticator{
 			Logger:            logger,
 			AccountRepository: db,

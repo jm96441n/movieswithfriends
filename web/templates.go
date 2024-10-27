@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jm96441n/movieswithfriends/identityaccess"
 	"github.com/jm96441n/movieswithfriends/partymgmt"
 	"github.com/jm96441n/movieswithfriends/store"
 )
@@ -38,7 +39,7 @@ type MoviesTemplateData struct {
 }
 
 type ProfilesTemplateData struct {
-	Profile store.Profile
+	Profile identityaccess.Profile
 	Parties []store.Party
 	BaseTemplateData
 }

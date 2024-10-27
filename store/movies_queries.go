@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -75,7 +76,18 @@ func (p *PGStore) GetMovieByID(ctx context.Context, id int) (Movie, error) {
 	return movie, nil
 }
 
-const insertMovieQuery = `INSERT INTO movies(title, release_date, overview, tagline, poster_url, tmdb_id, trailer_url) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id_movie`
+const insertMovieQuery = `INSERT INTO movies(
+  title, 
+  release_date, 
+  overview, 
+  tagline, 
+  poster_url, 
+  tmdb_id, 
+  trailer_url,
+  rating,
+  runtime,
+  genres
+  ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id_movie`
 
 // CreateMovie creates a movie in the database
 func (p *PGStore) CreateMovie(ctx context.Context, movie *Movie) (*Movie, error) {
@@ -84,7 +96,20 @@ func (p *PGStore) CreateMovie(ctx context.Context, movie *Movie) (*Movie, error)
 		return nil, err
 	}
 
-	err = p.db.QueryRow(ctx, insertMovieQuery, movie.Title, releaseDate, movie.Overview, movie.Tagline, movie.PosterURL, movie.TMDBID, movie.TrailerURL).Scan(&movie.ID)
+	fmt.Println(movie)
+
+	err = p.db.QueryRow(ctx, insertMovieQuery,
+		movie.Title,
+		releaseDate,
+		movie.Overview,
+		movie.Tagline,
+		movie.PosterURL,
+		movie.TMDBID,
+		movie.TrailerURL,
+		movie.Rating,
+		movie.Runtime,
+		movie.Genres,
+	).Scan(&movie.ID)
 	if err != nil {
 		return nil, err
 	}

@@ -38,7 +38,7 @@ type PartyService interface {
 }
 
 type ProfilesService interface {
-	GetProfileByID(context.Context, int) (store.Profile, error)
+	GetProfileByID(context.Context, int) (identityaccess.Profile, error)
 }
 
 type MoviesService interface {

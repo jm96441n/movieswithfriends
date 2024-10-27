@@ -32,7 +32,7 @@
                             </div>
                             <h6 class="card-subtitle text-muted">Movies Watched</h6>
                         </div>
-                        <h2 class="card-title mb-0">42</h2>
+                        <h2 class="card-title mb-0">{{ .Profile.Stats.MoviesWatched }}</h2>
                     </div>
                 </div>
             </div>
@@ -45,7 +45,7 @@
                             </div>
                             <h6 class="card-subtitle text-muted">Active Parties</h6>
                         </div>
-                        <h2 class="card-title mb-0">3</h2>
+                        <h2 class="card-title mb-0">{{ .Profile.Stats.NumberOfParties }}</h2>
                     </div>
                 </div>
             </div>
@@ -58,7 +58,7 @@
                             </div>
                             <h6 class="card-subtitle text-muted">Watch Time</h6>
                         </div>
-                        <h2 class="card-title mb-0">86h</h2>
+                        <h2 class="card-title mb-0">{{ timeToDuration .Profile.Stats.WatchTime }}</h2>
                     </div>
                 </div>
             </div>

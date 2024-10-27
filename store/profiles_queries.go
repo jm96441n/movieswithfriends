@@ -52,3 +52,36 @@ func (pg *PGStore) CreateProfileWithTxn(ctx context.Context, txn pgx.Tx, firstNa
 	}
 	return profile, nil
 }
+
+const getNumPartiesForProfileQuery = `select count(*) from party_members where id_member = $1;`
+
+const getTotalWatchTimeQuery = `
+  select coalesce(sum(movies.runtime), 0), count(movies.*) from movies
+  join party_movies on party_movies.id_movie = movies.id_movie
+  join party_members on party_members.id_party = party_movies.id_party
+  where party_members.id_member = $1 AND party_movies.watch_status = 'watched';
+`
+
+func (pg *PGStore) GetProfileStats(ctx context.Context, profileID int) (int, int, int, error) {
+	var numParties, watchTime, moviesWatched int
+	err := pg.db.QueryRow(ctx, getNumPartiesForProfileQuery, profileID).Scan(&numParties)
+	if err != nil {
+		pg.logger.Error("failed to get num parties for profile", err)
+		return 0, 0, 0, err
+	}
+	err = pg.db.QueryRow(ctx, getTotalWatchTimeQuery, profileID).Scan(&watchTime, &moviesWatched)
+	if err != nil {
+		pg.logger.Error("failed to get total watch time", err)
+		return 0, 0, 0, err
+	}
+	return numParties, watchTime, moviesWatched, nil
+}
+
+func (pg *PGStore) GetAccountEmailForProfile(ctx context.Context, profileID int) (string, error) {
+	var email string
+	err := pg.db.QueryRow(ctx, `select accounts.email from accounts join profiles on accounts.id_account = profiles.id_account where profiles.id_profile = $1`, profileID).Scan(&email)
+	if err != nil {
+		return "", err
+	}
+	return email, nil
+}

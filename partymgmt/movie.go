@@ -76,14 +76,14 @@ func (m *MovieService) CreateMovie(ctx context.Context, tmdbID int) (*store.Movi
 	err = nil
 
 	tmdbMovie, err := m.tmdbClient.GetMovie(ctx, tmdbID)
-	if err != nil {
+	if err != nil || tmdbMovie == nil {
 		m.logger.Error("Failed to get movie from tmdb", slog.Any("err", err), slog.Any("tmdbID", tmdbID))
 		return nil, err
 	}
 
 	movie, err = m.moviesRepository.CreateMovie(ctx, tmdbMovie.ToStoreMovie())
 	if err != nil {
-		m.logger.Error("Failed to create movie", slog.Any("err", err), slog.Any("movie", movie.Title))
+		m.logger.Error("Failed to create movie", slog.Any("err", err), slog.Any("movie", tmdbMovie.Title))
 		return nil, err
 	}
 	m.logger.Info("movie created in db", slog.Any("movie", movie))
