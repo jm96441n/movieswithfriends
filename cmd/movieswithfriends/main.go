@@ -92,6 +92,7 @@ func main() {
 		PartyService:      &partymgmt.PartyService{DB: db},
 		PartiesRepository: db,
 		ProfilesService:   identityaccess.NewProfileService(db),
+		MemberService:     partymgmt.NewMemberService(db),
 		Auth: &identityaccess.Authenticator{
 			Logger:            logger,
 			AccountRepository: db,

@@ -25,7 +25,7 @@ type MovieRepository interface {
 
 type PartiesStoreService interface {
 	GetPartiesByMemberIDForCurrentMovie(context.Context, int, int) ([]store.Party, error)
-	GetPartiesForMember(context.Context, int) ([]store.Party, error)
+	GetPartiesForMember(context.Context, int) ([]store.PartiesForMemberResult, error)
 	GetPartyByID(context.Context, int) (store.Party, error)
 	AddMovieToParty(context.Context, int, int, int) error
 	MarkMovieAsWatched(context.Context, int, int) error
@@ -39,6 +39,10 @@ type PartyService interface {
 
 type ProfilesService interface {
 	GetProfileByID(context.Context, int) (identityaccess.Profile, error)
+}
+
+type MemberService interface {
+	GetWatchHistory(context.Context, int, int) ([]store.WatchedMoviesForMemberResult, error)
 }
 
 type MoviesService interface {
@@ -64,6 +68,7 @@ type Application struct {
 	MoviesRepository  MovieRepository
 	PartyService      PartyService
 	PartiesRepository PartiesStoreService
+	MemberService     MemberService
 	ProfilesService   ProfilesService
 	Auth              Authenticator
 	AccountRepository AccountRepository

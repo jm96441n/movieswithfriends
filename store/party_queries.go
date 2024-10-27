@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -157,22 +158,44 @@ func (p *PGStore) AddMovieToParty(ctx context.Context, idParty, idMovie, id_adde
 }
 
 const GetPartiesByMemberIDQuery = `
-  select parties.id_party, parties.name from parties
-  left join party_members on party_members.id_party = parties.id_party
-  where party_members.id_member = $1
+  with current_member_parties as (
+    select 
+      parties.id_party,
+      parties.name
+    from parties
+    join party_members on party_members.id_party = parties.id_party
+    where party_members.id_member = $1
+  )
+    select 
+      current_member_parties.id_party,
+      current_member_parties.name,
+      count(distinct party_members.id_member) as member_count,
+      count(distinct party_movies.id_movie) as movie_count
+    from party_members
+    join party_movies on party_movies.id_party = party_members.id_party
+    join current_member_parties on current_member_parties.id_party = party_members.id_party
+    where party_members.id_party = current_member_parties.id_party
+    group by current_member_parties.id_party, current_member_parties.name;
 `
 
-func (pg *PGStore) GetPartiesForMember(ctx context.Context, id int) ([]Party, error) {
+type PartiesForMemberResult struct {
+	ID          int
+	Name        string
+	MemberCount int
+	MovieCount  int
+}
+
+func (pg *PGStore) GetPartiesForMember(ctx context.Context, id int) ([]PartiesForMemberResult, error) {
 	rows, err := pg.db.Query(ctx, GetPartiesByMemberIDQuery, id)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var parties []Party
+	var parties []PartiesForMemberResult
 	for rows.Next() {
-		var party Party
-		err := rows.Scan(&party.ID, &party.Name)
+		var party PartiesForMemberResult
+		err := rows.Scan(&party.ID, &party.Name, &party.MemberCount, &party.MovieCount)
 		if err != nil {
 			return nil, err
 		}
@@ -181,22 +204,20 @@ func (pg *PGStore) GetPartiesForMember(ctx context.Context, id int) ([]Party, er
 	return parties, nil
 }
 
-const updateWatchStatusQuery = `
-  update party_movies
-  set watch_status = $1
-  where id_party = $2 and id_movie = $3
-`
-
 func (pg *PGStore) MarkMovieAsWatched(ctx context.Context, idParty, idMovie int) error {
 	pg.logger.Info("MarkMovieAsWatched", "idParty", idParty, "idMovie", idMovie)
-	return pg.updateMovieStatusInParty(ctx, idParty, idMovie, WatchStatusWatched)
+	curTime := time.Now()
+	return pg.updateMovieStatusInParty(ctx, idParty, idMovie, WatchStatusWatched, &curTime)
 }
 
 const selectMovieForPartyQuery = `
-WITH selected_member_id AS (
-  select id_member 
-  from party_members 
+WITH party_members_for_selection AS (
+  select distinct(id_added_by) as id_member
+  from party_movies
   where id_party = $1
+), selected_member_id AS (
+  select id_member 
+  from party_members_for_selection
   order by random()
   limit 1
 )
@@ -214,11 +235,17 @@ func (pg *PGStore) SelectMovieForParty(ctx context.Context, idParty int) error {
 		return err
 	}
 
-	return pg.updateMovieStatusInParty(ctx, idParty, selectedMovieID, WatchStatusSelected)
+	return pg.updateMovieStatusInParty(ctx, idParty, selectedMovieID, WatchStatusSelected, nil)
 }
 
-func (pg *PGStore) updateMovieStatusInParty(ctx context.Context, idParty, idMovie int, status WatchStatusEnum) error {
-	_, err := pg.db.Exec(ctx, updateWatchStatusQuery, status, idParty, idMovie)
+const updateWatchStatusQuery = `
+  update party_movies
+  set watch_status = $1 and watch_date = $4
+  where id_party = $2 and id_movie = $3
+`
+
+func (pg *PGStore) updateMovieStatusInParty(ctx context.Context, idParty, idMovie int, status WatchStatusEnum, watchDate *time.Time) error {
+	_, err := pg.db.Exec(ctx, updateWatchStatusQuery, status, idParty, idMovie, watchDate)
 	if err != nil {
 		return err
 	}

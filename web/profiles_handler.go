@@ -35,8 +35,16 @@ func (a *Application) ProfileShowHandler(w http.ResponseWriter, r *http.Request)
 		a.serverError(w, r, err)
 	}
 
+	watchedMovies, err := a.MemberService.GetWatchHistory(ctx, profileID, 0)
+	if err != nil {
+		a.Logger.Error("failed to retrieve watched movies from db", "error", err)
+		a.serverError(w, r, err)
+		return
+	}
+
 	templateData := a.NewProfilesTemplateData(r, "/profile")
 	templateData.Profile = profile
 	templateData.Parties = parties
+	templateData.WatchedMovies = watchedMovies
 	a.render(w, r, http.StatusOK, "profiles/show.gohtml", templateData)
 }

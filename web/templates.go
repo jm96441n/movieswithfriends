@@ -39,8 +39,9 @@ type MoviesTemplateData struct {
 }
 
 type ProfilesTemplateData struct {
-	Profile identityaccess.Profile
-	Parties []store.Party
+	Profile       identityaccess.Profile
+	Parties       []store.PartiesForMemberResult
+	WatchedMovies []store.WatchedMoviesForMemberResult
 	BaseTemplateData
 }
 
@@ -135,6 +136,9 @@ var functions = template.FuncMap{
 	},
 	"formatDate": func(date time.Time) string {
 		return date.Format("January 2006")
+	},
+	"formatWatchDate": func(date time.Time) string {
+		return date.Format("January 03, 2006")
 	},
 }
 
