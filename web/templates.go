@@ -7,7 +7,9 @@ import (
 	"io/fs"
 	"net/http"
 	"strings"
+	"time"
 
+	"github.com/jm96441n/movieswithfriends/partymgmt"
 	"github.com/jm96441n/movieswithfriends/store"
 )
 
@@ -28,7 +30,7 @@ type BaseTemplateData struct {
 
 // TODO: refactor out references to store from here
 type MoviesTemplateData struct {
-	Movies      []store.Movie
+	Movies      []partymgmt.TMDBMovie
 	Movie       store.Movie
 	Parties     []store.Party
 	SearchValue string
@@ -113,6 +115,25 @@ var functions = template.FuncMap{
 			return "disabled"
 		}
 		return ""
+	},
+	"joinGenres": func(genres []partymgmt.Genre) string {
+		res := ""
+		for i, g := range genres {
+			if i == 0 {
+				res = g.Name
+			} else {
+				res = fmt.Sprintf("%s, %s", res, g.Name)
+			}
+		}
+		return res
+	},
+	"timeToDuration": func(minutes int) string {
+		hours := minutes / 60
+		mins := minutes % 60
+		return fmt.Sprintf("%dh %dm", hours, mins)
+	},
+	"formatDate": func(date time.Time) string {
+		return date.Format("January 2006")
 	},
 }
 

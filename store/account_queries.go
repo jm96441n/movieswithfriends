@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"errors"
+	"log/slog"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -84,6 +85,7 @@ where accounts.id_account = $1
 
 func (pg *PGStore) GetAccountAndProfileInfo(ctx context.Context, id int) (Account, error) {
 	var account Account
+	pg.logger.Info("GetAccountAndProfileInfo", slog.Any("id", id))
 	err := pg.db.QueryRow(ctx, getAccountAndProfileInfoQuery, id).Scan(&account.Email, &account.Profile.FirstName, &account.Profile.LastName)
 	if err != nil {
 		if err == pgx.ErrNoRows {

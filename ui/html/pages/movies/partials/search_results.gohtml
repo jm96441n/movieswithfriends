@@ -1,23 +1,36 @@
 {{ define "search_results" }}
   {{- range .Movies }}
-    <form class="row" method="POST" action="/movies/create">
-      <input type="hidden" name="tmdb_id" value="{{ .TMDBID }}" />
-      <div class="col">
-        <img
-          class="img-fluid thumbnail rounded"
-          style="max-width: 20%"
-          src="{{ .PosterURL }}"
-          alt="{{ .Title }} Poster"
-          onerror="this.onerror=null;this.src='https://via.placeholder.com/200x300?text=No+Poster';"
-        />
-      </div>
-      <div class="col">
-        <p>{{ .Title }}</p>
-        <p>{{ .ReleaseDate }}</p>
-        <p>{{ .Overview }}</p>
-        <button class="btn btn-primary" type="submit">View Details</button>
-      </div>
-    </form>
+    <!-- Movie Card -->
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100 border-0 shadow-sm">
+          <img src="{{ .PosterURL }}" class="card-img-top" alt="Movie Poster">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <h5 class="card-title mb-0">{{ .Title }}</h5>
+                  {{- if .Rating }}
+                    <span class="badge bg-warning text-dark">{{ .Rating }}</span>
+                  {{- end }}
+                </div>
+                {{- if .Genres }}
+                  <p class="text-muted small mb-2">{{ .ReleaseDate }} • {{ joinGenres .Genres }}</p>
+                {{- else }}
+                  <p class="text-muted small mb-2">{{ .ReleaseDate }}</p>
+                {{- end }}
+                <p class="card-text small mb-3">{{ .Tagline }}</p>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-plus me-1"></i>Add to List
+                    </button>
+                    <form method="POST" action="/movies/create">
+                      <input type="hidden" name="tmdb_id" value="{{ .TMDBID }}" />
+                      <button class="btn btn-outline-secondary btn-sm" type="submit">
+                        <i class="fas fa-info-circle me-1"></i>Details
+                      </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
   {{- end }}
 {{ end }}
 

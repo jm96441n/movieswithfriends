@@ -22,6 +22,9 @@ type Movie struct {
 	TrailerURL  string `json:"trailer_url"`
 	URL         string
 	ID          int
+	Runtime     int     `json:"runtime"`
+	Rating      float64 `json:"vote_average"`
+	Genres      []string
 	TMDBID      int `json:"id"`
 	WatchStatus WatchStatusEnum
 	AddedBy     FullName `json:"added_by"`

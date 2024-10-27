@@ -62,7 +62,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	tmdbClient := partymgmt.NewTMDBClient("https://api.themoviedb.org/3", tmdbApiKey)
+	tmdbClient, err := partymgmt.NewTMDBClient("https://api.themoviedb.org/3", tmdbApiKey)
+	if err != nil {
+		logger.Error(err.Error())
+		os.Exit(1)
+	}
 
 	sessionKey := make([]byte, length)
 	sessionKeyVar := os.Getenv("SESSION_KEY")
@@ -92,6 +96,7 @@ func main() {
 			Logger:            logger,
 			AccountRepository: db,
 		},
+		AccountRepository: db,
 	}
 
 	tlsConfig := &tls.Config{

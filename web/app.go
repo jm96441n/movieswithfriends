@@ -12,6 +12,7 @@ import (
 
 	"github.com/gorilla/sessions"
 	"github.com/jm96441n/movieswithfriends/identityaccess"
+	"github.com/jm96441n/movieswithfriends/partymgmt"
 	"github.com/jm96441n/movieswithfriends/store"
 )
 
@@ -41,7 +42,7 @@ type ProfilesService interface {
 }
 
 type MoviesService interface {
-	SearchMovies(context.Context, string) ([]store.Movie, error)
+	SearchMovies(context.Context, string) ([]partymgmt.TMDBMovie, error)
 	CreateMovie(context.Context, int) (*store.Movie, error)
 }
 

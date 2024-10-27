@@ -1,100 +1,196 @@
 {{ define "title" }}{{ .Movie.Title }}{{ end }}
-
 {{ define "main" }}
-  <div class="text-center">
-    <div class="row g-5">
-      <div class="col-lg-5 col-xs-12">
-        <img
-          src="{{ .Movie.PosterURL }}"
-          class="img-thumbnail"
-          alt="{{ .Movie.Title }}"
-        />
-      </div>
-      <div class="col-lg-7 col-xs-12">
-        <div class="row">
-          <h2>{{ .Movie.Title }}</h2>
-          <h3>{{ .Movie.Tagline }}</h3>
-          <p>{{ .Movie.ReleaseDate }}</p>
-          <h4>{{ .Movie.Overview }}</h4>
-        </div>
-        <div class="row mt-5">
-          <div class="col"></div>
-          <div class="col">
-            {{- if .IsAuthenticated -}}
-              <div class="dropdown">
-                <a
-                  class="btn btn-primary dropdown-toggle"
-                  href="#"
-                  role="button"
-                  data-bs-toggle="dropdown"
-                  data-bs-auto-close="outside"
-                  aria-expanded="false"
-                >
-                  Add to List
-                </a>
 
-                <ul class="dropdown-menu">
-                  <div class="list-group">
-                    {{- range .Parties }}
-                      {{ if .MovieAdded }}
-                        <div class="dropdown-item list-group-item-action">
-                          <li>
-                            <i class="fa-solid fa-check text-primary"></i>
-                            {{ .Name }}
-                          </li>
+    <!-- Movie Header -->
+    <div class="bg-dark text-white py-5">
+        <div class="container">
+            <div class="row align-items-center g-4">
+                <!-- Movie Poster -->
+                <div class="col-md-4 col-lg-3">
+                  <img src="{{ .Movie.PosterURL }}" alt="Movie Poster" class="img-fluid rounded shadow">
+                </div>
+                
+                <!-- Movie Info -->
+                <div class="col-md-8 col-lg-9">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h1 class="display-5 fw-bold mb-3">{{ .Movie.Title }}</h1>
+                        <span class="badge bg-warning text-dark fs-5">8.5</span>
+                    </div>
+                    <p class="lead mb-4">{{ .Movie.Tagline }}</p>
+                    
+                    <!-- Quick Info -->
+                    <div class="d-flex flex-wrap gap-3 mb-4 text-light">
+                        <div><i class="fas fa-calendar me-2"></i>{{ .Movie.ReleaseDate }}</div>
+                        <div><i class="fas fa-clock me-2"></i>2h 15m</div>
+                        <div><i class="fas fa-film me-2"></i>Action, Adventure</div>
+                        <div><i class="fas fa-star me-2"></i>PG-13</div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex gap-3">
+                        <!-- Trailer Button -->
+                        <button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#trailerModal">
+                            <i class="fas fa-play me-2"></i>Watch Trailer
+                        </button>
+                       
+                        {{ if .IsAuthenticated }}
+                        <!-- Add to Party Dropdown -->
+                        <div class="dropdown">
+                            <button class="btn btn-outline-light btn-lg dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-plus me-2"></i>Add to Party
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><h6 class="dropdown-header">Select a Party</h6></li>
+                                {{- range .Parties }}
+                                  {{ if .MovieAdded }}
+                                    <div class="dropdown-item list-group-item-action">
+                                      <li>
+                                        <i class="fa-solid fa-check text-primary"></i>
+                                        {{ .Name }}
+                                      </li>
+                                    </div>
+                                  {{- else }}
+                                    <a 
+                                      class="dropdown-item" 
+                                      hx-put="/parties/{{ .ID }}"
+                                      hx-target="#{{ hyphenate .Name }}"
+                                      hx-indicator="#{{ hyphenate .Name }}-indicator"
+                                      hx-vals='{"id_movie": {{ $.Movie.ID }}}'
+                                      id="{{ hyphenate .Name }}"
+                                    >
+                                      <li id="{{ hyphenate .Name }}-indicator">
+                                        <div
+                                          class="spinner-border spinner-border-sm text-success htmx-indicator"
+                                          role="status"
+                                        >
+                                          <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                        {{ .Name }} 
+                                      </li>
+                                    </a>
+                                  {{ end }}
+                                {{ end }}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="#">Create New Party</a></li>
+                            </ul>
                         </div>
-                      {{ else }}
-                        <a
-                          class="dropdown-item list-group-item-action"
-                          hx-put="/parties/{{ .ID }}"
-                          hx-target="#{{ hyphenate .Name }}"
-                          hx-indicator="#{{ hyphenate .Name }}-indicator"
-                          hx-vals='{"id_movie": {{ $.Movie.ID }}}'
-                          id="{{ hyphenate .Name }}"
-                        >
-                          <li id="{{ hyphenate .Name }}-indicator">
-                            <div
-                              class="spinner-border spinner-border-sm text-success htmx-indicator"
-                              role="status"
-                            >
-                              <span class="visually-hidden">Loading...</span>
-                            </div>
-                            {{ .Name }}
-                          </li>
+                        {{- else }}
+                        <a class="btn btn-outline-light btn-lg" type="button" href="/login" >
+                            <i class="fas fa-sign-in-alt me-2"></i>Sign in to Add to Party
                         </a>
-                      {{ end }}
-                    {{ end }}
-                  </div>
-                </ul>
-              </div>
-            {{- else -}}
-              <a href="/login">
-                <button type="button" class="btn btn-primary">
-                  Login To Add To A Party
-                </button>
-              </a>
-            {{- end -}}
-          </div>
-          <div class="col">
-            {{ if eq (len .Movie.TrailerURL) 0 }}
-              <button type="button" class="btn btn-secondary" disabled>
-                Watch Trailer
-              </button>
-            {{ else }}
-              <a
-                href="{{ .Movie.TrailerURL }}"
-                class="{{ disableClassForTrailerButton .Movie.TrailerURL }}"
-                target="_blank"
-              >
-                <button type="button" class="btn btn-primary">
-                  Watch Trailer
-                </button>
-              </a>
-            {{ end }}
-          </div>
-          <div class="col"></div>
+                        {{- end }}
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
     </div>
-  </div>
+
+    <!-- Movie Content -->
+    <div class="container py-5">
+        <div class="row g-4">
+            <!-- Main Content -->
+            <div class="col-lg-8">
+                <!-- Synopsis -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body">
+                        <h2 class="h4 mb-3">Synopsis</h2>
+                        <p>{{ .Movie.Overview }}</p>
+                    </div>
+                </div>
+
+                <!-- Cast -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body">
+                        <h2 class="h4 mb-3">Cast</h2>
+                        <div class="row g-3">
+                            <div class="col-6 col-md-3">
+                                <img src="/api/placeholder/150/150" class="rounded-circle mb-2" alt="Actor">
+                                <h6 class="mb-1">Actor Name</h6>
+                                <small class="text-muted">Character Name</small>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <img src="/api/placeholder/150/150" class="rounded-circle mb-2" alt="Actor">
+                                <h6 class="mb-1">Actor Name</h6>
+                                <small class="text-muted">Character Name</small>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <img src="/api/placeholder/150/150" class="rounded-circle mb-2" alt="Actor">
+                                <h6 class="mb-1">Actor Name</h6>
+                                <small class="text-muted">Character Name</small>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <img src="/api/placeholder/150/150" class="rounded-circle mb-2" alt="Actor">
+                                <h6 class="mb-1">Actor Name</h6>
+                                <small class="text-muted">Character Name</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <!-- Movie Details -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body">
+                        <h2 class="h4 mb-3">Details</h2>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Director</span>
+                            <span>Director Name</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Writers</span>
+                            <span>Writer Name</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Release Date</span>
+                            <span>October 15, 2023</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Runtime</span>
+                            <span>2h 15m</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">Budget</span>
+                            <span>$150 million</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ratings -->
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <h2 class="h4 mb-3">Ratings</h2>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span>IMDb</span>
+                            <span class="badge bg-warning text-dark">8.5/10</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span>Rotten Tomatoes</span>
+                            <span class="badge bg-success">92%</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Metacritic</span>
+                            <span class="badge bg-primary">85/100</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Trailer Modal -->
+    <div class="modal fade" id="trailerModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-body p-0">
+                    <div class="ratio ratio-16x9">
+                        <img src="/api/placeholder/1920/1080" alt="Trailer Placeholder">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
 {{ end }}

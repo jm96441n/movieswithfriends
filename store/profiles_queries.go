@@ -3,25 +3,33 @@ package store
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 )
 
 type Profile struct {
-	ID        int    `json:"id"`
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
+	ID        int       `json:"id"`
+	FirstName string    `json:"first_name"`
+	LastName  string    `json:"last_name"`
+	CreatedAt time.Time `json:"created_at"`
 	AccountID int
 }
 
 const GetProfileByIDQuery = `
-  select profiles.id_profile, profiles.first_name, profiles.last_name, profiles.id_account from profiles
+  select 
+    profiles.id_profile,
+    profiles.first_name,
+    profiles.last_name,
+    profiles.id_account,
+    profiles.created_at
+  from profiles
   where profiles.id_profile = $1`
 
 func (pg *PGStore) GetProfileByID(ctx context.Context, profileID int) (Profile, error) {
 	profile := Profile{}
 
-	err := pg.db.QueryRow(ctx, GetProfileByIDQuery, profileID).Scan(&profile.ID, &profile.FirstName, &profile.LastName, &profile.AccountID)
+	err := pg.db.QueryRow(ctx, GetProfileByIDQuery, profileID).Scan(&profile.ID, &profile.FirstName, &profile.LastName, &profile.AccountID, &profile.CreatedAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return Profile{}, ErrNoRecord

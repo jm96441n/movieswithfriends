@@ -16,7 +16,8 @@ type moviesRepository interface {
 
 type movieFetcher interface {
 	Search(ctx context.Context, searchTerm string, page int) (SearchResults, error)
-	GetMovie(ctx context.Context, tmdbID int) (*store.Movie, error)
+	GetMovie(ctx context.Context, tmdbID int) (*TMDBMovie, error)
+	GetGenre(int) (Genre, error)
 }
 
 type MovieService struct {
@@ -33,7 +34,7 @@ func NewMovieService(client *TMDBClient, logger *slog.Logger, moviesRepository m
 	}
 }
 
-func (m *MovieService) SearchMovies(ctx context.Context, searchTerm string) ([]store.Movie, error) {
+func (m *MovieService) SearchMovies(ctx context.Context, searchTerm string) ([]TMDBMovie, error) {
 	result, err := m.tmdbClient.Search(ctx, searchTerm, 1)
 	if err != nil {
 		return nil, err
@@ -41,7 +42,20 @@ func (m *MovieService) SearchMovies(ctx context.Context, searchTerm string) ([]s
 
 	for idx := range result.Movies {
 		result.Movies[idx].URL = fmt.Sprintf("/movies/%d", result.Movies[idx].TMDBID)
-		result.Movies[idx].PosterURL = fmt.Sprintf("https://image.tmdb.org/t/p/w500/%s", result.Movies[idx].PosterURL)
+		if result.Movies[idx].PosterURL != "" {
+			result.Movies[idx].PosterURL = fmt.Sprintf("https://image.tmdb.org/t/p/w500/%s", result.Movies[idx].PosterURL)
+		} else {
+			result.Movies[idx].PosterURL = "https://placehold.co/270x400?text=No+Poster+Available"
+		}
+		result.Movies[idx].Genres = make([]Genre, 0, len(result.Movies[idx].GenreIDs))
+		for _, genreID := range result.Movies[idx].GenreIDs {
+			genre, err := m.tmdbClient.GetGenre(genreID)
+			if err != nil {
+				m.logger.Error("Failed to get genre", slog.Any("err", err), slog.Any("genreID", genreID))
+				continue
+			}
+			result.Movies[idx].Genres = append(result.Movies[idx].Genres, genre)
+		}
 	}
 
 	return result.Movies, nil
@@ -61,13 +75,13 @@ func (m *MovieService) CreateMovie(ctx context.Context, tmdbID int) (*store.Movi
 
 	err = nil
 
-	movie, err = m.tmdbClient.GetMovie(ctx, tmdbID)
+	tmdbMovie, err := m.tmdbClient.GetMovie(ctx, tmdbID)
 	if err != nil {
 		m.logger.Error("Failed to get movie from tmdb", slog.Any("err", err), slog.Any("tmdbID", tmdbID))
 		return nil, err
 	}
 
-	movie, err = m.moviesRepository.CreateMovie(ctx, movie)
+	movie, err = m.moviesRepository.CreateMovie(ctx, tmdbMovie.ToStoreMovie())
 	if err != nil {
 		m.logger.Error("Failed to create movie", slog.Any("err", err), slog.Any("movie", movie.Title))
 		return nil, err
