@@ -13,12 +13,30 @@ type partyStore interface {
 	CreateParty(context.Context, int, string, string) (int, error)
 	GetPartyByShortID(context.Context, string) (store.Party, error)
 	CreatePartyMember(context.Context, int, int) error
+	GetPartyByIDWithStats(context.Context, int) (store.GetPartyByIDWithStatsResult, error)
+}
+
+type movieStore interface {
+	GetMoviesForParty(context.Context, int, int) (store.MoviesByStatus, error)
 }
 
 // TOOD: should this exist? maybe just pass db to functions that need it
 type PartyService struct {
-	Logger *slog.Logger
-	DB     partyStore
+	Logger           *slog.Logger
+	DB               partyStore
+	MoviesRepository movieStore
+}
+
+type Party struct {
+	ID              int
+	Name            string
+	ShortID         string
+	MemberCount     int
+	MovieCount      int
+	WatchedCount    int
+	WatchedMovies   []*store.Movie
+	UnwatchedMovies []*store.Movie
+	SelectedMovie   *store.Movie
 }
 
 var ErrMemberExistsInParty = errors.New("member already exists in party")
@@ -67,6 +85,42 @@ func (s *PartyService) CreateParty(ctx context.Context, idMember int, name strin
 	}
 
 	return id, nil
+}
+
+type partyGetter interface {
+	GetPartyByIDWithStats(context.Context, int) (store.GetPartyByIDWithStatsResult, error)
+}
+
+type movieGetter interface {
+	GetMoviesForParty(context.Context, int, int) ([]store.Movie, error)
+}
+
+func (s *PartyService) GetPartyWithMovies(ctx context.Context, id int) (Party, error) {
+	results, err := s.DB.GetPartyByIDWithStats(ctx, id)
+	if err != nil {
+		return Party{}, err
+	}
+
+	party := Party{
+		ID:           results.ID,
+		Name:         results.Name,
+		ShortID:      results.ShortID,
+		MemberCount:  results.MemberCount,
+		MovieCount:   results.MovieCount,
+		WatchedCount: results.WatchedCount,
+	}
+
+	moviesByStatus, err := s.MoviesRepository.GetMoviesForParty(ctx, party.ID, 0)
+	if err != nil {
+		return Party{}, err
+	}
+
+	s.Logger.Info("GetPartyWithMovies", "party", party, "moviesByStatus", moviesByStatus)
+	party.WatchedMovies = moviesByStatus.WatchedMovies
+	party.UnwatchedMovies = moviesByStatus.UnwatchedMovies
+	party.SelectedMovie = moviesByStatus.SelectedMovie
+
+	return party, nil
 }
 
 // generate a random 6 character string

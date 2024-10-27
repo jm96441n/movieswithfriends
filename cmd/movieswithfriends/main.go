@@ -89,7 +89,7 @@ func main() {
 		SessionStore:      sessionStore,
 		MoviesService:     partymgmt.NewMovieService(tmdbClient, logger, db),
 		MoviesRepository:  db,
-		PartyService:      &partymgmt.PartyService{DB: db},
+		PartyService:      &partymgmt.PartyService{DB: db, MoviesRepository: db, Logger: logger},
 		PartiesRepository: db,
 		ProfilesService:   identityaccess.NewProfileService(db),
 		MemberService:     partymgmt.NewMemberService(db),

@@ -134,6 +134,39 @@ func (p *PGStore) GetPartyByID(ctx context.Context, id int) (Party, error) {
 	return party, nil
 }
 
+type GetPartyByIDWithStatsResult struct {
+	ID           int
+	Name         string
+	ShortID      string
+	MemberCount  int
+	MovieCount   int
+	WatchedCount int
+}
+
+const getPartyByIDWithStatsQuery = `
+  select
+    parties.id_party,
+    parties.name,
+    parties.short_id,
+    count(distinct party_members.id_member) as member_count,
+    count(distinct party_movies.id_movie) as movie_count
+  from parties
+  join party_members on party_members.id_party = parties.id_party
+  join party_movies on party_movies.id_party = parties.id_party
+  where parties.id_party = $1
+  group by parties.id_party;
+`
+
+func (p *PGStore) GetPartyByIDWithStats(ctx context.Context, id int) (GetPartyByIDWithStatsResult, error) {
+	p.logger.Info("GetPartyByIDWithStats", "id", id)
+	party := GetPartyByIDWithStatsResult{}
+	err := p.db.QueryRow(ctx, getPartyByIDWithStatsQuery, id).Scan(&party.ID, &party.Name, &party.ShortID, &party.MemberCount, &party.MovieCount)
+	if err != nil {
+		return GetPartyByIDWithStatsResult{}, err
+	}
+	return party, nil
+}
+
 const getPartyByShortIDQuery = `select id_party, name, short_id from parties where short_id = $1`
 
 func (p *PGStore) GetPartyByShortID(ctx context.Context, shortID string) (Party, error) {

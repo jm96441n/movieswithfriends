@@ -35,6 +35,7 @@ type PartiesStoreService interface {
 type PartyService interface {
 	CreateParty(context.Context, int, string) (int, error)
 	AddFriendToParty(context.Context, int, string) error
+	GetPartyWithMovies(context.Context, int) (partymgmt.Party, error)
 }
 
 type ProfilesService interface {

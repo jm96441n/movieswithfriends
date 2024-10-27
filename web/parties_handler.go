@@ -5,6 +5,8 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+
+	"github.com/jm96441n/movieswithfriends/partymgmt"
 )
 
 func (a *Application) CreatePartyHandler(w http.ResponseWriter, r *http.Request) {
@@ -58,25 +60,15 @@ func (a *Application) PartyShowHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	party, err := a.PartiesRepository.GetPartyByID(ctx, id)
+	party, err := a.PartyService.GetPartyWithMovies(ctx, id)
 	if err != nil {
 		logger.Error("failed to get party by ID", slog.Any("error", err))
 		a.serverError(w, r, err)
 		return
 	}
 
-	movies, err := a.MoviesRepository.GetMoviesForParty(ctx, party.ID, 0)
-	if err != nil {
-		logger.Error("failed to get movies for party", slog.Any("error", err))
-		a.serverError(w, r, err)
-		return
-	}
-
 	templateData := a.NewPartiesTemplateData(r, "/parties")
 	templateData.Party = party
-	templateData.WatchedMovies = movies.WatchedMovies
-	templateData.UnwatchedMovies = movies.UnwatchedMovies
-	templateData.SelectedMovie = movies.SelectedMovie
 
 	a.render(w, r, http.StatusOK, "parties/show.gohtml", templateData)
 }
@@ -115,10 +107,16 @@ func (a *Application) AddMovietoPartyHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	party, err := a.PartiesRepository.GetPartyByID(ctx, idParty)
+	result, err := a.PartiesRepository.GetPartyByID(ctx, idParty)
 	if err != nil {
 		a.serverError(w, r, err)
 		return
+	}
+
+	party := partymgmt.Party{
+		ID:      result.ID,
+		Name:    result.Name,
+		ShortID: result.ShortID,
 	}
 
 	templateData := a.NewPartiesTemplateData(r, "/parties")
