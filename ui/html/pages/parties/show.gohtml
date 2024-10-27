@@ -1,168 +1,176 @@
 {{ define "title" }}{{ .Party.Name }}{{ end }}
-
 {{ define "main" }}
-  <div class="text-center mt-5">
-    <h2>{{ .Party.Name }}</h2>
-    <h4> Join Code: {{ .Party.ShortID }}</h4>
-    <div class="mt-5 mb-5">
-      <div class="row">
-        <div class="col-4"></div>
-        <div class="col-4">
-          <div class="card">
-            {{ if .SelectedMovie }}
-              <div class="row">
-                <div class="col-4">
-                  <img
-                    src="{{ .SelectedMovie.PosterURL }}"
-                    class="img-fluid rounded-start"
-                    alt=""
-                  />
+   <!-- Party Header -->
+    <div class="bg-dark text-white py-4 mb-4">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h1 class="h2 mb-1">Friday Night Movies</h1>
+                    <div class="d-flex gap-3 text-light small">
+                        <div><i class="fas fa-users me-1"></i>4 members</div>
+                        <div><i class="fas fa-film me-1"></i>12 movies</div>
+                        <div><i class="fas fa-check me-1"></i>8 watched</div>
+                    </div>
                 </div>
-                <div class="col-8">
-                  <div class="card-body">
-                    <h4 class="card-title">Selected Movie:</h4>
-                    <h5 class="card-subtitle">
-                      {{ .SelectedMovie.Title }}
-                    </h5>
-                    <p class="card-text">
-                      <strong>Added By:</strong> {{ .SelectedMovie.AddedBy.FirstName }} {{ .SelectedMovie.AddedBy.LastName }}
-                    </p>
-                    <form
-                      method="POST"
-                      action="/parties/{{ .Party.ID }}/movies/{{ .SelectedMovie.ID }}"
-                    >
-                      <button type="submit" class="btn btn-primary mt-3">
-                        Watch Movie
-                      </button>
-                    </form>
-                  </div>
+                <div class="col-auto">
+                    <button class="btn btn-outline-light">
+                        <i class="fas fa-cog me-2"></i>Party Settings
+                    </button>
                 </div>
-              </div>
-            {{ else }}
-              <div class="row align-items-center">
-                <div class="col-4"></div>
-                <div class="col-4">
-                  <div class="card-body">
-                    {{- if eq (len .UnwatchedMovies) 0 }}
-                      <a href="/movies" class="btn btn-primary mt-3 mb-3">
-                        Add Some Movies!
-                      </a>
-                    {{- else }}
-                      <form
-                        method="POST"
-                        action="/parties/{{ .Party.ID }}/movies"
-                      >
-                        <button type="submit" class="btn btn-primary mt-3 mb-3">
-                          Pick Us A Movie!
-                        </button>
-                      </form>
-                    {{- end }}
-                  </div>
-                </div>
-              </div>
-            {{ end }}
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="mt-5">
-      <div class="row">
-        <div class="col-2"></div>
-        <div class="col-8">
-          <ul class="nav nav-tabs" id="myTab" role="tablist">
-            <li class="nav-item" role="presentation">
-              <button
-                class="nav-link active"
-                id="unwatched-tab"
-                data-bs-toggle="tab"
-                data-bs-target="#unwatched-tab-pane"
-                type="button"
-                role="tab"
-                aria-controls="unwatched-tab-pane"
-                aria-selected="true"
-              >
-                Unwatched Movies
-              </button>
-            </li>
-            <li class="nav-item" role="presentation">
-              <button
-                class="nav-link"
-                id="watched-tab"
-                data-bs-toggle="tab"
-                data-bs-target="#watched-tab-pane"
-                type="button"
-                role="tab"
-                aria-controls="watched-tab-pane"
-                aria-selected="false"
-              >
-                Watched Movies
-              </button>
-            </li>
-          </ul>
-          <div class="tab-content" id="myTabContent">
-            <div
-              class="tab-pane fade show active"
-              id="unwatched-tab-pane"
-              role="tabpanel"
-              aria-labelledby="unwatched-tab"
-              tabindex="0"
-            >
-              <table class="table table-striped">
-                <thead>
-                  <tr>
-                    <th scope="col">Movie</th>
-                    <th scope="col">Added By</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {{ range .UnwatchedMovies }}
-                    <tr>
-                      <td>
-                        {{ .Title }}
-                      </td>
-                      <td>
-                        {{ .AddedBy.FirstName }}
-                        {{ .AddedBy.LastName }}
-                      </td>
-                    </tr>
-                  {{ end }}
-                </tbody>
-              </table>
             </div>
-            <div
-              class="tab-pane fade"
-              id="watched-tab-pane"
-              role="tabpanel"
-              aria-labelledby="watched-tab"
-              tabindex="0"
-            >
-              <table class="table table-striped">
-                <thead>
-                  <tr>
-                    <th scope="col">Movie</th>
-                    <th scope="col">Added By</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {{ range .WatchedMovies }}
-                    <tr>
-                      <td>
-                        {{ .Title }}
-                      </td>
-                      <td>
-                        {{ .AddedBy.FirstName }}
-                        {{ .AddedBy.LastName }}
-                      </td>
-                    </tr>
-                  {{ end }}
-                </tbody>
-              </table>
-            </div>
-          </div>
         </div>
-      </div>
     </div>
-  </div>
+
+    <div class="container mb-5">
+        <!-- Current Selection Section -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body p-4">
+                <!-- When no movie is selected -->
+                <div class="text-center py-5">
+                    <div class="display-1 text-muted mb-4">
+                        <i class="fas fa-film"></i>
+                    </div>
+                    <h2 class="h4 mb-3">No Movie Selected</h2>
+                    <p class="text-muted mb-4">Let the app choose your next movie from the unwatched list</p>
+                    <button class="btn btn-primary btn-lg">
+                        <i class="fas fa-random me-2"></i>Pick a Movie
+                    </button>
+                </div>
+
+                <!-- When a movie is selected (initially hidden) -->
+                <div class="row g-4 d-none">
+                    <div class="col-md-3">
+                        <img src="/api/placeholder/300/450" class="img-fluid rounded" alt="Movie Poster">
+                    </div>
+                    <div class="col-md-9">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h2 class="h3 mb-0">The Selected Movie</h2>
+                            <span class="badge bg-warning text-dark">8.5</span>
+                        </div>
+                        <p class="text-muted mb-4">2023 • Action, Adventure • 2h 15m</p>
+                        <p class="mb-4">Movie description goes here. This can be a brief synopsis of the plot without spoilers.</p>
+                        <div class="d-flex gap-2 mb-4">
+                            <button class="btn btn-primary">
+                                <i class="fas fa-play me-2"></i>Watch Trailer
+                            </button>
+                            <button class="btn btn-success">
+                                <i class="fas fa-check me-2"></i>Mark as Watched
+                            </button>
+                            <button class="btn btn-outline-danger">
+                                <i class="fas fa-random me-2"></i>Pick Another
+                            </button>
+                        </div>
+                        <div class="small">
+                            <p class="mb-1"><strong>Selected by:</strong> Movie Night Picker</p>
+                            <p class="mb-0"><strong>Selected on:</strong> October 27, 2023</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- Unwatched Movies -->
+            <div class="col-lg-6">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-white py-3">
+                        <h3 class="h5 mb-0">Unwatched Movies</h3>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="list-group list-group-flush">
+                            <div class="list-group-item">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">Movie Title One</h6>
+                                        <small class="text-muted">Added by John • Oct 25</small>
+                                    </div>
+                                    <div class="badge bg-warning text-dark">8.5</div>
+                                </div>
+                            </div>
+                            <div class="list-group-item">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">Movie Title Two</h6>
+                                        <small class="text-muted">Added by Sarah • Oct 24</small>
+                                    </div>
+                                    <div class="badge bg-warning text-dark">7.9</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white py-3">
+                        <nav>
+                            <ul class="pagination mb-0 justify-content-center">
+                                <li class="page-item disabled">
+                                    <a class="page-link" href="#">Previous</a>
+                                </li>
+                                <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                                <li class="page-item"><a class="page-link" href="#">2</a></li>
+                                <li class="page-item">
+                                    <a class="page-link" href="#">Next</a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Watched Movies -->
+            <div class="col-lg-6">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-white py-3">
+                        <h3 class="h5 mb-0">Watch History</h3>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="list-group list-group-flush">
+                            <div class="list-group-item">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">Movie Title Three</h6>
+                                        <div class="text-warning small mb-1">
+                                            <i class="fas fa-star"></i>
+                                            <i class="fas fa-star"></i>
+                                            <i class="fas fa-star"></i>
+                                            <i class="fas fa-star"></i>
+                                            <i class="far fa-star"></i>
+                                        </div>
+                                        <small class="text-muted">Watched on Oct 20</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="list-group-item">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">Movie Title Four</h6>
+                                        <div class="text-warning small mb-1">
+                                            <i class="fas fa-star"></i>
+                                            <i class="fas fa-star"></i>
+                                            <i class="fas fa-star"></i>
+                                            <i class="fas fa-star"></i>
+                                            <i class="fas fa-star"></i>
+                                        </div>
+                                        <small class="text-muted">Watched on Oct 13</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white py-3">
+                        <nav>
+                            <ul class="pagination mb-0 justify-content-center">
+                                <li class="page-item disabled">
+                                    <a class="page-link" href="#">Previous</a>
+                                </li>
+                                <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                                <li class="page-item"><a class="page-link" href="#">2</a></li>
+                                <li class="page-item">
+                                    <a class="page-link" href="#">Next</a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 {{ end }}
