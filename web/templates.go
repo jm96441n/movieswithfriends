@@ -137,6 +137,12 @@ var functions = template.FuncMap{
 	"formatWatchDate": func(date time.Time) string {
 		return date.Format("January 03, 2006")
 	},
+	"disableIfEmpty": func(s string) string {
+		if s == "" {
+			return "disabled"
+		}
+		return ""
+	},
 }
 
 func NewTemplateCache(filesystem embed.FS) (map[string]*template.Template, error) {

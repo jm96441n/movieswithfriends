@@ -41,9 +41,9 @@
                           <p class="text-muted mb-4">{{ $selectedMovie.ReleaseDate }} • {{ $selectedMovie.Genres }} • {{ timeToDuration $selectedMovie.Runtime }}</p>
                           <p class="mb-4">{{ $selectedMovie.Tagline }}</p>
                           <div class="d-flex gap-2 mb-4">
-                              <button class="btn btn-primary">
-                                  <i class="fas fa-play me-2"></i>Watch Trailer
-                              </button>
+                              <a href="{{ $selectedMovie.TrailerURL }}" class="btn btn-primary {{ disableIfEmpty $selectedMovie.TrailerURL }}">
+                                <i class="fas fa-play me-2"></i>{{- if $selectedMovie.TrailerURL }}Watch Trailer{{else}} Trailer Not Available{{end}}
+                              </a>
                               <form action="/parties/{{ $party.ID }}/movies/{{ $selectedMovie.ID }}" method="post">
                                 <button class="btn btn-success" type="submit">
                                     <i class="fas fa-check me-2"></i>Mark as Watched
@@ -54,8 +54,8 @@
                               </button>
                           </div>
                           <div class="small">
-                              <p class="mb-1"><strong>Selected by:</strong> Movie Night Picker</p>
-                              <p class="mb-0"><strong>Selected on:</strong> October 27, 2023</p>
+                              <p class="mb-1"><strong>Added by:</strong> {{ $selectedMovie.AddedBy.FirstName }} {{ $selectedMovie.AddedBy.LastName }}</p>
+                              <!-- <p class="mb-0"><strong>Selected on:</strong> October 27, 2023</p> -->
                           </div>
                       </div>
                   </div>

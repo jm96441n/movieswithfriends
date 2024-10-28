@@ -148,7 +148,19 @@ type MoviesByStatus struct {
 }
 
 const getMoviesForPartyQuery = `
-SELECT watch_status, jsonb_agg(movie_data) as movies
+SELECT watch_status, jsonb_agg(
+  jsonb_build_object(
+        'id_movie', id_movie,
+        'title', title,
+        'poster_url', poster_url,
+        'added_by', jsonb_build_object(
+            'first_name', first_name,
+            'last_name', last_name
+        ),
+        'watch_date', watch_date,
+        'genres', genres
+    )
+) as movies
 FROM (
     SELECT *
     FROM (
