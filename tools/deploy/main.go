@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 
@@ -52,7 +51,6 @@ func copyMigationFiles() error {
 
 	// Connect to the remote server and perform the SSH handshake.
 	client, err := ssh.Dial("tcp", "162.243.240.76:22", config)
-	fmt.Println(client)
 	return nil
 }
 

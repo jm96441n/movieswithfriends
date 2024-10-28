@@ -2,7 +2,6 @@ package web
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
@@ -33,8 +32,6 @@ func (a *Application) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 		a.serverError(w, r, err)
 		return
 	}
-
-	fmt.Println("req: ", req)
 
 	_, err = a.Auth.CreateAccount(ctx, req)
 	if err != nil {

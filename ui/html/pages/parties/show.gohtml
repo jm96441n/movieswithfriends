@@ -26,46 +26,53 @@
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-body p-4">
                 <!-- When no movie is selected -->
-                <div class="text-center py-5">
-                    <div class="display-1 text-muted mb-4">
-                        <i class="fas fa-film"></i>
-                    </div>
-                    <h2 class="h4 mb-3">No Movie Selected</h2>
-                    <p class="text-muted mb-4">Let the app choose your next movie from the unwatched list</p>
-                    <button class="btn btn-primary btn-lg">
-                        <i class="fas fa-random me-2"></i>Pick a Movie
-                    </button>
-                </div>
-
-                <!-- When a movie is selected (initially hidden) -->
-                <div class="row g-4 d-none">
-                    <div class="col-md-3">
-                        <img src="/api/placeholder/300/450" class="img-fluid rounded" alt="Movie Poster">
-                    </div>
-                    <div class="col-md-9">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <h2 class="h3 mb-0">The Selected Movie</h2>
-                            <span class="badge bg-warning text-dark">8.5</span>
-                        </div>
-                        <p class="text-muted mb-4">2023 • Action, Adventure • 2h 15m</p>
-                        <p class="mb-4">Movie description goes here. This can be a brief synopsis of the plot without spoilers.</p>
-                        <div class="d-flex gap-2 mb-4">
-                            <button class="btn btn-primary">
-                                <i class="fas fa-play me-2"></i>Watch Trailer
-                            </button>
-                            <button class="btn btn-success">
-                                <i class="fas fa-check me-2"></i>Mark as Watched
-                            </button>
-                            <button class="btn btn-outline-danger">
-                                <i class="fas fa-random me-2"></i>Pick Another
-                            </button>
-                        </div>
-                        <div class="small">
-                            <p class="mb-1"><strong>Selected by:</strong> Movie Night Picker</p>
-                            <p class="mb-0"><strong>Selected on:</strong> October 27, 2023</p>
-                        </div>
-                    </div>
-                </div>
+                {{ $party := .Party }}
+                {{ if .Party.SelectedMovie }}
+                  {{ $selectedMovie := .Party.SelectedMovie }}
+                  <div class="row g-4">
+                      <div class="col-md-3">
+                      <img src="{{ $selectedMovie.PosterURL }}" class="img-fluid rounded" alt="Movie Poster">
+                      </div>
+                      <div class="col-md-9">
+                          <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h2 class="h3 mb-0">{{ $selectedMovie.Title }}</h2>
+                            <span class="badge bg-warning text-dark">{{ $selectedMovie.Rating }}</span>
+                          </div>
+                          <p class="text-muted mb-4">{{ $selectedMovie.ReleaseDate }} • {{ $selectedMovie.Genres }} • {{ timeToDuration $selectedMovie.Runtime }}</p>
+                          <p class="mb-4">{{ $selectedMovie.Tagline }}</p>
+                          <div class="d-flex gap-2 mb-4">
+                              <button class="btn btn-primary">
+                                  <i class="fas fa-play me-2"></i>Watch Trailer
+                              </button>
+                              <form action="/parties/{{ $party.ID }}/movies/{{ $selectedMovie.ID }}" method="post">
+                                <button class="btn btn-success" type="submit">
+                                    <i class="fas fa-check me-2"></i>Mark as Watched
+                                </button>
+                              </form>
+                              <button class="btn btn-outline-danger">
+                                  <i class="fas fa-random me-2"></i>Pick Another
+                              </button>
+                          </div>
+                          <div class="small">
+                              <p class="mb-1"><strong>Selected by:</strong> Movie Night Picker</p>
+                              <p class="mb-0"><strong>Selected on:</strong> October 27, 2023</p>
+                          </div>
+                      </div>
+                  </div>
+                {{ else }}
+                  <div class="text-center py-5">
+                      <div class="display-1 text-muted mb-4">
+                          <i class="fas fa-film"></i>
+                      </div>
+                      <h2 class="h4 mb-3">No Movie Selected</h2>
+                      <p class="text-muted mb-4">Let the app choose your next movie from the unwatched list</p>
+                      <form action="/parties/{{ .Party.ID }}/movies" method="post">
+                          <button class="btn btn-primary btn-lg" type="submit">
+                              <i class="fas fa-random me-2"></i>Pick a Movie
+                          </button>
+                      </form>
+                  </div>
+                {{ end }}
             </div>
         </div>
 
@@ -78,24 +85,17 @@
                     </div>
                     <div class="card-body p-0">
                         <div class="list-group list-group-flush">
+                            {{ range .Party.UnwatchedMovies }}
                             <div class="list-group-item">
                                 <div class="d-flex align-items-center">
                                     <div class="flex-grow-1">
-                                        <h6 class="mb-1">Movie Title One</h6>
-                                        <small class="text-muted">Added by John • Oct 25</small>
+                                        <h6 class="mb-1">{{ .Title }}</h6>
+                                        <small class="text-muted">Added by {{ .AddedBy.FirstName }} • ADD ADDED BY DATE</small>
                                     </div>
                                     <div class="badge bg-warning text-dark">8.5</div>
                                 </div>
                             </div>
-                            <div class="list-group-item">
-                                <div class="d-flex align-items-center">
-                                    <div class="flex-grow-1">
-                                        <h6 class="mb-1">Movie Title Two</h6>
-                                        <small class="text-muted">Added by Sarah • Oct 24</small>
-                                    </div>
-                                    <div class="badge bg-warning text-dark">7.9</div>
-                                </div>
-                            </div>
+                            {{ end }}
                         </div>
                     </div>
                     <div class="card-footer bg-white py-3">
@@ -123,10 +123,11 @@
                     </div>
                     <div class="card-body p-0">
                         <div class="list-group list-group-flush">
+                            {{ range .Party.WatchedMovies }}
                             <div class="list-group-item">
                                 <div class="d-flex align-items-center">
                                     <div class="flex-grow-1">
-                                        <h6 class="mb-1">Movie Title Three</h6>
+                                        <h6 class="mb-1">{{ .Title }}</h6>
                                         <div class="text-warning small mb-1">
                                             <i class="fas fa-star"></i>
                                             <i class="fas fa-star"></i>
@@ -134,25 +135,11 @@
                                             <i class="fas fa-star"></i>
                                             <i class="far fa-star"></i>
                                         </div>
-                                        <small class="text-muted">Watched on Oct 20</small>
+                                        <small class="text-muted">Watched on {{ .WatchDate }}</small>
                                     </div>
                                 </div>
                             </div>
-                            <div class="list-group-item">
-                                <div class="d-flex align-items-center">
-                                    <div class="flex-grow-1">
-                                        <h6 class="mb-1">Movie Title Four</h6>
-                                        <div class="text-warning small mb-1">
-                                            <i class="fas fa-star"></i>
-                                            <i class="fas fa-star"></i>
-                                            <i class="fas fa-star"></i>
-                                            <i class="fas fa-star"></i>
-                                            <i class="fas fa-star"></i>
-                                        </div>
-                                        <small class="text-muted">Watched on Oct 13</small>
-                                    </div>
-                                </div>
-                            </div>
+                            {{ end }}
                         </div>
                     </div>
                     <div class="card-footer bg-white py-3">

@@ -2,8 +2,8 @@ package store
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -15,20 +15,17 @@ type FullName struct {
 }
 
 type Movie struct {
-	Title       string `json:"title"`
-	ReleaseDate string `json:"release_date"`
-	Overview    string `json:"overview"`
-	Tagline     string `json:"tagline"`
-	PosterURL   string `json:"poster_path"`
-	TrailerURL  string `json:"trailer_url"`
-	URL         string
 	ID          int
-	Runtime     int     `json:"runtime"`
-	Rating      float64 `json:"vote_average"`
+	Title       string
+	ReleaseDate string
+	Overview    string
+	Tagline     string
+	PosterURL   string
+	TrailerURL  string
+	Runtime     int
+	Rating      float64
 	Genres      []string
-	TMDBID      int `json:"id"`
-	WatchStatus WatchStatusEnum
-	AddedBy     FullName `json:"added_by"`
+	TMDBID      int
 }
 
 const (
@@ -96,8 +93,6 @@ func (p *PGStore) CreateMovie(ctx context.Context, movie *Movie) (*Movie, error)
 		return nil, err
 	}
 
-	fmt.Println(movie)
-
 	err = p.db.QueryRow(ctx, insertMovieQuery,
 		movie.Title,
 		releaseDate,
@@ -117,36 +112,71 @@ func (p *PGStore) CreateMovie(ctx context.Context, movie *Movie) (*Movie, error)
 	return movie, nil
 }
 
-const getMoviesForPartyQuery = `
-SELECT *
-FROM (
-    SELECT 
-      movies.id_movie,
-      movies.title,
-      movies.poster_url,
-      profiles.first_name,
-      profiles.last_name,
-      party_movies.watch_status,
-           ROW_NUMBER() OVER (PARTITION BY party_movies.watch_status ORDER BY party_movies.created_at DESC) as rn
-    FROM movies
-    INNER JOIN party_movies ON movies.id_movie = party_movies.id_movie
-    JOIN profiles ON party_movies.id_added_by = profiles.id_profile
-    WHERE party_movies.id_party = $1
-) t
-WHERE rn <= 10;
-`
+type UnwatchedMovie struct {
+	ID          int       `json:"id_movie"`
+	Title       string    `json:"title"`
+	ReleaseDate string    `json:"release_date"`
+	Rating      float64   `json:"vote_average"`
+	Genres      []string  `json:"genres"`
+	AddedBy     FullName  `json:"added_by"`
+	AddedOnDate time.Time `json:"added_on_date"`
+}
+
+type WatchedMovie struct {
+	ID        int       `json:"id_movie"`
+	Title     string    `json:"title"`
+	WatchDate time.Time `json:"watch_date"`
+}
+
+type SelectedMovie struct {
+	ID          int      `json:"id_movie"`
+	Title       string   `json:"title"`
+	ReleaseDate string   `json:"release_date"`
+	TrailerURL  string   `json:"trailer_url"`
+	PosterURL   string   `json:"poster_url"`
+	Runtime     int      `json:"runtime"`
+	Rating      float64  `json:"vote_average"`
+	Tagline     string   `json:"tagline"`
+	Genres      []string `json:"genres"`
+	AddedBy     FullName `json:"added_by"`
+}
 
 type MoviesByStatus struct {
-	UnwatchedMovies []*Movie
-	SelectedMovie   *Movie
-	WatchedMovies   []*Movie
+	UnwatchedMovies []*UnwatchedMovie
+	SelectedMovie   *SelectedMovie
+	WatchedMovies   []*WatchedMovie
 }
+
+const getMoviesForPartyQuery = `
+SELECT watch_status, jsonb_agg(movie_data) as movies
+FROM (
+    SELECT *
+    FROM (
+        SELECT 
+          movies.id_movie,
+          movies.title,
+          movies.poster_url,
+          movies.genres,
+          profiles.first_name,
+          profiles.last_name,
+          party_movies.watch_status,
+          party_movies.watch_date,
+          ROW_NUMBER() OVER (PARTITION BY party_movies.watch_status ORDER BY party_movies.created_at DESC) as rn
+        FROM movies
+        INNER JOIN party_movies ON movies.id_movie = party_movies.id_movie
+        JOIN profiles ON party_movies.id_added_by = profiles.id_profile
+        WHERE party_movies.id_party = $1
+    ) t
+    WHERE rn <= 10
+) movie_data
+GROUP BY watch_status;
+`
 
 // GetMoviesForParty returns a paginated list of movies for a party grouped by watchStatus
 func (p *PGStore) GetMoviesForParty(ctx context.Context, idParty, offset int) (MoviesByStatus, error) {
 	movies := MoviesByStatus{
-		UnwatchedMovies: []*Movie{},
-		WatchedMovies:   []*Movie{},
+		UnwatchedMovies: []*UnwatchedMovie{},
+		WatchedMovies:   []*WatchedMovie{},
 	}
 	rows, err := p.db.Query(ctx, getMoviesForPartyQuery, idParty)
 	if err != nil {
@@ -156,30 +186,43 @@ func (p *PGStore) GetMoviesForParty(ctx context.Context, idParty, offset int) (M
 	defer rows.Close()
 	for rows.Next() {
 		var (
-			rn    int
-			movie = &Movie{}
+			status    WatchStatusEnum
+			movieJSON []byte
 		)
-		err := rows.Scan(
-			&movie.ID,
-			&movie.Title,
-			&movie.PosterURL,
-			&movie.AddedBy.FirstName,
-			&movie.AddedBy.LastName,
-			&movie.WatchStatus,
-			&rn,
-		)
+		err := rows.Scan(&status, &movieJSON)
 		if err != nil {
 			p.logger.Error(err.Error(), "query", getMoviesForPartyQuery)
 			return MoviesByStatus{}, err
 		}
 
-		switch movie.WatchStatus {
+		switch status {
 		case WatchStatusUnwatched:
-			movies.UnwatchedMovies = append(movies.UnwatchedMovies, movie)
+			unwatchedMovies := []*UnwatchedMovie{}
+			err = json.Unmarshal(movieJSON, &unwatchedMovies)
+			if err != nil {
+				p.logger.Error(err.Error(), "query", getMoviesForPartyQuery)
+				return MoviesByStatus{}, err
+			}
+			movies.UnwatchedMovies = unwatchedMovies
 		case WatchStatusSelected:
-			movies.SelectedMovie = movie
+			// this will always be 1 movie, but we have an array from the agg so we'll just always take the first one
+			selectedMovies := []*SelectedMovie{}
+			err = json.Unmarshal(movieJSON, &selectedMovies)
+			if err != nil {
+				p.logger.Error(err.Error(), "query", getMoviesForPartyQuery)
+				return MoviesByStatus{}, err
+			}
+			if len(selectedMovies) > 0 {
+				movies.SelectedMovie = selectedMovies[0]
+			}
 		case WatchStatusWatched:
-			movies.WatchedMovies = append(movies.WatchedMovies, movie)
+			watchedMovies := []*WatchedMovie{}
+			err = json.Unmarshal(movieJSON, &watchedMovies)
+			if err != nil {
+				p.logger.Error(err.Error(), "query", getMoviesForPartyQuery)
+				return MoviesByStatus{}, err
+			}
+			movies.WatchedMovies = watchedMovies
 		}
 	}
 
@@ -187,8 +230,6 @@ func (p *PGStore) GetMoviesForParty(ctx context.Context, idParty, offset int) (M
 		p.logger.Error(err.Error(), "query", getMoviesForPartyQuery)
 		return MoviesByStatus{}, err
 	}
-
-	p.logger.Info("GetPartyByIDWithMovies", "partyID", idParty)
 
 	return movies, nil
 }

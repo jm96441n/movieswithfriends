@@ -34,9 +34,9 @@ type Party struct {
 	MemberCount     int
 	MovieCount      int
 	WatchedCount    int
-	WatchedMovies   []*store.Movie
-	UnwatchedMovies []*store.Movie
-	SelectedMovie   *store.Movie
+	WatchedMovies   []*store.WatchedMovie
+	UnwatchedMovies []*store.UnwatchedMovie
+	SelectedMovie   *store.SelectedMovie
 }
 
 var ErrMemberExistsInParty = errors.New("member already exists in party")
@@ -115,10 +115,10 @@ func (s *PartyService) GetPartyWithMovies(ctx context.Context, id int) (Party, e
 		return Party{}, err
 	}
 
-	s.Logger.Info("GetPartyWithMovies", "party", party, "moviesByStatus", moviesByStatus)
 	party.WatchedMovies = moviesByStatus.WatchedMovies
 	party.UnwatchedMovies = moviesByStatus.UnwatchedMovies
 	party.SelectedMovie = moviesByStatus.SelectedMovie
+	s.Logger.Info("GetPartyWithMovies", "party", party, "moviesByStatus", moviesByStatus)
 
 	return party, nil
 }

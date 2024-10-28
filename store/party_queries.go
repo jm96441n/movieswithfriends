@@ -273,7 +273,7 @@ func (pg *PGStore) SelectMovieForParty(ctx context.Context, idParty int) error {
 
 const updateWatchStatusQuery = `
   update party_movies
-  set watch_status = $1 and watch_date = $4
+  set watch_status = $1, watch_date = $4
   where id_party = $2 and id_movie = $3
 `
 
