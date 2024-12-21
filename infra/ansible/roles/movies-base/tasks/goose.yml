@@ -1,0 +1,41 @@
+- name: Install Goose
+  vars:
+    goose_version: "v3.22.1"  # Change this to the version you want
+    goose_checksum: "sha256:86c4393deaa2de0125010bf8f9b525ad8cd7bd7ba0900ffdec42dfb98170877b"
+    goose_arch: "x86_64"  # Change to "arm64" if needed
+    goose_os: "linux"  # Change to "darwin" for macOS
+  block:
+  - name: Create temporary directory
+    tempfile:
+      state: directory
+      suffix: goose
+    register: tempdir
+
+  - name: Download Goose
+    get_url:
+      url: "https://github.com/pressly/goose/releases/download/{{ goose_version }}/goose_{{ goose_os }}_{{ goose_arch }}"
+      dest: "{{ tempdir.path }}/goose"
+      checksum: "{{ goose_checksum }}"
+      mode: '0755'
+
+  - name: Move Goose to /usr/local/bin
+    copy:
+      src: "{{ tempdir.path }}/goose"
+      dest: "/usr/local/bin/goose"
+      mode: '0755'
+      remote_src: yes
+
+  - name: Clean up temporary directory
+    file:
+      path: "{{ tempdir.path }}"
+      state: absent
+
+  - name: Verify Goose installation
+    command: goose --version
+    register: goose_version_output
+    changed_when: false
+
+  - name: Display Goose version
+    debug:
+      var: goose_version_output.stdout_lines
+

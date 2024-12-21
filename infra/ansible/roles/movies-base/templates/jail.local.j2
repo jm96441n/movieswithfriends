@@ -1,0 +1,19 @@
+[DEFAULT]
+{% for key, value in fail2ban_jail_config.DEFAULT.items() %}
+{{ key }} = {{ value }}
+{% endfor %}
+
+[sshd]
+{% for key, value in fail2ban_jail_config.sshd.items() %}
+{{ key }} = {{ value }}
+{% endfor %}
+
+[caddy-http-auth]
+{% for key, value in fail2ban_jail_config.caddyhttpauth.items() %}
+{{ key }} = {{ value }}
+{% endfor %}
+
+[caddy-notfound]
+{% for key, value in fail2ban_jail_config.caddynotfound.items() %}
+{{ key }} = {{ value }}
+{% endfor %}

@@ -1,0 +1,26 @@
+[Unit]
+Description={{ app_name }} service
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User={{ app_user }}
+Group={{ app_group }}
+WorkingDirectory={{ app_dir }}
+EnvironmentFile={{ app_dir }}/config/app.env
+ExecStart={{ app_dir }}/bin/{{ binary_name }}
+Environment=CONFIG_FILE={{ app_dir }}/config/config.yml
+Restart=always
+RestartSec=5
+StartLimitInterval=0
+StartLimitBurst=5
+
+# Security hardening
+NoNewPrivileges=yes
+ProtectSystem=full
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+
+[Install]
+WantedBy=multi-user.target

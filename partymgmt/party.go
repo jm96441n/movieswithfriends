@@ -118,7 +118,6 @@ func (s *PartyService) GetPartyWithMovies(ctx context.Context, id int) (Party, e
 	party.WatchedMovies = moviesByStatus.WatchedMovies
 	party.UnwatchedMovies = moviesByStatus.UnwatchedMovies
 	party.SelectedMovie = moviesByStatus.SelectedMovie
-	s.Logger.Info("GetPartyWithMovies", "party", party, "moviesByStatus", moviesByStatus)
 
 	return party, nil
 }

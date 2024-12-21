@@ -7,6 +7,7 @@ import (
 	"slices"
 
 	"github.com/jm96441n/movieswithfriends/ui"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 type route struct {
@@ -40,15 +41,16 @@ func (a *Application) Routes() http.Handler {
 
 	authenticatorMW := a.authenticateMiddleware()
 	requireAuthMW := a.authenticatedMiddleware()
-	loggingMW := loggingMiddlewareBuilder(a.Logger)
+	// loggingMW := loggingMiddlewareBuilder(a.Logger)
 
 	for _, r := range routes {
 		handlerFunc := r.handler
 		if r.authenticatedRoute {
 			handlerFunc = requireAuthMW(handlerFunc)
 		}
-		handlerFunc = loggingMW(authenticatorMW(handlerFunc))
-		router.HandleFunc(r.path, handlerFunc)
+		handlerFunc = otelhttp.NewHandler(otelhttp.WithRouteTag(r.path, authenticatorMW(handlerFunc)), r.path).(http.HandlerFunc)
+
+		router.Handle(r.path, handlerFunc)
 	}
 
 	fsys, err := fs.Sub(ui.TemplateFS, "static")
@@ -67,6 +69,14 @@ func (a *Application) staticRoutes() []route {
 		{
 			path:               "/",
 			handler:            a.HomeHandler,
+			authenticatedRoute: false,
+		},
+		{
+			path: "/health",
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+				return
+			},
 			authenticatedRoute: false,
 		},
 	}

@@ -6,7 +6,7 @@ variable "region" {
 }
 
 data "digitalocean_image" "base_image" {
-  name = "packer-1728353739"
+  name = "packer-1730661392"
 }
 
 resource "digitalocean_droplet" "app" {
@@ -17,12 +17,19 @@ resource "digitalocean_droplet" "app" {
   ssh_keys = [
     data.digitalocean_ssh_key.terraform.id,
   ]
-  connection {
-    host        = self.ipv4_address
-    user        = "root"
-    type        = "ssh"
-    private_key = file(var.pvt_key)
-    timeout     = "2m"
+
+
+  # Wait for cloud-init to complete
+  provisioner "remote-exec" {
+    inline = ["echo 'Waiting for cloud-init to complete...'"]
+
+    connection {
+      type        = "ssh"
+      host        = self.ipv4_address
+      user        = "root"
+      private_key = file("~/.ssh/do")
+      timeout     = "2m"
+    }
   }
 }
 
@@ -51,4 +58,9 @@ resource "digitalocean_volume_attachment" "app" {
     digitalocean_volume.app,
     digitalocean_droplet.app
   ]
+}
+
+# outputs.tf
+output "vps_ip" {
+  value = digitalocean_droplet.app.ipv4_address
 }

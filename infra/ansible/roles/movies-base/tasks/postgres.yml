@@ -1,0 +1,58 @@
+- name: Setup postgres
+  block:
+  - name: Update apt cache
+    apt:
+      update_cache: yes
+      cache_valid_time: 3600
+    become: true
+
+  - name: Install necessary dependencies
+    apt:
+      name:
+        - gnupg2
+        - wget
+        - lsb-release
+      state: present
+    register: apt_install
+    retries: 5
+    delay: 30
+    until: apt_install is not failed
+
+  - name: Add key for Postgres repo
+    apt_key: 
+      url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+      state: present
+    become: true
+
+  - name: Wait for APT Lock
+    shell:  while fuser /var/lib/apt/lists/lock >/dev/null 2>&1; do sleep 5; done;
+
+  - name: Add Postgres repo to sources list
+    apt_repository:
+      repo: "deb http://apt.postgresql.org/pub/repos/apt {{ ansible_distribution_release }}-pgdg main"
+      state: present
+      filename: pgdg
+    become: true
+    register: postgres_repo
+    retries: 5
+    delay: 30
+    until: postgres_repo is not failed
+
+  - name: Install PostgreSQL and dependencies
+    apt:
+      name:
+        - postgresql
+        - postgresql-contrib
+        - libpq-dev
+        - python3-psycopg2
+      state: present
+    register: postgres_install
+    retries: 5
+    delay: 30
+    until: postgres_install is not failed
+
+  - name: Ensure PostgreSQL is started and enabled
+    service:
+      name: postgresql
+      state: started
+      enabled: yes

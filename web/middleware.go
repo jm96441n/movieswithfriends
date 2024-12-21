@@ -21,8 +21,13 @@ const (
 func loggingMiddlewareBuilder(logger *slog.Logger) func(http.HandlerFunc) http.HandlerFunc {
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			if req.Pattern == "/health" {
+				next.ServeHTTP(w, req)
+				return
+			}
+
 			cur := time.Now()
-			logger.Info(fmt.Sprintf("Starting %s request for %s", req.Method, req.URL.Path))
+			logger.InfoContext(req.Context(), fmt.Sprintf("Starting %s request for %s", req.Method, req.URL.Path))
 			next.ServeHTTP(w, req)
 			diff := time.Since(cur)
 			logger.Info(fmt.Sprintf("Completed %s request for %s in %d milliseconds", req.Method, req.URL.Path, diff.Milliseconds()))
@@ -33,11 +38,15 @@ func loggingMiddlewareBuilder(logger *slog.Logger) func(http.HandlerFunc) http.H
 func (a *Application) authenticateMiddleware() func(http.HandlerFunc) http.HandlerFunc {
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			ctx := req.Context()
+			logger := a.Logger
+
 			session, err := a.SessionStore.Get(req, sessionName)
 			if err != nil {
-				a.Logger.Debug("failed to get session, trying to create a new one", slog.Any("error", err))
+				logger.DebugContext(ctx, "failed to get session, trying to create a new one", slog.Any("error", err))
 				session, err = a.SessionStore.New(req, sessionName)
 				if err != nil {
+					logger.ErrorContext(ctx, "failed to create a new session", slog.Any("error", err))
 					a.serverError(w, req, err)
 					return
 				}
@@ -46,7 +55,7 @@ func (a *Application) authenticateMiddleware() func(http.HandlerFunc) http.Handl
 			accountID := session.Values["accountID"]
 
 			if accountID == nil {
-				a.Logger.Error("no accountID in session")
+				logger.DebugContext(ctx, "no accountID in session")
 				next.ServeHTTP(w, req)
 				return
 			}
@@ -55,7 +64,7 @@ func (a *Application) authenticateMiddleware() func(http.HandlerFunc) http.Handl
 
 			exists, err := a.Auth.AccountExists(req.Context(), id)
 			if err != nil {
-				a.Logger.Error("error fetching id", slog.Any("error", err))
+				logger.ErrorContext(ctx, "error fetching id", slog.Any("error", err))
 				a.serverError(w, req, err)
 				return
 			}
@@ -64,7 +73,7 @@ func (a *Application) authenticateMiddleware() func(http.HandlerFunc) http.Handl
 				profileID := session.Values["profileID"].(int)
 				partiesForProfile, err := a.PartiesRepository.GetPartiesForMember(req.Context(), profileID)
 				if err != nil {
-					a.Logger.Error("error fetching parties for profile", slog.Any("error", err))
+					logger.Error("error fetching parties for profile", slog.Any("error", err))
 					a.serverError(w, req, err)
 					return
 				}
@@ -78,7 +87,7 @@ func (a *Application) authenticateMiddleware() func(http.HandlerFunc) http.Handl
 
 				account, err := a.AccountRepository.GetAccountAndProfileInfo(req.Context(), id)
 				if err != nil {
-					a.Logger.Error("error fetching account info", slog.Any("error", err))
+					logger.Error("error fetching account info", slog.Any("error", err))
 					a.serverError(w, req, err)
 					return
 				}

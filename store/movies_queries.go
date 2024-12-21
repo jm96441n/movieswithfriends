@@ -212,7 +212,7 @@ func (p *PGStore) GetMoviesForParty(ctx context.Context, idParty, offset int) (M
 			unwatchedMovies := []*UnwatchedMovie{}
 			err = json.Unmarshal(movieJSON, &unwatchedMovies)
 			if err != nil {
-				p.logger.Error(err.Error(), "query", getMoviesForPartyQuery)
+				p.logger.Error(err.Error(), "marshalType", "unwatchedMovies", "query", getMoviesForPartyQuery)
 				return MoviesByStatus{}, err
 			}
 			movies.UnwatchedMovies = unwatchedMovies
@@ -221,7 +221,7 @@ func (p *PGStore) GetMoviesForParty(ctx context.Context, idParty, offset int) (M
 			selectedMovies := []*SelectedMovie{}
 			err = json.Unmarshal(movieJSON, &selectedMovies)
 			if err != nil {
-				p.logger.Error(err.Error(), "query", getMoviesForPartyQuery)
+				p.logger.Error(err.Error(), "marshalType", "selectedMovie", "query", getMoviesForPartyQuery)
 				return MoviesByStatus{}, err
 			}
 			if len(selectedMovies) > 0 {
@@ -231,7 +231,7 @@ func (p *PGStore) GetMoviesForParty(ctx context.Context, idParty, offset int) (M
 			watchedMovies := []*WatchedMovie{}
 			err = json.Unmarshal(movieJSON, &watchedMovies)
 			if err != nil {
-				p.logger.Error(err.Error(), "query", getMoviesForPartyQuery)
+				p.logger.Error(err.Error(), "marshalType", "watchedMovies", "query", getMoviesForPartyQuery)
 				return MoviesByStatus{}, err
 			}
 			movies.WatchedMovies = watchedMovies

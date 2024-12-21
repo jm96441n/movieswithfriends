@@ -12,6 +12,7 @@ import (
 )
 
 func (a *Application) MoviesIndexHandler(w http.ResponseWriter, r *http.Request) {
+	logger := a.Logger.With(slog.Any("handler", "MoviesIndexHandler"))
 	queryParams := r.URL.Query()
 	templateData := a.NewMoviesTemplateData(r, "/movies")
 
@@ -24,8 +25,9 @@ func (a *Application) MoviesIndexHandler(w http.ResponseWriter, r *http.Request)
 	templateData.SearchValue = queryParams.Get("search")
 	term := strings.TrimSpace(queryParams.Get("search"))
 
-	movies, err := a.MoviesService.SearchMovies(ctx, term)
+	movies, err := a.MoviesService.SearchMovies(ctx, logger, term)
 	if err != nil {
+		logger.ErrorContext(ctx, "failed to search movies", slog.Any("error", err))
 		a.serverError(w, r, err)
 	}
 
@@ -39,9 +41,11 @@ func (a *Application) MoviesIndexHandler(w http.ResponseWriter, r *http.Request)
 }
 
 func (a *Application) MoviesCreateHandler(w http.ResponseWriter, r *http.Request) {
+	logger := a.Logger.With(slog.Any("handler", "MoviesCreateHandler"))
 	ctx := r.Context()
 	err := r.ParseForm()
 	if err != nil {
+		logger.ErrorContext(ctx, "failed to parse form", slog.Any("error", err))
 		a.serverError(w, r, err)
 		return
 	}
@@ -50,12 +54,14 @@ func (a *Application) MoviesCreateHandler(w http.ResponseWriter, r *http.Request
 
 	id, err := strconv.Atoi(idParams)
 	if err != nil {
+		logger.ErrorContext(ctx, "failed to convert tmdb_id to int", slog.Any("error", err))
 		a.clientError(w, http.StatusBadRequest)
 		return
 	}
 
-	movie, err := a.MoviesService.CreateMovie(ctx, id)
+	movie, err := a.MoviesService.CreateMovie(ctx, logger, id)
 	if err != nil {
+		logger.ErrorContext(ctx, "failed to create movie", slog.Any("error", err))
 		a.serverError(w, r, err)
 	}
 
@@ -63,6 +69,7 @@ func (a *Application) MoviesCreateHandler(w http.ResponseWriter, r *http.Request
 }
 
 func (a *Application) MoviesShowHandler(w http.ResponseWriter, r *http.Request) {
+	logger := a.Logger.With(slog.Any("handler", "MoviesShowHandler"))
 	ctx := r.Context()
 	idParams := r.PathValue("id")
 
@@ -74,9 +81,9 @@ func (a *Application) MoviesShowHandler(w http.ResponseWriter, r *http.Request) 
 
 	memberID, err := a.getProfileIDFromSession(r)
 	if errors.Is(err, ErrFailedToGetProfileIDFromSession) {
-		a.Logger.Debug("profileID is not in session")
+		logger.DebugContext(ctx, "profileID is not in session")
 	} else if err != nil {
-		a.Logger.Error("failed to get profile id from session", slog.Any("error", err))
+		logger.Error("failed to get profile id from session", slog.Any("error", err))
 		a.serverError(w, r, err)
 		return
 	}
@@ -84,19 +91,19 @@ func (a *Application) MoviesShowHandler(w http.ResponseWriter, r *http.Request) 
 	result, err := a.MoviesRepository.GetMovieByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, store.ErrNoRecord) {
-			a.Logger.Error("did not find movie in db", "id", id)
+			logger.ErrorContext(ctx, "did not find movie in db", "id", id)
 			a.clientError(w, http.StatusNotFound)
 			return
 		}
 
-		a.Logger.Error("failed to retrieve movie from db", "error", err)
+		logger.ErrorContext(ctx, "failed to retrieve movie from db", "error", err)
 		a.serverError(w, r, err)
 		return
 	}
 
 	parties, err := a.PartiesRepository.GetPartiesByMemberIDForCurrentMovie(ctx, id, memberID)
 	if err != nil {
-		a.Logger.Error("failed to get parties", "error", err)
+		logger.ErrorContext(ctx, "failed to get parties", "error", err)
 		a.serverError(w, r, err)
 		return
 	}

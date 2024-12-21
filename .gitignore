@@ -9,6 +9,9 @@
 
 !Dockerfile
 !Makefile
+!Caddyfile
+
+otelconfig.yaml
 
 /_data/
 

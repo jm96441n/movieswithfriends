@@ -24,7 +24,7 @@ build {
   sources = ["source.digitalocean.app"]
 
   provisioner "ansible" {
-    playbook_file = "./install.yaml"
-    extra_arguments = [ "--scp-extra-args", "'-O'", "--vault-password-file", "secret.pass"] 
+    playbook_file = "../ansible/packer_provision.yml"
+    extra_arguments = [ "--scp-extra-args", "'-O'"] 
   }
 }

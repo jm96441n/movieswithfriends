@@ -1,7 +1,7 @@
 -- +goose Up
 -- +goose StatementBegin
 SELECT 'up SQL query';
-ALTER TABLE party_movies ADD COLUMN watch_date DATE;
+ALTER TABLE party_movies ADD COLUMN watch_date TIMESTAMP;
 -- +goose StatementEnd
 
 -- +goose Down

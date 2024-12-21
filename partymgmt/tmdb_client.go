@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 
@@ -57,9 +58,11 @@ type Genre struct {
 	Name string `json:"name"`
 }
 
-func NewTMDBClient(baseURL, apiKey string) (*TMDBClient, error) {
+func NewTMDBClient(baseURL, apiKey string, logger *slog.Logger) (*TMDBClient, error) {
+	httpClient := retryablehttp.NewClient()
+	httpClient.Logger = logger
 	client := &TMDBClient{
-		client:     retryablehttp.NewClient(),
+		client:     httpClient,
 		baseURL:    baseURL,
 		tmdbKey:    apiKey,
 		genreCache: genreCache{genres: make(map[int]Genre)},

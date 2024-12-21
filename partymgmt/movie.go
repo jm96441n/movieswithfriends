@@ -21,20 +21,18 @@ type movieFetcher interface {
 }
 
 type MovieService struct {
-	logger           *slog.Logger
 	moviesRepository moviesRepository
 	tmdbClient       movieFetcher
 }
 
-func NewMovieService(client *TMDBClient, logger *slog.Logger, moviesRepository moviesRepository) *MovieService {
+func NewMovieService(client *TMDBClient, moviesRepository moviesRepository) *MovieService {
 	return &MovieService{
 		tmdbClient:       client,
-		logger:           logger,
 		moviesRepository: moviesRepository,
 	}
 }
 
-func (m *MovieService) SearchMovies(ctx context.Context, searchTerm string) ([]TMDBMovie, error) {
+func (m *MovieService) SearchMovies(ctx context.Context, logger *slog.Logger, searchTerm string) ([]TMDBMovie, error) {
 	result, err := m.tmdbClient.Search(ctx, searchTerm, 1)
 	if err != nil {
 		return nil, err
@@ -51,7 +49,7 @@ func (m *MovieService) SearchMovies(ctx context.Context, searchTerm string) ([]T
 		for _, genreID := range result.Movies[idx].GenreIDs {
 			genre, err := m.tmdbClient.GetGenre(genreID)
 			if err != nil {
-				m.logger.Error("Failed to get genre", slog.Any("err", err), slog.Any("genreID", genreID))
+				logger.ErrorContext(ctx, "Failed to get genre", slog.Any("err", err), slog.Any("genreID", genreID))
 				continue
 			}
 			result.Movies[idx].Genres = append(result.Movies[idx].Genres, genre)
@@ -61,15 +59,15 @@ func (m *MovieService) SearchMovies(ctx context.Context, searchTerm string) ([]T
 	return result.Movies, nil
 }
 
-func (m *MovieService) CreateMovie(ctx context.Context, tmdbID int) (*store.Movie, error) {
+func (m *MovieService) CreateMovie(ctx context.Context, logger *slog.Logger, tmdbID int) (*store.Movie, error) {
 	movie, err := m.moviesRepository.GetMovieByTMDBID(ctx, tmdbID)
 	if movie != nil {
-		m.logger.Info("movie found in db", slog.Any("movie", movie.Title))
+		logger.InfoContext(ctx, "movie found in db", slog.Any("movie", movie.Title))
 		return movie, nil
 	}
 
 	if !errors.Is(err, store.ErrNoRecord) {
-		m.logger.Error("Failed to get movie by tmdbid", slog.Any("err", err), slog.Any("tmdbID", tmdbID))
+		logger.ErrorContext(ctx, "Failed to get movie by tmdbid", slog.Any("err", err), slog.Any("tmdbID", tmdbID))
 		return nil, err
 	}
 
@@ -77,16 +75,16 @@ func (m *MovieService) CreateMovie(ctx context.Context, tmdbID int) (*store.Movi
 
 	tmdbMovie, err := m.tmdbClient.GetMovie(ctx, tmdbID)
 	if err != nil || tmdbMovie == nil {
-		m.logger.Error("Failed to get movie from tmdb", slog.Any("err", err), slog.Any("tmdbID", tmdbID))
+		logger.ErrorContext(ctx, "Failed to get movie from tmdb", slog.Any("err", err), slog.Any("tmdbID", tmdbID))
 		return nil, err
 	}
 
 	movie, err = m.moviesRepository.CreateMovie(ctx, tmdbMovie.ToStoreMovie())
 	if err != nil {
-		m.logger.Error("Failed to create movie", slog.Any("err", err), slog.Any("movie", tmdbMovie.Title))
+		logger.ErrorContext(ctx, "Failed to create movie", slog.Any("err", err), slog.Any("movie", tmdbMovie.Title))
 		return nil, err
 	}
-	m.logger.Info("movie created in db", slog.Any("movie", movie))
+	logger.InfoContext(ctx, "movie created in db", slog.Any("movie", movie))
 
 	return movie, nil
 }

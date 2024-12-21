@@ -47,8 +47,8 @@ type MemberService interface {
 }
 
 type MoviesService interface {
-	SearchMovies(context.Context, string) ([]partymgmt.TMDBMovie, error)
-	CreateMovie(context.Context, int) (*store.Movie, error)
+	SearchMovies(context.Context, *slog.Logger, string) ([]partymgmt.TMDBMovie, error)
+	CreateMovie(context.Context, *slog.Logger, int) (*store.Movie, error)
 }
 
 type Authenticator interface {
@@ -103,7 +103,6 @@ func (a *Application) render(w http.ResponseWriter, r *http.Request, status int,
 		return
 	}
 
-	a.Logger.Info("rendering template", slog.Any("template", page))
 	w.WriteHeader(status)
 
 	buf.WriteTo(w)

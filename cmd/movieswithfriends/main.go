@@ -1,28 +1,72 @@
 package main
 
 import (
+	"context"
 	"crypto/rand"
-	"crypto/tls"
 	_ "embed"
 	"io"
-	"log"
 	"log/slog"
 	"net/http"
 	"os"
 	"time"
 
-	"github.com/gorilla/sessions"
 	"github.com/jm96441n/movieswithfriends/identityaccess"
 	"github.com/jm96441n/movieswithfriends/partymgmt"
 	"github.com/jm96441n/movieswithfriends/store"
 	"github.com/jm96441n/movieswithfriends/ui"
 	"github.com/jm96441n/movieswithfriends/web"
+
+	"github.com/gorilla/sessions"
+	"github.com/honeycombio/otel-config-go/otelconfig"
+	slogmulti "github.com/samber/slog-multi"
+	"go.opentelemetry.io/contrib/bridges/otelslog"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
+	"go.opentelemetry.io/otel/log/global"
+	"go.opentelemetry.io/otel/sdk/log"
 )
 
 const length = 32
 
 func main() {
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	ctx := context.Background()
+
+	// Create the OTLP log exporter that sends logs to configured destination
+	logExporter, err := otlploghttp.New(ctx)
+	if err != nil {
+		panic("failed to initialize exporter")
+	}
+
+	// Create the logger provider
+	lp := log.NewLoggerProvider(
+		log.WithProcessor(
+			log.NewBatchProcessor(logExporter),
+		),
+	)
+
+	// Ensure the logger is shutdown before exiting so all pending logs are exported
+	defer lp.Shutdown(ctx)
+
+	// Set the logger provider globally
+	global.SetLoggerProvider(lp)
+
+	// Instantiate a new slog logger
+	logger := slog.New(
+		slogmulti.Fanout(
+			slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}),
+			otelslog.NewHandler("movieswithfriends"),
+		))
+
+	// use otelconfig to set up OpenTelemetry SDK
+	otelShutdown, err := otelconfig.ConfigureOpenTelemetry()
+	if err != nil {
+		logger.Error("error setting up OTel SDK", slog.Any("err", err))
+		os.Exit(1)
+	}
+
+	defer otelShutdown()
+
+	logger.Info("successfully setup otel")
 
 	logger.Info("setting up postgres store")
 	dbUser := os.Getenv("DB_USERNAME")
@@ -62,7 +106,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	tmdbClient, err := partymgmt.NewTMDBClient("https://api.themoviedb.org/3", tmdbApiKey)
+	tmdbClient, err := partymgmt.NewTMDBClient("https://api.themoviedb.org/3", tmdbApiKey, logger)
 	if err != nil {
 		logger.Error(err.Error())
 		os.Exit(1)
@@ -74,20 +118,20 @@ func main() {
 		logger.Error("SESSION_KEY is not set")
 
 		if _, err := io.ReadFull(rand.Reader, sessionKey); err != nil {
-			log.Fatalf("could not generate secure key: %v", err)
+			logger.Error("could not generate secure key", slog.Any("err", err))
 			os.Exit(1)
 		}
 	} else {
 		sessionKey = []byte(sessionKeyVar)
 	}
 
-	sessionStore := sessions.NewCookieStore([]byte(sessionKey))
+	sessionStore := sessions.NewCookieStore(sessionKey)
 
 	app := web.Application{
 		TemplateCache:     tmplCache,
 		Logger:            logger,
 		SessionStore:      sessionStore,
-		MoviesService:     partymgmt.NewMovieService(tmdbClient, logger, db),
+		MoviesService:     partymgmt.NewMovieService(tmdbClient, db),
 		MoviesRepository:  db,
 		PartyService:      &partymgmt.PartyService{DB: db, MoviesRepository: db, Logger: logger},
 		PartiesRepository: db,
@@ -100,33 +144,18 @@ func main() {
 		AccountRepository: db,
 	}
 
-	tlsConfig := &tls.Config{
-		CurvePreferences: []tls.CurveID{tls.X25519, tls.CurveP256},
-	}
-
 	addr := os.Getenv("ADDR")
 	if addr == "" {
 		logger.Info("ADDR is not set, defaulting to :4000")
 		addr = ":4000"
 	}
 
-	tlsCert := os.Getenv("TLS_CERT_LOCATION")
-	if tlsCert == "" {
-		logger.Error("TLS_CERT_LOCATION is not set")
-		os.Exit(1)
-	}
-
-	tlsKey := os.Getenv("TLS_KEY_LOCATION")
-	if tlsKey == "" {
-		logger.Error("TLS_KEY_LOCATION is not set")
-		os.Exit(1)
-	}
-	// binding.pry
 	server := http.Server{
-		Addr:         addr,
-		Handler:      app.Routes(),
+		Addr: addr,
+		Handler: otelhttp.NewHandler(app.Routes(), "movieswithfriends",
+			otelhttp.WithMessageEvents(otelhttp.ReadEvents, otelhttp.WriteEvents),
+		),
 		ErrorLog:     slog.NewLogLogger(logger.Handler(), slog.LevelError),
-		TLSConfig:    tlsConfig,
 		IdleTimeout:  time.Minute,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
@@ -134,7 +163,7 @@ func main() {
 
 	logger.Info("starting server", slog.String("addr", addr))
 
-	err = server.ListenAndServeTLS(tlsCert, tlsKey)
+	err = server.ListenAndServe()
 	logger.Error(err.Error())
 	os.Exit(1)
 }
