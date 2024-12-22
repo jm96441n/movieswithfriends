@@ -83,7 +83,14 @@ func (a *Application) serverError(w http.ResponseWriter, r *http.Request, err er
 	http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 }
 
-func (a *Application) clientError(w http.ResponseWriter, status int) {
+func (a *Application) clientError(w http.ResponseWriter, r *http.Request, status int, message string) {
+	session, err := a.SessionStore.Get(r, sessionName)
+	if err != nil {
+		a.serverError(w, r, err)
+	}
+	session.AddFlash(message)
+	session.Save(r, w)
+
 	http.Error(w, http.StatusText(status), status)
 }
 

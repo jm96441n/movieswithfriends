@@ -20,7 +20,7 @@ func (a *Application) ProfileShowHandler(w http.ResponseWriter, r *http.Request)
 	if err != nil {
 		if errors.Is(err, store.ErrNoRecord) {
 			a.Logger.Error("did not find profile in db", "profileID", profileID)
-			a.clientError(w, http.StatusNotFound)
+			a.clientError(w, r, http.StatusNotFound, "uh oh")
 			return
 		}
 

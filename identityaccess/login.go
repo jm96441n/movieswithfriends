@@ -34,6 +34,9 @@ var ErrInvalidCredentials = errors.New("invalid credentials")
 func (a *Authenticator) Authenticate(ctx context.Context, email, password string) (store.Account, error) {
 	account, err := a.AccountRepository.FindAccountByEmail(ctx, email)
 	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			return store.Account{}, ErrInvalidCredentials
+		}
 		a.Logger.Error("error finding account by email", slog.Any("error", err), slog.String("email", email))
 		return store.Account{}, err
 	}

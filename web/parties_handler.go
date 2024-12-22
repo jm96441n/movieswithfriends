@@ -28,7 +28,7 @@ func (a *Application) CreatePartyHandler(w http.ResponseWriter, r *http.Request)
 	name := r.FormValue("name")
 	if name == "" {
 		a.Logger.Error("failed to get name from form")
-		a.clientError(w, http.StatusBadRequest)
+		a.clientError(w, r, http.StatusBadRequest, "Name is required for creating a party")
 		return
 	}
 
@@ -56,7 +56,7 @@ func (a *Application) PartyShowHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(idParam)
 	if err != nil {
 		logger.Error("failed to get party ID from path", slog.Any("error", err))
-		a.clientError(w, http.StatusBadRequest)
+		a.clientError(w, r, http.StatusBadRequest, "Failed to find the party, please try again")
 		return
 	}
 
@@ -91,13 +91,13 @@ func (a *Application) AddMovietoPartyHandler(w http.ResponseWriter, r *http.Requ
 
 	idMovie, err := strconv.Atoi(r.FormValue("id_movie"))
 	if err != nil {
-		a.clientError(w, http.StatusBadRequest)
+		a.clientError(w, r, http.StatusBadRequest, "Uh oh")
 		return
 	}
 
 	idParty, err := strconv.Atoi(idPartyParam)
 	if err != nil {
-		a.clientError(w, http.StatusBadRequest)
+		a.clientError(w, r, http.StatusBadRequest, "uh oh")
 		return
 	}
 
@@ -131,13 +131,13 @@ func (a *Application) MarkMovieAsWatchedHandler(w http.ResponseWriter, r *http.R
 	idMovieParam := r.PathValue("id")
 	idMovie, err := strconv.Atoi(idMovieParam)
 	if err != nil {
-		a.clientError(w, http.StatusBadRequest)
+		a.clientError(w, r, http.StatusBadRequest, "uh oh")
 		return
 	}
 
 	idParty, err := strconv.Atoi(idPartyParam)
 	if err != nil {
-		a.clientError(w, http.StatusBadRequest)
+		a.clientError(w, r, http.StatusBadRequest, "uh oh")
 		return
 	}
 
@@ -155,7 +155,7 @@ func (a *Application) SelectMovieForParty(w http.ResponseWriter, r *http.Request
 	idPartyParam := r.PathValue("party_id")
 	idParty, err := strconv.Atoi(idPartyParam)
 	if err != nil {
-		a.clientError(w, http.StatusBadRequest)
+		a.clientError(w, r, http.StatusBadRequest, "uh oh")
 		return
 	}
 

@@ -89,8 +89,13 @@ func (a *Application) authenticatedMiddleware() func(http.HandlerFunc) http.Hand
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			if !isAuthenticated(req.Context()) {
-				a.clientError(w, http.StatusUnauthorized)
-				return
+				session, err := a.SessionStore.Get(req, sessionName)
+				if err != nil {
+					a.serverError(w, req, err)
+				}
+				session.AddFlash("Please log in first.")
+				session.Save(req, w)
+				http.Redirect(w, req, "/login", http.StatusSeeOther)
 			}
 
 			next.ServeHTTP(w, req)

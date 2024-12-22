@@ -1,30 +1,36 @@
-FROM golang:1.21 as base
+FROM golang:1.23 AS base
+
 
 WORKDIR /go/src/app
 
-COPY backend/go.mod ./backend/go.sum ./
+COPY ./go.mod ./go.sum ./
 
 RUN go mod download
 
-COPY backend/main.go ./
-COPY backend/web ./web
-COPY backend/store ./store
+COPY ./cmd ./
+COPY ./web ./web
+COPY ./identityaccess/ ./identityaccess
+COPY ./partymgmt/ ./partymgmt
+COPY ./ui ./ui
+COPY ./store ./store
+COPY ./migrations ./migrations
 
-FROM base as dev-base
+FROM base AS dev-base
 
-RUN go install github.com/githubnemo/CompileDaemon@latest
+RUN go install github.com/pressly/goose/v3/cmd/goose@latest
+RUN go install github.com/air-verse/air@latest
 
-FROM dev-base as dev
+FROM dev-base AS dev
 
 WORKDIR /go/src/app
 
-CMD ["CompileDaemon", "-command=./movieswithfriends"]
+CMD ["air"]
 
-FROM base as builder
+FROM base AS builder
 
 RUN CGO_ENABLED=0 go build -o /go/bin/app
 
-FROM debian:latest as prod
+FROM debian:latest AS prod
 
 COPY --from=builder /go/bin/app /
 CMD ["/app"]

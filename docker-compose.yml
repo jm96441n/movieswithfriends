@@ -1,0 +1,45 @@
+services:
+  app:
+    build: 
+      context: .
+      target: dev
+    ports:
+      - "4000:4000"
+    environment:
+      - TMDB_API_KEY=${TMDB_API_KEY}
+      - DB_USERNAME=user
+      - DB_PASSWORD=password
+      - DB_HOST=db
+      - DB_DATABASE_NAME=movieswithfriends
+      - SESSION_KEY=${SESSION_KEY}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - .:/go/src/app
+    networks:
+      - app-network
+
+  db:
+    image: postgres:bullseye
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=user 
+      - POSTGRES_PASSWORD=password 
+      - POSTGRES_DB=movieswithfriends
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d movieswithfriends"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - ./${VOLUME_LOCATION}:/var/lib/postgresql/data 
+    networks:
+      - app-network
+
+
+networks:
+  app-network:
+    driver: bridge

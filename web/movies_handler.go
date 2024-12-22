@@ -55,7 +55,14 @@ func (a *Application) MoviesCreateHandler(w http.ResponseWriter, r *http.Request
 	id, err := strconv.Atoi(idParams)
 	if err != nil {
 		logger.ErrorContext(ctx, "failed to convert tmdb_id to int", slog.Any("error", err))
-		a.clientError(w, http.StatusBadRequest)
+		session, err := a.SessionStore.Get(r, sessionName)
+		if err != nil {
+			a.serverError(w, r, err)
+		}
+		session.AddFlash("Please log in first.")
+		session.Save(r, w)
+		http.Redirect(w, r, "/movies", http.StatusSeeOther)
+
 		return
 	}
 
@@ -75,7 +82,7 @@ func (a *Application) MoviesShowHandler(w http.ResponseWriter, r *http.Request) 
 
 	id, err := strconv.Atoi(idParams)
 	if err != nil {
-		a.clientError(w, http.StatusBadRequest)
+		a.clientError(w, r, http.StatusBadRequest, "Please try again")
 		return
 	}
 
@@ -92,7 +99,7 @@ func (a *Application) MoviesShowHandler(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		if errors.Is(err, store.ErrNoRecord) {
 			logger.ErrorContext(ctx, "did not find movie in db", "id", id)
-			a.clientError(w, http.StatusNotFound)
+			a.clientError(w, r, http.StatusNotFound, "Could not find the requested movie in the database, try again")
 			return
 		}
 
