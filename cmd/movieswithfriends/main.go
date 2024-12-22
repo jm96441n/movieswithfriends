@@ -53,7 +53,7 @@ func main() {
 	// Instantiate a new slog logger
 	logger := slog.New(
 		slogmulti.Fanout(
-			slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}),
+			slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
 			otelslog.NewHandler("movieswithfriends"),
 		))
 

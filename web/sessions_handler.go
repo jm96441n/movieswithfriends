@@ -9,7 +9,7 @@ import (
 )
 
 func (a *Application) LoginShowHandler(w http.ResponseWriter, r *http.Request) {
-	data := a.NewTemplateData(r, "/login")
+	data := a.NewTemplateData(r, w, "/login")
 	a.render(w, r, http.StatusOK, "login/show.gohtml", data)
 }
 

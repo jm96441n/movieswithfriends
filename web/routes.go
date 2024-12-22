@@ -41,7 +41,6 @@ func (a *Application) Routes() http.Handler {
 
 	authenticatorMW := a.authenticateMiddleware()
 	requireAuthMW := a.authenticatedMiddleware()
-	// loggingMW := loggingMiddlewareBuilder(a.Logger)
 
 	for _, r := range routes {
 		handlerFunc := r.handler

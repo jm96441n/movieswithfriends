@@ -38,7 +38,7 @@ func (a *Application) AddMemberToPartyHandler(w http.ResponseWriter, r *http.Req
 			a.Logger.Error("failed to get parties for profile", slog.Any("error", err))
 			a.serverError(w, r, err)
 		}
-		templateData := a.NewProfilesTemplateData(r, "/profile")
+		templateData := a.NewProfilesTemplateData(r, w, "/profile")
 		templateData.Parties = parties
 
 		a.renderPartial(w, r, http.StatusOK, "profiles/partials/party_list.gohtml", templateData)

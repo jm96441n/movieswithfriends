@@ -14,7 +14,7 @@ import (
 func (a *Application) MoviesIndexHandler(w http.ResponseWriter, r *http.Request) {
 	logger := a.Logger.With(slog.Any("handler", "MoviesIndexHandler"))
 	queryParams := r.URL.Query()
-	templateData := a.NewMoviesTemplateData(r, "/movies")
+	templateData := a.NewMoviesTemplateData(r, w, "/movies")
 
 	if _, ok := queryParams["search"]; !ok {
 		a.render(w, r, http.StatusOK, "movies/index.gohtml", templateData)
@@ -108,7 +108,7 @@ func (a *Application) MoviesShowHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	templateData := a.NewMoviesTemplateData(r, "/movie")
+	templateData := a.NewMoviesTemplateData(r, w, "/movie")
 	templateData.Movie = result
 	templateData.Parties = parties
 	a.render(w, r, http.StatusOK, "movies/show.gohtml", templateData)

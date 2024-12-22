@@ -149,3 +149,16 @@ func (a *Application) getProfileIDFromSession(r *http.Request) (int, error) {
 
 	return profileID, nil
 }
+
+func (a *Application) setFlashMessage(r *http.Request, w http.ResponseWriter, msg string) {
+	session, err := a.SessionStore.Get(r, sessionName)
+	if err != nil {
+		a.Logger.Error("failed to get session", slog.Any("error", err))
+		return
+	}
+
+	a.Logger.Debug("adding flash message")
+	session.AddFlash(msg)
+	session.Save(r, w)
+	return
+}

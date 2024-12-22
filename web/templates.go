@@ -21,7 +21,7 @@ type partyNav struct {
 
 type BaseTemplateData struct {
 	CurrentPagePath    string
-	Flash              string
+	Flashes            []interface{}
 	IsAuthenticated    bool
 	CurrentYear        int
 	CurrentUserParties []partyNav
@@ -50,29 +50,29 @@ type PartiesTemplateData struct {
 	BaseTemplateData
 }
 
-func (a *Application) NewTemplateData(r *http.Request, path string) BaseTemplateData {
-	return newBaseTemplateData(r, path)
+func (a *Application) NewTemplateData(r *http.Request, w http.ResponseWriter, path string) BaseTemplateData {
+	return a.newBaseTemplateData(r, w, path)
 }
 
-func (a *Application) NewMoviesTemplateData(r *http.Request, path string) MoviesTemplateData {
+func (a *Application) NewMoviesTemplateData(r *http.Request, w http.ResponseWriter, path string) MoviesTemplateData {
 	return MoviesTemplateData{
-		BaseTemplateData: newBaseTemplateData(r, path),
+		BaseTemplateData: a.newBaseTemplateData(r, w, path),
 	}
 }
 
-func (a *Application) NewProfilesTemplateData(r *http.Request, path string) ProfilesTemplateData {
+func (a *Application) NewProfilesTemplateData(r *http.Request, w http.ResponseWriter, path string) ProfilesTemplateData {
 	return ProfilesTemplateData{
-		BaseTemplateData: newBaseTemplateData(r, path),
+		BaseTemplateData: a.newBaseTemplateData(r, w, path),
 	}
 }
 
-func (a *Application) NewPartiesTemplateData(r *http.Request, path string) PartiesTemplateData {
+func (a *Application) NewPartiesTemplateData(r *http.Request, w http.ResponseWriter, path string) PartiesTemplateData {
 	return PartiesTemplateData{
-		BaseTemplateData: newBaseTemplateData(r, path),
+		BaseTemplateData: a.newBaseTemplateData(r, w, path),
 	}
 }
 
-func newBaseTemplateData(r *http.Request, path string) BaseTemplateData {
+func (a *Application) newBaseTemplateData(r *http.Request, w http.ResponseWriter, path string) BaseTemplateData {
 	authed := isAuthenticated(r.Context())
 
 	var (
@@ -86,8 +86,15 @@ func newBaseTemplateData(r *http.Request, path string) BaseTemplateData {
 		email = r.Context().Value(emailContextKey).(string)
 	}
 
+	var flashes []interface{}
+	session, err := a.SessionStore.Get(r, sessionName)
+	if err == nil {
+		flashes = session.Flashes()
+		session.Save(r, w)
+	}
+
 	return BaseTemplateData{
-		//			Flash:       a.sessionManager.PopString(r.Context(), "flash"),
+		Flashes:            flashes,
 		CurrentPagePath:    path,
 		CurrentYear:        2024,
 		IsAuthenticated:    authed,

@@ -33,8 +33,11 @@
     <body class="bg-light">
       {{ template "nav" . }}
       <main class="container-fluid">
-        {{ with .Flash }}
-          <div class="flash">{{ . }}</div>
+        {{ range .Flashes}}
+          <div class="alert alert-primary alert-dismissible fade show" role="alert"> 
+            {{ . }} 
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
         {{ end }}
         {{ template "main" . }}
       </main>

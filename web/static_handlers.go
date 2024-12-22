@@ -5,6 +5,6 @@ import (
 )
 
 func (a *Application) HomeHandler(w http.ResponseWriter, r *http.Request) {
-	data := a.NewTemplateData(r, "/")
+	data := a.NewTemplateData(r, w, "/")
 	a.render(w, r, http.StatusOK, "home.gohtml", data)
 }

@@ -14,7 +14,7 @@ type SignupResponse struct {
 }
 
 func (a *Application) SignUpShowHandler(w http.ResponseWriter, r *http.Request) {
-	data := a.NewTemplateData(r, "/signup")
+	data := a.NewTemplateData(r, w, "/signup")
 	a.render(w, r, http.StatusOK, "signup/show.gohtml", data)
 }
 
@@ -39,7 +39,10 @@ func (a *Application) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.Logger.Info("successfully signed up user", "userName", req.FirstName, "userEmail", req.Email)
+	a.Logger.Debug("seeting flash message")
+	a.setFlashMessage(r, w, "Successfully signed up! Please log in.")
+
+	a.Logger.Debug("successfully signed up user", "userName", req.FirstName, "userEmail", req.Email)
 	http.Redirect(w, r, "/login", http.StatusSeeOther)
 }
 

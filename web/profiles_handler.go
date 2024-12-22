@@ -42,7 +42,7 @@ func (a *Application) ProfileShowHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	templateData := a.NewProfilesTemplateData(r, "/profile")
+	templateData := a.NewProfilesTemplateData(r, w, "/profile")
 	templateData.Profile = profile
 	templateData.Parties = parties
 	templateData.WatchedMovies = watchedMovies

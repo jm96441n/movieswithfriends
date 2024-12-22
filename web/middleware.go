@@ -2,10 +2,8 @@ package web
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"net/http"
-	"time"
 )
 
 type contextKey string
@@ -17,23 +15,6 @@ const (
 	emailContextKey           = contextKey("email")
 	sessionName               = "moviesWithFriendsCookie"
 )
-
-func loggingMiddlewareBuilder(logger *slog.Logger) func(http.HandlerFunc) http.HandlerFunc {
-	return func(next http.HandlerFunc) http.HandlerFunc {
-		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			if req.Pattern == "/health" {
-				next.ServeHTTP(w, req)
-				return
-			}
-
-			cur := time.Now()
-			logger.InfoContext(req.Context(), fmt.Sprintf("Starting %s request for %s", req.Method, req.URL.Path))
-			next.ServeHTTP(w, req)
-			diff := time.Since(cur)
-			logger.Info(fmt.Sprintf("Completed %s request for %s in %d milliseconds", req.Method, req.URL.Path, diff.Milliseconds()))
-		})
-	}
-}
 
 func (a *Application) authenticateMiddleware() func(http.HandlerFunc) http.HandlerFunc {
 	return func(next http.HandlerFunc) http.HandlerFunc {
