@@ -59,11 +59,18 @@ type PartiesTemplateData struct {
 }
 
 type SignupTemplateData struct {
-	EmailErrors     []string
-	PasswordErrors  []string
-	FirstNameErrors []string
-	LastNameErrors  []string
+	HasEmailError     *bool
+	HasPasswordError  *bool
+	HasFirstNameError *bool
+	HasLastNameError  *bool
 	BaseTemplateData
+}
+
+func (s *SignupTemplateData) InitHasErrorFields() {
+	s.HasEmailError = new(bool)
+	s.HasPasswordError = new(bool)
+	s.HasFirstNameError = new(bool)
+	s.HasLastNameError = new(bool)
 }
 
 func (a *Application) NewTemplateData(r *http.Request, w http.ResponseWriter, path string) BaseTemplateData {
@@ -88,8 +95,8 @@ func (a *Application) NewPartiesTemplateData(r *http.Request, w http.ResponseWri
 	}
 }
 
-func (a *Application) NewSignupTemplateData(r *http.Request, w http.ResponseWriter, path string) SignupTemplateData {
-	return SignupTemplateData{
+func (a *Application) NewSignupTemplateData(r *http.Request, w http.ResponseWriter, path string) *SignupTemplateData {
+	return &SignupTemplateData{
 		BaseTemplateData: a.newBaseTemplateData(r, w, path),
 	}
 }
@@ -134,15 +141,13 @@ func (a *Application) newBaseTemplateData(r *http.Request, w http.ResponseWriter
 	}
 }
 
-func navClasses(currentPath, targetPath string) string {
-	if currentPath == targetPath {
-		return "active"
-	}
-	return ""
-}
-
 var functions = template.FuncMap{
-	"navClasses": navClasses,
+	"navClasses": func(currentPath, targetPath string) string {
+		if currentPath == targetPath {
+			return "active"
+		}
+		return ""
+	},
 	"hyphenate": func(s string) string {
 		return strings.ReplaceAll(strings.ToLower(s), " ", "-")
 	},
@@ -179,6 +184,17 @@ var functions = template.FuncMap{
 			return "disabled"
 		}
 		return ""
+	},
+	"isInvalidClass": func(invalid *bool) string {
+		if invalid == nil {
+			return ""
+		}
+		val := *invalid
+		if val {
+			return "is-invalid"
+		}
+
+		return "is-valid"
 	},
 }
 

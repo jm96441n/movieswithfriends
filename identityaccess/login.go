@@ -27,26 +27,10 @@ type SignupReq struct {
 }
 
 type SignupValidationError struct {
-	emailError     error
-	passwordError  error
-	firstNameError error
-	lastNameError  error
-}
-
-func (s *SignupValidationError) EmailErrors() []string {
-	return strings.Split(s.emailError.Error(), "\n")
-}
-
-func (s *SignupValidationError) PasswordErrors() []string {
-	return strings.Split(s.passwordError.Error(), "\n")
-}
-
-func (s *SignupValidationError) FirstNameErrors() []string {
-	return strings.Split(s.firstNameError.Error(), "\n")
-}
-
-func (s *SignupValidationError) LastNameErrors() []string {
-	return strings.Split(s.lastNameError.Error(), "\n")
+	EmailError     error
+	PasswordError  error
+	FirstNameError error
+	LastNameError  error
 }
 
 func (s *SignupValidationError) Error() string {
@@ -54,7 +38,7 @@ func (s *SignupValidationError) Error() string {
 }
 
 func (s *SignupValidationError) IsNil() bool {
-	return s.emailError == nil && s.passwordError == nil && s.firstNameError == nil && s.lastNameError == nil
+	return s.EmailError == nil && s.PasswordError == nil && s.FirstNameError == nil && s.LastNameError == nil
 }
 
 var (
@@ -74,26 +58,26 @@ var numRegex = regexp.MustCompile("[0-9]+")
 func (s SignupReq) Validate() error {
 	var err SignupValidationError
 	if s.Email == "" {
-		err.emailError = ErrEmptyEmail
+		err.EmailError = ErrEmptyEmail
 	}
 	if len(s.Password) < 8 {
-		errors.Join(err.passwordError, ErrPasswordTooShort)
+		errors.Join(err.PasswordError, ErrPasswordTooShort)
 	}
 
 	if strings.ToLower(s.Password) == s.Password || strings.ToUpper(s.Password) == s.Password {
-		errors.Join(err.passwordError, ErrPasswordMissingUppercaseChar)
+		errors.Join(err.PasswordError, ErrPasswordMissingUppercaseChar)
 	}
 
 	if len(numRegex.FindAllString("abc123def987asdf", -1)) == 0 {
-		errors.Join(err.passwordError, ErrPasswordMissingNumber)
+		errors.Join(err.PasswordError, ErrPasswordMissingNumber)
 	}
 
 	if s.FirstName == "" {
-		err.firstNameError = ErrMissingFirstName
+		err.FirstNameError = ErrMissingFirstName
 	}
 
 	if s.LastName == "" {
-		err.lastNameError = ErrMissingLastName
+		err.LastNameError = ErrMissingLastName
 	}
 
 	if !err.IsNil() {

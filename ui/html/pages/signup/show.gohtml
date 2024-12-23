@@ -30,7 +30,7 @@
                   <input
                     type="text"
                     name="firstName"
-                    class="form-control"
+                    class="form-control {{ isInvalidClass .HasFirstNameError }}"
                     id="firstName"
                     required
                   />
@@ -41,7 +41,7 @@
                   <input
                     type="text"
                     name="lastName"
-                    class="form-control"
+                    class="form-control {{ isInvalidClass .HasLastNameError }}"
                     id="lastName"
                     required
                   />
@@ -55,7 +55,7 @@
                 <input
                   type="email"
                   name="email"
-                  class="form-control"
+                  class="form-control {{ isInvalidClass .HasEmailError }}"
                   id="email"
                   required
                 />
@@ -64,12 +64,12 @@
 
               <!-- Password Field -->
               <div class="mb-4">
-                <label for="password" class="form-label">Password</label>
+                <label for="password" class="form-label ">Password</label>
                 <div class="input-group">
                   <input
                     type="password"
                     name="password"
-                    class="form-control"
+                    class="form-control {{ isInvalidClass .HasPasswordError }}"
                     id="password"
                     required
                     pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"

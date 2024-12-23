@@ -22,7 +22,7 @@ func (a *Application) SignUpShowHandler(w http.ResponseWriter, r *http.Request) 
 func (a *Application) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
 	ctx, cancel := context.WithTimeout(r.Context(), time.Millisecond*500)
-	r.WithContext(ctx)
+	r = r.WithContext(ctx)
 
 	defer cancel()
 	defer r.Body.Close()
@@ -46,10 +46,23 @@ func (a *Application) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 
 		if errors.As(err, &signupErr) {
 			data := a.NewSignupTemplateData(r, w, "/signup")
-			data.EmailErrors = signupErr.EmailErrors()
-			data.PasswordErrors = signupErr.PasswordErrors()
-			data.FirstNameErrors = signupErr.FirstNameErrors()
-			data.LastNameErrors = signupErr.LastNameErrors()
+			data.InitHasErrorFields()
+			if signupErr.EmailError != nil {
+				*data.HasEmailError = true
+			}
+
+			if signupErr.PasswordError != nil {
+				*data.HasPasswordError = true
+			}
+
+			if signupErr.FirstNameError != nil {
+				*data.HasFirstNameError = true
+			}
+
+			if signupErr.LastNameError != nil {
+				*data.HasLastNameError = true
+			}
+
 			a.render(w, r, http.StatusBadRequest, "signup/show.gohtml", data)
 			return
 		}
