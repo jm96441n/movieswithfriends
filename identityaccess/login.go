@@ -65,6 +65,8 @@ func (a *Authenticator) AccountExists(ctx context.Context, accountID int) (bool,
 	return found, nil
 }
 
+var ErrAccountExists = errors.New("account already exists")
+
 func (a *Authenticator) CreateAccount(ctx context.Context, req SignupReq) (store.Account, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
@@ -73,6 +75,10 @@ func (a *Authenticator) CreateAccount(ctx context.Context, req SignupReq) (store
 	}
 	account, err := a.AccountRepository.CreateAccount(ctx, req.Email, req.FirstName, req.LastName, hashedPassword)
 	if err != nil {
+		if errors.Is(err, store.ErrDuplicateEmailAddress) {
+			a.Logger.Debug("email exists for account")
+			return store.Account{}, ErrAccountExists
+		}
 		a.Logger.Error("error creating account", slog.Any("error", err))
 		return store.Account{}, err
 	}

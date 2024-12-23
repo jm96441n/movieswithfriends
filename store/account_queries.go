@@ -6,6 +6,7 @@ import (
 	"log/slog"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 type Account struct {
@@ -29,6 +30,14 @@ func (pg *PGStore) CreateAccount(ctx context.Context, email, firstName, lastName
 
 	err = txn.QueryRow(ctx, insertAccountQuery, email, password).Scan(&account.ID)
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			if pgErr.Code == pgUniqueViolationCode {
+				if pgErr.ConstraintName == "unique_email_addresses" {
+					return Account{}, ErrDuplicateEmailAddress
+				}
+			}
+		}
 		return Account{}, err
 	}
 

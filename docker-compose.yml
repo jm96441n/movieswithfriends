@@ -2,7 +2,7 @@ services:
   app:
     build: 
       context: .
-      target: dev
+      target: prod
     ports:
       - "4000:4000"
     environment:

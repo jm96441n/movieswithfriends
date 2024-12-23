@@ -2,6 +2,7 @@ package web
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"net/http"
 	"time"
@@ -35,6 +36,11 @@ func (a *Application) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 
 	_, err = a.Auth.CreateAccount(ctx, req)
 	if err != nil {
+		if errors.Is(err, identityaccess.ErrAccountExists) {
+			a.setFlashMessage(r, w, "An account exists with this email. Try logging in or resetting your password.")
+			http.Redirect(w, r, "/signup", http.StatusSeeOther)
+			return
+		}
 		a.serverError(w, r, err)
 		return
 	}

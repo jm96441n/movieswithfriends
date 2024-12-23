@@ -8,6 +8,7 @@ var (
 	ErrMemberPartyCombinationNotUnique = errors.New("store: member party combination not unique")
 	ErrDuplicatePartyName              = errors.New("party name already exists")
 	ErrDuplicatePartyShortID           = errors.New("party short id already exists")
+	ErrDuplicateEmailAddress           = errors.New("email address already exists")
 )
 
 type WatchStatusEnum string

@@ -10,7 +10,9 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.7.7
 	github.com/honeycombio/otel-config-go v1.17.0
 	github.com/jackc/pgx/v5 v5.7.1
+	github.com/playwright-community/playwright-go v0.4901.0
 	github.com/pressly/goose/v3 v3.22.1
+	github.com/samber/slog-multi v1.2.4
 	github.com/testcontainers/testcontainers-go v0.34.0
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.34.0
 	go.opentelemetry.io/contrib/bridges/otelslog v0.8.0
@@ -18,7 +20,6 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp v0.9.0
 	go.opentelemetry.io/otel/log v0.9.0
 	go.opentelemetry.io/otel/sdk/log v0.9.0
-	go.opentelemetry.io/otel/trace v1.33.0
 	golang.org/x/crypto v0.31.0
 )
 
@@ -65,11 +66,9 @@ require (
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/playwright-community/playwright-go v0.4901.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
 	github.com/samber/lo v1.47.0 // indirect
-	github.com/samber/slog-multi v1.2.4 // indirect
 	github.com/sethvargo/go-envconfig v1.1.0 // indirect
 	github.com/sethvargo/go-retry v0.3.0 // indirect
 	github.com/shirou/gopsutil/v3 v3.23.12 // indirect
@@ -94,6 +93,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.33.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.33.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.33.0 // indirect
+	go.opentelemetry.io/otel/trace v1.33.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.4.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/net v0.33.0 // indirect

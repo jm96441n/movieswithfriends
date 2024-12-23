@@ -1,5 +1,4 @@
-FROM golang:1.23 AS base
-
+FROM golang:1.23-bookworm AS base
 
 WORKDIR /go/src/app
 
@@ -7,7 +6,7 @@ COPY ./go.mod ./go.sum ./
 
 RUN go mod download
 
-COPY ./cmd ./
+COPY ./cmd ./cmd
 COPY ./web ./web
 COPY ./identityaccess/ ./identityaccess
 COPY ./partymgmt/ ./partymgmt
@@ -28,9 +27,9 @@ CMD ["air"]
 
 FROM base AS builder
 
-RUN CGO_ENABLED=0 go build -o /go/bin/app
+RUN CGO_ENABLED=0 go build -o /go/bin/app ./cmd/movieswithfriends/ 
 
-FROM debian:latest AS prod
+FROM gcr.io/distroless/static-debian12 AS prod
 
 COPY --from=builder /go/bin/app /
 CMD ["/app"]

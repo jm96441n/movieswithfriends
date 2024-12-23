@@ -27,3 +27,7 @@ copy-migrations:
 .PHONY: deploy
 deploy: build-deploy copy-migrations
 	source ./infra/.envrc && ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i './infra/ansible/inventory/app.yml' -u root --private-key ~/.ssh/do ./infra/ansible/deploy_app.yml
+
+.PHONY: e2e
+e2e:
+	@docker build --target=prod -t movieswithfriends:test . && go test ./e2e/...
