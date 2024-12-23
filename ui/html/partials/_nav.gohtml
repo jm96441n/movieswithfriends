@@ -50,30 +50,28 @@
                   data-bs-auto-close="outside"
                   aria-expanded="false"
                 >
-                  Parties 
+                  Parties
                 </a>
                 <ul class="dropdown-menu">
                   <div class="list-group">
-                  {{- range .CurrentUserParties }}
-                    <a
-                      class="dropdown-item list-group-item-action"
-                      id="{{ hyphenate .Name }}-party-nav-bar"
-                      href="/parties/{{ .ID }}"
-                    >
-                      <li>
-                        {{ .Name }}
-                      </li>
-                    </a>
-                  {{- end}}
+                    {{- range .CurrentUserParties }}
+                      <a
+                        class="dropdown-item list-group-item-action"
+                        id="{{ hyphenate .Name }}-party-nav-bar"
+                        href="/parties/{{ .ID }}"
+                      >
+                        <li>
+                          {{ .Name }}
+                        </li>
+                      </a>
+                    {{- end }}
                     <div class="dropdown-divider"></div>
                     <a
                       class="dropdown-item list-group-item-action btn btn-primary"
                       id="create-party-button"
                       href="/parties/new"
                     >
-                      <li>
-                        Create New Party
-                      </li>
+                      <li>Create New Party</li>
                     </a>
                   </div>
                 </ul>

@@ -1,40 +1,40 @@
 {{ define "title" }}Movies Search{{ end }}
 {{ define "main" }}
- <!-- Search Header -->
-    <div class="bg-white border-bottom py-4 mb-4">
-        <div class="container">
-            <h1 class="h3 mb-4">Search Movies</h1>
-            
-            <!-- Search Bar -->
-            <div class="row justify-content-center">
-                <div class="col-lg-8">
-                    <form>
-                        <input 
-                          type="search" 
-                          class="form-control form-control-lg"
-                          aria-label="Search"
-                          type="search"
-                          name="search"
-                          placeholder="Begin typing to search for movies..."
-                          value="{{ .SearchValue }}"
-                          hx-get="/movies"
-                          hx-push-url="true"
-                          hx-trigger="input changed delay:500ms, search"
-                          hx-target="#search-results"
-                          hx-params="*"
-                        >
-                    </form>
-                </div>
-            </div>
+  <!-- Search Header -->
+  <div class="bg-white border-bottom py-4 mb-4">
+    <div class="container">
+      <h1 class="h3 mb-4">Search Movies</h1>
+
+      <!-- Search Bar -->
+      <div class="row justify-content-center">
+        <div class="col-lg-8">
+          <form>
+            <input
+              type="search"
+              class="form-control form-control-lg"
+              aria-label="Search"
+              type="search"
+              name="search"
+              placeholder="Begin typing to search for movies..."
+              value="{{ .SearchValue }}"
+              hx-get="/movies"
+              hx-push-url="true"
+              hx-trigger="input changed delay:500ms, search"
+              hx-target="#search-results"
+              hx-params="*"
+            />
+          </form>
         </div>
-    </div>
-    <div class="container mb-7">
-      <!-- Movie Grid -->
-      <div class="row g-4" id="search-results">
-        {{ template "search_results" . }}
       </div>
     </div>
-    <!-- TODO: Pagination 
+  </div>
+  <div class="container mb-7">
+    <!-- Movie Grid -->
+    <div class="row g-4" id="search-results">
+      {{ template "search_results" . }}
+    </div>
+  </div>
+  <!-- TODO: Pagination 
     <nav class="my-4">
             <ul class="pagination justify-content-center">
                 <li class="page-item disabled">

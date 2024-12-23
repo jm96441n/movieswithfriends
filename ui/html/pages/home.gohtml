@@ -1,105 +1,140 @@
 {{ define "title" }}Home{{ end }}
 {{ define "main" }}
-    <!-- Hero Section -->
-    <div class="bg-dark text-white py-5">
-        <div class="container">
-            <div class="row align-items-center">
-                <div class="col-lg-6">
-                    <h1 class="display-4 fw-bold mb-3">Movie Night Made Simple</h1>
-                    <p class="lead mb-4">No more endless scrolling or debates about what to watch. Create shared watchlists with friends and let our fair picker choose your next movie night feature.</p>
-                    <div class="d-flex gap-3">
-                        <a href="/signup" class="btn btn-primary btn-lg">Get Started</a>
-                        <a href="#how-it-works" class="btn btn-outline-light btn-lg">Learn More</a>
-                    </div>
-                </div>
-                <div class="col-lg-6 mt-5 mt-lg-0">
-                    <div class="position-relative">
-                        <img src="/static/images/hero.jpg" alt="Movie Night Illustration" class="img-fluid rounded-3 shadow-lg">
-                        <div class="position-absolute top-0 start-100 translate-middle">
-                            <div class="bg-primary text-white p-3 rounded-circle">
-                                <i class="fas fa-random fa-2x"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+  <!-- Hero Section -->
+  <div class="bg-dark text-white py-5">
+    <div class="container">
+      <div class="row align-items-center">
+        <div class="col-lg-6">
+          <h1 class="display-4 fw-bold mb-3">Movie Night Made Simple</h1>
+          <p class="lead mb-4">
+            No more endless scrolling or debates about what to watch. Create
+            shared watchlists with friends and let our fair picker choose your
+            next movie night feature.
+          </p>
+          <div class="d-flex gap-3">
+            <a href="/signup" class="btn btn-primary btn-lg">Get Started</a>
+            <a href="#how-it-works" class="btn btn-outline-light btn-lg"
+              >Learn More</a
+            >
+          </div>
         </div>
-    </div>
-
-    <!-- How It Works -->
-    <div id="how-it-works" class="py-5">
-        <div class="container">
-            <h2 class="text-center fw-bold mb-5">How It Works</h2>
-            <div class="row g-4">
-                <div class="col-md-4">
-                    <div class="card border-0 h-100">
-                        <div class="card-body text-center">
-                            <div class="bg-primary bg-opacity-10 p-3 rounded-circle d-inline-block mb-3">
-                                <i class="fas fa-users fa-2x text-primary"></i>
-                            </div>
-                            <h3 class="h5 fw-bold">Create Your Watch Group</h3>
-                            <p class="text-muted">Invite friends to join your movie watch group. Everyone can contribute to the shared watchlist.</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card border-0 h-100">
-                        <div class="card-body text-center">
-                            <div class="bg-primary bg-opacity-10 p-3 rounded-circle d-inline-block mb-3">
-                                <i class="fas fa-film fa-2x text-primary"></i>
-                            </div>
-                            <h3 class="h5 fw-bold">Build Your Watchlist</h3>
-                            <p class="text-muted">Add movies you want to watch. Everyone's suggestions are tracked and weighted equally.</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card border-0 h-100">
-                        <div class="card-body text-center">
-                            <div class="bg-primary bg-opacity-10 p-3 rounded-circle d-inline-block mb-3">
-                                <i class="fas fa-magic fa-2x text-primary"></i>
-                            </div>
-                            <h3 class="h5 fw-bold">Let the App Choose</h3>
-                            <p class="text-muted">Click the picker button and get a fair, random selection from your group's watchlist.</p>
-                        </div>
-                    </div>
-                </div>
+        <div class="col-lg-6 mt-5 mt-lg-0">
+          <div class="position-relative">
+            <img
+              src="/static/images/hero.jpg"
+              alt="Movie Night Illustration"
+              class="img-fluid rounded-3 shadow-lg"
+            />
+            <div class="position-absolute top-0 start-100 translate-middle">
+              <div class="bg-primary text-white p-3 rounded-circle">
+                <i class="fas fa-random fa-2x"></i>
+              </div>
             </div>
+          </div>
         </div>
+      </div>
     </div>
+  </div>
 
-    <!-- Features -->
-    <div class="bg-light py-5">
-        <div class="container">
-            <h2 class="text-center fw-bold mb-5">Key Features</h2>
-            <div class="row g-4 align-items-center">
-                <div class="col-lg-6">
-                    <img src="/static/images/features.jpg" alt="App Features" class="img-fluid rounded-3 shadow">
-                </div>
-                <div class="col-lg-6">
-                    <div class="d-flex mb-4">
-                        <div class="me-3">
-                            <div class="bg-success bg-opacity-10 p-3 rounded-circle">
-                                <i class="fas fa-check text-success"></i>
-                            </div>
-                        </div>
-                        <div>
-                            <h3 class="h5 fw-bold">Fair Selection Algorithm</h3>
-                            <p class="text-muted mb-0">Our picker ensures every movie has an equal chance of being selected, making movie night fair for everyone.</p>
-                        </div>
-                    </div>
-                    <div class="d-flex mb-4">
-                        <div class="me-3">
-                            <div class="bg-success bg-opacity-10 p-3 rounded-circle">
-                                <i class="fas fa-check text-success"></i>
-                            </div>
-                        </div>
-                        <div>
-                            <h3 class="h5 fw-bold">Shared Watchlists</h3>
-                            <p class="text-muted mb-0">Create multiple watchlists for different friend groups and occasions.</p>
-                        </div>
-                    </div>
-                    <!-- Uncomment this when we add this feature
+  <!-- How It Works -->
+  <div id="how-it-works" class="py-5">
+    <div class="container">
+      <h2 class="text-center fw-bold mb-5">How It Works</h2>
+      <div class="row g-4">
+        <div class="col-md-4">
+          <div class="card border-0 h-100">
+            <div class="card-body text-center">
+              <div
+                class="bg-primary bg-opacity-10 p-3 rounded-circle d-inline-block mb-3"
+              >
+                <i class="fas fa-users fa-2x text-primary"></i>
+              </div>
+              <h3 class="h5 fw-bold">Create Your Watch Group</h3>
+              <p class="text-muted">
+                Invite friends to join your movie watch group. Everyone can
+                contribute to the shared watchlist.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card border-0 h-100">
+            <div class="card-body text-center">
+              <div
+                class="bg-primary bg-opacity-10 p-3 rounded-circle d-inline-block mb-3"
+              >
+                <i class="fas fa-film fa-2x text-primary"></i>
+              </div>
+              <h3 class="h5 fw-bold">Build Your Watchlist</h3>
+              <p class="text-muted">
+                Add movies you want to watch. Everyone's suggestions are tracked
+                and weighted equally.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card border-0 h-100">
+            <div class="card-body text-center">
+              <div
+                class="bg-primary bg-opacity-10 p-3 rounded-circle d-inline-block mb-3"
+              >
+                <i class="fas fa-magic fa-2x text-primary"></i>
+              </div>
+              <h3 class="h5 fw-bold">Let the App Choose</h3>
+              <p class="text-muted">
+                Click the picker button and get a fair, random selection from
+                your group's watchlist.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Features -->
+  <div class="bg-light py-5">
+    <div class="container">
+      <h2 class="text-center fw-bold mb-5">Key Features</h2>
+      <div class="row g-4 align-items-center">
+        <div class="col-lg-6">
+          <img
+            src="/static/images/features.jpg"
+            alt="App Features"
+            class="img-fluid rounded-3 shadow"
+          />
+        </div>
+        <div class="col-lg-6">
+          <div class="d-flex mb-4">
+            <div class="me-3">
+              <div class="bg-success bg-opacity-10 p-3 rounded-circle">
+                <i class="fas fa-check text-success"></i>
+              </div>
+            </div>
+            <div>
+              <h3 class="h5 fw-bold">Fair Selection Algorithm</h3>
+              <p class="text-muted mb-0">
+                Our picker ensures every movie has an equal chance of being
+                selected, making movie night fair for everyone.
+              </p>
+            </div>
+          </div>
+          <div class="d-flex mb-4">
+            <div class="me-3">
+              <div class="bg-success bg-opacity-10 p-3 rounded-circle">
+                <i class="fas fa-check text-success"></i>
+              </div>
+            </div>
+            <div>
+              <h3 class="h5 fw-bold">Shared Watchlists</h3>
+              <p class="text-muted mb-0">
+                Create multiple watchlists for different friend groups and
+                occasions.
+              </p>
+            </div>
+          </div>
+          <!-- Uncomment this when we add this feature
                     <div class="d-flex mb-4">
                         <div class="me-3">
                             <div class="bg-success bg-opacity-10 p-3 rounded-circle">
@@ -112,12 +147,12 @@
                         </div>
                     </div>
                     -->
-                </div>
-            </div>
         </div>
+      </div>
     </div>
+  </div>
 
-    <!-- Social Proof 
+  <!-- Social Proof 
     <div class="py-5">
         <div class="container">
             <div class="row justify-content-center text-center mb-5">
@@ -194,16 +229,20 @@
         </div>
     </div>
     -->
-    <!-- CTA -->
-    <div class="bg-primary text-white text-center py-5">
-        <div class="container">
-            <div class="row justify-content-center">
-                <div class="col-lg-8">
-                    <h2 class="fw-bold mb-4">Ready to Make Movie Night Better?</h2>
-                    <p class="lead mb-4">Join now and start planning your next movie night the easy way.</p>
-                    <a href="/signup" class="btn btn-lg btn-light">Get Started - It's Free!</a>
-                </div>
-            </div>
+  <!-- CTA -->
+  <div class="bg-primary text-white text-center py-5">
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col-lg-8">
+          <h2 class="fw-bold mb-4">Ready to Make Movie Night Better?</h2>
+          <p class="lead mb-4">
+            Join now and start planning your next movie night the easy way.
+          </p>
+          <a href="/signup" class="btn btn-lg btn-light"
+            >Get Started - It's Free!</a
+          >
         </div>
+      </div>
     </div>
+  </div>
 {{ end }}
