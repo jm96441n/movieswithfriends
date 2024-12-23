@@ -15,7 +15,7 @@ type SignupResponse struct {
 }
 
 func (a *Application) SignUpShowHandler(w http.ResponseWriter, r *http.Request) {
-	data := a.NewTemplateData(r, w, "/signup")
+	data := a.NewSignupTemplateData(r, w, "/signup")
 	a.render(w, r, http.StatusOK, "signup/show.gohtml", data)
 }
 
@@ -37,16 +37,29 @@ func (a *Application) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 	_, err = a.Auth.CreateAccount(ctx, req)
 	if err != nil {
 		if errors.Is(err, identityaccess.ErrAccountExists) {
-			a.setFlashMessage(r, w, "An account exists with this email. Try logging in or resetting your password.")
+			a.setErrorFlashMessage(r, w, "An account exists with this email. Try logging in or resetting your password.")
 			http.Redirect(w, r, "/signup", http.StatusSeeOther)
 			return
 		}
+
+		var signupErr *identityaccess.SignupValidationError
+
+		if errors.As(err, &signupErr) {
+			data := a.NewSignupTemplateData(r, w, "/signup")
+			data.EmailErrors = signupErr.EmailErrors()
+			data.PasswordErrors = signupErr.PasswordErrors()
+			data.FirstNameErrors = signupErr.FirstNameErrors()
+			data.LastNameErrors = signupErr.LastNameErrors()
+			a.render(w, r, http.StatusBadRequest, "signup/show.gohtml", data)
+			return
+		}
+
 		a.serverError(w, r, err)
 		return
 	}
 
 	a.Logger.Debug("seeting flash message")
-	a.setFlashMessage(r, w, "Successfully signed up! Please log in.")
+	a.setInfoFlashMessage(r, w, "Successfully signed up! Please log in.")
 
 	a.Logger.Debug("successfully signed up user", "userName", req.FirstName, "userEmail", req.Email)
 	http.Redirect(w, r, "/login", http.StatusSeeOther)

@@ -6,14 +6,8 @@ COPY ./go.mod ./go.sum ./
 
 RUN go mod download
 
-COPY ./cmd ./cmd
-COPY ./web ./web
-COPY ./identityaccess/ ./identityaccess
-COPY ./partymgmt/ ./partymgmt
-COPY ./ui ./ui
-COPY ./store ./store
-COPY ./migrations ./migrations
 
+## DEV BUILD
 FROM base AS dev-base
 
 RUN go install github.com/pressly/goose/v3/cmd/goose@latest
@@ -25,7 +19,17 @@ WORKDIR /go/src/app
 
 CMD ["air"]
 
+
+## PROD BUILD
 FROM base AS builder
+
+COPY ./cmd ./cmd
+COPY ./web ./web
+COPY ./identityaccess/ ./identityaccess
+COPY ./partymgmt/ ./partymgmt
+COPY ./ui ./ui
+COPY ./store ./store
+COPY ./migrations ./migrations
 
 RUN CGO_ENABLED=0 go build -o /go/bin/app ./cmd/movieswithfriends/ 
 

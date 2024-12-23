@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"regexp"
+	"strings"
 
 	"github.com/jm96441n/movieswithfriends/store"
 	"golang.org/x/crypto/bcrypt"
@@ -24,12 +26,87 @@ type SignupReq struct {
 	PartyID   string `json:"partyID"`
 }
 
+type SignupValidationError struct {
+	emailError     error
+	passwordError  error
+	firstNameError error
+	lastNameError  error
+}
+
+func (s *SignupValidationError) EmailErrors() []string {
+	return strings.Split(s.emailError.Error(), "\n")
+}
+
+func (s *SignupValidationError) PasswordErrors() []string {
+	return strings.Split(s.passwordError.Error(), "\n")
+}
+
+func (s *SignupValidationError) FirstNameErrors() []string {
+	return strings.Split(s.firstNameError.Error(), "\n")
+}
+
+func (s *SignupValidationError) LastNameErrors() []string {
+	return strings.Split(s.lastNameError.Error(), "\n")
+}
+
+func (s *SignupValidationError) Error() string {
+	return fmt.Sprintf("signup validation error: %v", s)
+}
+
+func (s *SignupValidationError) IsNil() bool {
+	return s.emailError == nil && s.passwordError == nil && s.firstNameError == nil && s.lastNameError == nil
+}
+
+var (
+	ErrEmptyEmail                   = errors.New("email is required")
+	ErrPasswordTooShort             = errors.New("password must be at least 8 characters long")
+	ErrPasswordMissingNumber        = errors.New("password must contain at least one number")
+	ErrPasswordMissingUppercaseChar = errors.New("password must contain at least one uppercase character")
+	ErrMissingFirstName             = errors.New("first name is required")
+	ErrMissingLastName              = errors.New("last name is required")
+
+	ErrInvalidCredentials = errors.New("invalid credentials")
+	ErrAccountExists      = errors.New("account already exists")
+)
+
+var numRegex = regexp.MustCompile("[0-9]+")
+
+func (s SignupReq) Validate() error {
+	var err SignupValidationError
+	if s.Email == "" {
+		err.emailError = ErrEmptyEmail
+	}
+	if len(s.Password) < 8 {
+		errors.Join(err.passwordError, ErrPasswordTooShort)
+	}
+
+	if strings.ToLower(s.Password) == s.Password || strings.ToUpper(s.Password) == s.Password {
+		errors.Join(err.passwordError, ErrPasswordMissingUppercaseChar)
+	}
+
+	if len(numRegex.FindAllString("abc123def987asdf", -1)) == 0 {
+		errors.Join(err.passwordError, ErrPasswordMissingNumber)
+	}
+
+	if s.FirstName == "" {
+		err.firstNameError = ErrMissingFirstName
+	}
+
+	if s.LastName == "" {
+		err.lastNameError = ErrMissingLastName
+	}
+
+	if !err.IsNil() {
+		return &err
+	}
+
+	return nil
+}
+
 type Authenticator struct {
 	Logger            *slog.Logger
 	AccountRepository accountRepository
 }
-
-var ErrInvalidCredentials = errors.New("invalid credentials")
 
 func (a *Authenticator) Authenticate(ctx context.Context, email, password string) (store.Account, error) {
 	account, err := a.AccountRepository.FindAccountByEmail(ctx, email)
@@ -65,9 +142,11 @@ func (a *Authenticator) AccountExists(ctx context.Context, accountID int) (bool,
 	return found, nil
 }
 
-var ErrAccountExists = errors.New("account already exists")
-
 func (a *Authenticator) CreateAccount(ctx context.Context, req SignupReq) (store.Account, error) {
+	err := req.Validate()
+	if err != nil {
+		return store.Account{}, err
+	}
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		a.Logger.Error("error hashing password", slog.Any("error", err))

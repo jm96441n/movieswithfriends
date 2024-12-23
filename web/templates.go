@@ -19,9 +19,17 @@ type partyNav struct {
 	Name string
 }
 
+const (
+	FlashErrorKey   = "error"
+	FlashInfoKey    = "info"
+	FlashWarningKey = "warn"
+)
+
 type BaseTemplateData struct {
 	CurrentPagePath    string
-	Flashes            []interface{}
+	ErrorFlashes       []interface{}
+	InfoFlashes        []interface{}
+	WarningFlashes     []interface{}
 	IsAuthenticated    bool
 	CurrentYear        int
 	CurrentUserParties []partyNav
@@ -50,6 +58,14 @@ type PartiesTemplateData struct {
 	BaseTemplateData
 }
 
+type SignupTemplateData struct {
+	EmailErrors     []string
+	PasswordErrors  []string
+	FirstNameErrors []string
+	LastNameErrors  []string
+	BaseTemplateData
+}
+
 func (a *Application) NewTemplateData(r *http.Request, w http.ResponseWriter, path string) BaseTemplateData {
 	return a.newBaseTemplateData(r, w, path)
 }
@@ -72,6 +88,12 @@ func (a *Application) NewPartiesTemplateData(r *http.Request, w http.ResponseWri
 	}
 }
 
+func (a *Application) NewSignupTemplateData(r *http.Request, w http.ResponseWriter, path string) SignupTemplateData {
+	return SignupTemplateData{
+		BaseTemplateData: a.newBaseTemplateData(r, w, path),
+	}
+}
+
 func (a *Application) newBaseTemplateData(r *http.Request, w http.ResponseWriter, path string) BaseTemplateData {
 	authed := isAuthenticated(r.Context())
 
@@ -86,15 +108,23 @@ func (a *Application) newBaseTemplateData(r *http.Request, w http.ResponseWriter
 		email = r.Context().Value(emailContextKey).(string)
 	}
 
-	var flashes []interface{}
+	var (
+		errorFlashes   []interface{}
+		warningFlashes []interface{}
+		infoFlashes    []interface{}
+	)
 	session, err := a.SessionStore.Get(r, sessionName)
 	if err == nil {
-		flashes = session.Flashes()
+		errorFlashes = session.Flashes(FlashErrorKey)
+		warningFlashes = session.Flashes(FlashWarningKey)
+		infoFlashes = session.Flashes(FlashInfoKey)
 		session.Save(r, w)
 	}
 
 	return BaseTemplateData{
-		Flashes:            flashes,
+		ErrorFlashes:       errorFlashes,
+		InfoFlashes:        infoFlashes,
+		WarningFlashes:     warningFlashes,
 		CurrentPagePath:    path,
 		CurrentYear:        2024,
 		IsAuthenticated:    authed,

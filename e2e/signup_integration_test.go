@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -50,7 +51,7 @@ func TestSignup(t *testing.T) {
 		t.Fatalf("could not start playwright: %v", err)
 	}
 	browser, err := pw.Chromium.Launch(playwright.BrowserTypeLaunchOptions{
-		Headless: playwright.Bool(false),
+		Headless: playwright.Bool(true),
 	})
 	if err != nil {
 		t.Fatalf("could not launch browser: %v", err)
@@ -62,8 +63,9 @@ func TestSignup(t *testing.T) {
 	}
 
 	tests := map[string]func(*testing.T){
-		"testSignupIsSuccessful":        testSignupIsSuccessful(browser, port.Port()),
-		"testSignupFailsIfEmailIsInUse": testSignupFailsIfEmailIsInUse(dbCtr, browser, port.Port()),
+		"testSignupIsSuccessful":             testSignupIsSuccessful(browser, port.Port()),
+		"testSignupFailsIfEmailIsInUse":      testSignupFailsIfEmailIsInUse(dbCtr, browser, port.Port()),
+		"testSignupFailsWithFormValidations": testSignupFailsWithFormValidations(browser, port.Port()),
 	}
 
 	for name, testFn := range tests {
@@ -133,14 +135,59 @@ func testSignupFailsIfEmailIsInUse(dbCtr *postgres.PostgresContainer, browser pl
 			t.Fatalf("could not click create account button: %v", err)
 		}
 
+		locatorChecker := playwright.NewPlaywrightAssertions()
+
 		flashMsg := page.GetByText("An account exists with this email. Try logging in or resetting your password.")
-		if flashMsg == nil {
+		flashChecker := locatorChecker.Locator(flashMsg)
+		if err := flashChecker.Not().ToBeEmpty(); err != nil {
 			t.Fatal("expected error message in flash, got nothing")
+		}
+
+		regex := regexp.MustCompile(`.*alert-danger.*`)
+
+		if err := flashChecker.ToHaveClass(regex); err != nil {
+			s, err := flashMsg.GetAttribute("class")
+			if err != nil {
+				t.Fatalf("failed to get class attribute: %v", err)
+			}
+			t.Fatalf("expected flash message to be have class \"alert-danger\", it was %s", s)
 		}
 
 		curURL := page.URL()
 		if !strings.Contains(curURL, "/signup") {
 			t.Fatalf("expected to be on signup page, got %s", curURL)
+		}
+	}
+}
+
+func testSignupFailsWithFormValidations(browser playwright.Browser, appPort string) func(t *testing.T) {
+	return func(t *testing.T) {
+		page, err := browser.NewPage()
+		if err != nil {
+			t.Fatalf("could not create page: %v", err)
+		}
+
+		if _, err = page.Goto(fmt.Sprintf("http://localhost:%s/signup", appPort)); err != nil {
+			t.Fatalf("could not goto: %v", err)
+		}
+
+		err = page.GetByText("Create Account").Click()
+		if err != nil {
+			t.Fatalf("could not click create account button: %v", err)
+		}
+
+		errMsgs := page.Locator(".invalid-feedback")
+		if errMsgs == nil {
+			t.Fatalf("could not get error messages")
+		}
+
+		texts, err := errMsgs.AllInnerTexts()
+		if err != nil {
+			t.Fatalf("could not get error messages text: %v", err)
+		}
+
+		for _, text := range texts {
+			fmt.Println(text)
 		}
 	}
 }
