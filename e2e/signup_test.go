@@ -106,7 +106,18 @@ func testSignupIsSuccessful(browser playwright.Browser, appPort string) func(t *
 			t.Fatalf("expected to be on login page, got %s", curURL)
 		}
 
-		// fillInField(t, "Email")
+		fillInField(t, "Email Address", "buddy3@santa.com", page)
+		fillInField(t, "Password", "1Password", page)
+
+		err = page.Locator("button").GetByText("Sign In").Click()
+		if err != nil {
+			t.Fatalf("could not click sign in button: %v", err)
+		}
+
+		curURL = page.URL()
+		if !strings.Contains(curURL, "/profile") {
+			t.Fatalf("expected to be on profile page, got %s", curURL)
+		}
 	}
 }
 

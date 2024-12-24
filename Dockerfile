@@ -6,7 +6,6 @@ COPY ./go.mod ./go.sum ./
 
 RUN go mod download
 
-
 ## DEV BUILD
 FROM base AS dev-base
 
