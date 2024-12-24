@@ -105,6 +105,8 @@ func testSignupIsSuccessful(browser playwright.Browser, appPort string) func(t *
 		if !strings.Contains(curURL, "/login") {
 			t.Fatalf("expected to be on login page, got %s", curURL)
 		}
+
+		// fillInField(t, "Email")
 	}
 }
 
@@ -114,7 +116,7 @@ func testSignupFailsIfEmailIsInUse(dbCtr *postgres.PostgresContainer, browser pl
 		testConn := setupDBConn(ctx, t, dbCtr)
 		t.Cleanup(cleanupAndResetDB(ctx, t, dbCtr, testConn))
 
-		seedExistingAccount(ctx, t, testConn, "buddy@santa.com", "anotherpassword")
+		seedAccount(ctx, t, testConn, "buddy@santa.com", "anotherpassword")
 
 		page, err := browser.NewPage()
 		if err != nil {
@@ -192,7 +194,7 @@ func testSignupFailsWithFormValidations(browser playwright.Browser, appPort stri
 	}
 }
 
-func seedExistingAccount(ctx context.Context, t *testing.T, conn *pgx.Conn, email, password string) {
+func seedAccount(ctx context.Context, t *testing.T, conn *pgx.Conn, email, password string) {
 	t.Helper()
 	_, err := conn.Exec(ctx, "INSERT INTO accounts (email, password) VALUES ($1, $2)", email, password)
 	if err != nil {
