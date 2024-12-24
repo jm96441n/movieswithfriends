@@ -10,6 +10,10 @@ func FillInField(t *testing.T, label, value string, page playwright.Page) {
 	t.Helper()
 	field := page.GetByLabel(label)
 
+	if field == nil {
+		t.Fatalf("could not find field labeled by %q", label)
+	}
+
 	err := field.Fill(value)
 	if err != nil {
 		t.Fatalf("could not fill %s: %v", label, err)

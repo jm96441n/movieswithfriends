@@ -57,7 +57,7 @@ func testSignupIsSuccessful(browser playwright.Browser, appPort string) func(t *
 		helpers.FillInField(t, "Email", "buddy3@santa.com", page)
 		helpers.FillInField(t, "Password", "1Password", page)
 
-		err := page.GetByText("Create Account").Click()
+		err := page.Locator("button:has-text('Create Account')").Click()
 		if err != nil {
 			t.Fatalf("could not click create account button: %v", err)
 		}
@@ -75,7 +75,7 @@ func testSignupIsSuccessful(browser playwright.Browser, appPort string) func(t *
 		helpers.FillInField(t, "Email Address", "buddy3@santa.com", page)
 		helpers.FillInField(t, "Password", "1Password", page)
 
-		err = page.Locator("button").GetByText("Sign In").Click()
+		err = page.Locator("button:has-text('Sign In')").Click()
 		if err != nil {
 			t.Fatalf("could not click sign in button: %v", err)
 		}
@@ -102,7 +102,7 @@ func testSignupFailsIfEmailIsInUse(dbCtr *postgres.PostgresContainer, browser pl
 		helpers.FillInField(t, "Email", "buddy@santa.com", page)
 		helpers.FillInField(t, "Password", "1Password", page)
 
-		err := page.GetByText("Create Account").Click()
+		err := page.Locator("button:has-text('Create Account')").Click()
 		if err != nil {
 			t.Fatalf("could not click create account button: %v", err)
 		}
@@ -141,7 +141,7 @@ func testSignupFailsWithFormValidations(browser playwright.Browser, appPort stri
 			{"First Name", "Buddy"},
 			{"Last Name", "TheElf"},
 			{"Email", "buddy3@santa.com"},
-			{"Passowrd", "1Password"},
+			{"Password", "1Password"},
 		}
 
 		errMsgs := page.Locator(".invalid-feedback:visible")
@@ -154,8 +154,8 @@ func testSignupFailsWithFormValidations(browser playwright.Browser, appPort stri
 			t.Fatal("Expected 0 warnings before submission but there were some")
 		}
 
-		for i := 0; i < len(expectedMsgs); i++ {
-			err := page.GetByText("Create Account").Click()
+		for i := 0; i < 4; i++ {
+			err := page.Locator("button:has-text('Create Account')").Click()
 			if err != nil {
 				t.Fatalf("could not click create account button: %v", err)
 			}
