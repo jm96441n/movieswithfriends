@@ -2,7 +2,7 @@ module github.com/jm96441n/movieswithfriends
 
 go 1.23
 
-toolchain go1.23.1
+toolchain go1.23.4
 
 require (
 	github.com/exaring/otelpgx v0.7.0
