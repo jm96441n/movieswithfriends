@@ -41,22 +41,19 @@ func TestSignup(t *testing.T) {
 	}
 
 	tests := map[string]func(*testing.T){
-		"testSignupIsSuccessful":             testSignupIsSuccessful(page, port.Port()),
+		"testSignupIsSuccessful":             testSignupIsSuccessful(dbCtr, page, port.Port()),
 		"testSignupFailsIfEmailIsInUse":      testSignupFailsIfEmailIsInUse(dbCtr, page, port.Port()),
-		"testSignupFailsWithFormValidations": testSignupFailsWithFormValidations(page, port.Port()),
+		"testSignupFailsWithFormValidations": testSignupFailsWithFormValidations(dbCtr, page, port.Port()),
 	}
 
 	for name, testFn := range tests {
-		err := page.Context().ClearCookies()
-		if err != nil {
-			t.Fatalf("could not clear cookies: %v", err)
-		}
 		t.Run(name, testFn)
 	}
 }
 
-func testSignupIsSuccessful(page playwright.Page, appPort string) func(t *testing.T) {
+func testSignupIsSuccessful(dbCtr *postgres.PostgresContainer, page playwright.Page, appPort string) func(t *testing.T) {
 	return func(t *testing.T) {
+		helpers.Setup(t, dbCtr, page)
 		t.Helper()
 
 		_, err := page.Goto(fmt.Sprintf("http://localhost:%s/signup", appPort))
@@ -101,9 +98,7 @@ func testSignupIsSuccessful(page playwright.Page, appPort string) func(t *testin
 
 func testSignupFailsIfEmailIsInUse(dbCtr *postgres.PostgresContainer, page playwright.Page, appPort string) func(t *testing.T) {
 	return func(t *testing.T) {
-		ctx := context.Background()
-		testConn := helpers.SetupDBConn(ctx, t, dbCtr)
-		t.Cleanup(helpers.CleanupAndResetDB(ctx, t, dbCtr, testConn))
+		ctx, testConn := helpers.Setup(t, dbCtr, page)
 
 		helpers.SeedAccountWithProfile(ctx, t, testConn, "buddy@santa.com", "anotherpassword", "Buddy", "TheElf")
 
@@ -147,8 +142,9 @@ func testSignupFailsIfEmailIsInUse(dbCtr *postgres.PostgresContainer, page playw
 	}
 }
 
-func testSignupFailsWithFormValidations(page playwright.Page, appPort string) func(t *testing.T) {
+func testSignupFailsWithFormValidations(dbCtr *postgres.PostgresContainer, page playwright.Page, appPort string) func(t *testing.T) {
 	return func(t *testing.T) {
+		helpers.Setup(t, dbCtr, page)
 		_, err := page.Goto(fmt.Sprintf("http://localhost:%s/signup", appPort))
 		if err != nil {
 			t.Fatalf("could not goto signup page: %v", err)

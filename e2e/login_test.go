@@ -40,27 +40,19 @@ func TestLogin(t *testing.T) {
 		t.Fatalf("could not create page: %v", err)
 	}
 
-	tests := map[string]func(*testing.T){
+	tests := map[string]func(t *testing.T){
 		"testLoginIsSuccessful":                           testLoginIsSuccessful(dbCtr, page, port.Port()),
 		"testLoginFailsWhenUsernameOrPasswordIsIncorrect": testLoginFailsWhenUsernameOrPasswordIsIncorrect(dbCtr, page, port.Port()),
 	}
 
 	for name, testFn := range tests {
 		t.Run(name, testFn)
-
-		err := page.Context().ClearCookies()
-		if err != nil {
-			t.Fatalf("could not clear cookies: %v", err)
-		}
 	}
 }
 
-func testLoginIsSuccessful(dbCtr *postgres.PostgresContainer, page playwright.Page, appPort string) func(t *testing.T) {
+func testLoginIsSuccessful(dbCtr *postgres.PostgresContainer, page playwright.Page, appPort string) func(*testing.T) {
 	return func(t *testing.T) {
-		ctx := context.Background()
-		testConn := helpers.SetupDBConn(ctx, t, dbCtr)
-		t.Cleanup(helpers.CleanupAndResetDB(ctx, t, dbCtr, testConn))
-
+		ctx, testConn := helpers.Setup(t, dbCtr, page)
 		helpers.SeedAccountWithProfile(ctx, t, testConn, "buddy@santa.com", "anotherpassword", "Buddy", "TheElf")
 
 		_, err := page.Goto(fmt.Sprintf("http://localhost:%s", appPort))
@@ -126,11 +118,9 @@ func testLoginIsSuccessful(dbCtr *postgres.PostgresContainer, page playwright.Pa
 	}
 }
 
-func testLoginFailsWhenUsernameOrPasswordIsIncorrect(dbCtr *postgres.PostgresContainer, page playwright.Page, appPort string) func(t *testing.T) {
+func testLoginFailsWhenUsernameOrPasswordIsIncorrect(dbCtr *postgres.PostgresContainer, page playwright.Page, appPort string) func(*testing.T) {
 	return func(t *testing.T) {
-		ctx := context.Background()
-		testConn := helpers.SetupDBConn(ctx, t, dbCtr)
-		t.Cleanup(helpers.CleanupAndResetDB(ctx, t, dbCtr, testConn))
+		ctx, testConn := helpers.Setup(t, dbCtr, page)
 
 		helpers.SeedAccountWithProfile(ctx, t, testConn, "buddy@santa.com", "anotherpassword", "Buddy", "TheElf")
 
