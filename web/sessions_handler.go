@@ -24,17 +24,13 @@ func (a *Application) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	account, err := a.Auth.Authenticate(r.Context(), r.FormValue("email"), r.FormValue("password"))
 	if err != nil {
 		if errors.Is(err, identityaccess.ErrInvalidCredentials) {
-			session, err := a.SessionStore.Get(r, sessionName)
-			if err != nil {
-				a.Logger.Error("error getting session from store", slog.Any("error", err))
-				a.serverError(w, r, err)
-			}
-			session.AddFlash("Email/Password combination is incorrect")
-			session.Save(r, w)
+			a.setErrorFlashMessage(r, w, "Email/Password combination is incorrect")
 			a.Logger.Error("Email/Password combo wrong")
+
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
+
 		a.Logger.Error("error authenticating", slog.Any("error", err))
 		a.serverError(w, r, err)
 		return

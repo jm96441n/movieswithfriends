@@ -35,29 +35,41 @@ func TestSignup(t *testing.T) {
 		t.Fatalf("failed to get port mapping: %v", err)
 	}
 
+	page, err := browser.NewPage()
+	if err != nil {
+		t.Fatalf("could not create page: %v", err)
+	}
+
 	tests := map[string]func(*testing.T){
-		"testSignupIsSuccessful":             testSignupIsSuccessful(browser, port.Port()),
-		"testSignupFailsIfEmailIsInUse":      testSignupFailsIfEmailIsInUse(dbCtr, browser, port.Port()),
-		"testSignupFailsWithFormValidations": testSignupFailsWithFormValidations(browser, port.Port()),
+		"testSignupIsSuccessful":             testSignupIsSuccessful(page, port.Port()),
+		"testSignupFailsIfEmailIsInUse":      testSignupFailsIfEmailIsInUse(dbCtr, page, port.Port()),
+		"testSignupFailsWithFormValidations": testSignupFailsWithFormValidations(page, port.Port()),
 	}
 
 	for name, testFn := range tests {
+		err := page.Context().ClearCookies()
+		if err != nil {
+			t.Fatalf("could not clear cookies: %v", err)
+		}
 		t.Run(name, testFn)
 	}
 }
 
-func testSignupIsSuccessful(browser playwright.Browser, appPort string) func(t *testing.T) {
+func testSignupIsSuccessful(page playwright.Page, appPort string) func(t *testing.T) {
 	return func(t *testing.T) {
 		t.Helper()
 
-		page := helpers.OpenPage(t, browser, fmt.Sprintf("http://localhost:%s/signup", appPort))
+		_, err := page.Goto(fmt.Sprintf("http://localhost:%s/signup", appPort))
+		if err != nil {
+			t.Fatalf("could not goto signup page: %v", err)
+		}
 
 		helpers.FillInField(t, "First Name", "Buddy", page)
 		helpers.FillInField(t, "Last Name", "TheElf", page)
 		helpers.FillInField(t, "Email", "buddy3@santa.com", page)
 		helpers.FillInField(t, "Password", "1Password", page)
 
-		err := page.Locator("button:has-text('Create Account')").Click()
+		err = page.Locator("button:has-text('Create Account')").Click()
 		if err != nil {
 			t.Fatalf("could not click create account button: %v", err)
 		}
@@ -87,7 +99,7 @@ func testSignupIsSuccessful(browser playwright.Browser, appPort string) func(t *
 	}
 }
 
-func testSignupFailsIfEmailIsInUse(dbCtr *postgres.PostgresContainer, browser playwright.Browser, appPort string) func(t *testing.T) {
+func testSignupFailsIfEmailIsInUse(dbCtr *postgres.PostgresContainer, page playwright.Page, appPort string) func(t *testing.T) {
 	return func(t *testing.T) {
 		ctx := context.Background()
 		testConn := helpers.SetupDBConn(ctx, t, dbCtr)
@@ -95,14 +107,17 @@ func testSignupFailsIfEmailIsInUse(dbCtr *postgres.PostgresContainer, browser pl
 
 		helpers.SeedAccountWithProfile(ctx, t, testConn, "buddy@santa.com", "anotherpassword", "Buddy", "TheElf")
 
-		page := helpers.OpenPage(t, browser, fmt.Sprintf("http://localhost:%s/signup", appPort))
+		_, err := page.Goto(fmt.Sprintf("http://localhost:%s/signup", appPort))
+		if err != nil {
+			t.Fatalf("could not goto signup page: %v", err)
+		}
 
 		helpers.FillInField(t, "First Name", "Buddy", page)
 		helpers.FillInField(t, "Last Name", "TheElf", page)
 		helpers.FillInField(t, "Email", "buddy@santa.com", page)
 		helpers.FillInField(t, "Password", "1Password", page)
 
-		err := page.Locator("button:has-text('Create Account')").Click()
+		err = page.Locator("button:has-text('Create Account')").Click()
 		if err != nil {
 			t.Fatalf("could not click create account button: %v", err)
 		}
@@ -132,9 +147,12 @@ func testSignupFailsIfEmailIsInUse(dbCtr *postgres.PostgresContainer, browser pl
 	}
 }
 
-func testSignupFailsWithFormValidations(browser playwright.Browser, appPort string) func(t *testing.T) {
+func testSignupFailsWithFormValidations(page playwright.Page, appPort string) func(t *testing.T) {
 	return func(t *testing.T) {
-		page := helpers.OpenPage(t, browser, fmt.Sprintf("http://localhost:%s/signup", appPort))
+		_, err := page.Goto(fmt.Sprintf("http://localhost:%s/signup", appPort))
+		if err != nil {
+			t.Fatalf("could not goto signup page: %v", err)
+		}
 
 		expectedMsgs := []string{"First Name is required", "Last Name is required", "Email is required", "Password must contain:\nAt least 8 characters\nAt least one uppercase letter\nAt least one lowercase letter\nAt least one number"}
 		fieldVals := [][]string{
@@ -149,7 +167,7 @@ func testSignupFailsWithFormValidations(browser playwright.Browser, appPort stri
 			t.Fatalf("could not get error messages")
 		}
 
-		err := playwright.NewPlaywrightAssertions().Locator(errMsgs).ToHaveCount(0)
+		err = playwright.NewPlaywrightAssertions().Locator(errMsgs).ToHaveCount(0)
 		if err != nil {
 			t.Fatal("Expected 0 warnings before submission but there were some")
 		}
