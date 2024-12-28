@@ -48,24 +48,61 @@ func testLoginIsSuccessful(dbCtr *postgres.PostgresContainer, browser playwright
 		testConn := helpers.SetupDBConn(ctx, t, dbCtr)
 		t.Cleanup(helpers.CleanupAndResetDB(ctx, t, dbCtr, testConn))
 
-		helpers.SeedAccount(ctx, t, testConn, "buddy@santa.com", "anotherpassword")
+		helpers.SeedAccountWithProfile(ctx, t, testConn, "buddy@santa.com", "anotherpassword", "Buddy", "TheElf")
 
-		page := helpers.OpenPage(t, browser, fmt.Sprintf("http://localhost:%s/login", appPort))
+		page := helpers.OpenPage(t, browser, fmt.Sprintf("http://localhost:%s", appPort))
 
-		// figure out why this isn't working!
-		helpers.FillInField(t, "Password", "anotherpassword", page)
+		err := page.Locator(".dropdown > #user-nav-dropdown-btn").Click()
+		if err != nil {
+			t.Fatal("failed to click dropown button")
+		}
+
+		err = page.Locator("text=Sign In").Click()
+		if err != nil {
+			t.Fatal("failed to click link to sign in")
+		}
+
+		curURL := page.URL()
+		if !strings.Contains(curURL, "/login") {
+			t.Fatalf("expected to be on login page, got %s", curURL)
+		}
+
 		helpers.FillInField(t, "Email Address", "buddy@santa.com", page)
+		helpers.FillInField(t, "Password", "anotherpassword", page)
 
-		err := page.Locator("button:has-text('Sign In')").Click()
+		err = page.Locator("button:has-text('Sign In')").Click()
 		if err != nil {
 			t.Fatalf("could not click Sign In button: %v", err)
 		}
 
-		// page.WaitForURL("http://localhost:4000/profile")
-
-		curURL := page.URL()
+		curURL = page.URL()
 		if !strings.Contains(curURL, "/profile") {
 			t.Fatalf("expected to be on profile page, got %s", curURL)
+		}
+
+		err = page.Locator(".dropdown > #user-nav-dropdown-btn").Click()
+		if err != nil {
+			t.Fatal("failed to click dropown button")
+		}
+
+		locatorChecker := playwright.NewPlaywrightAssertions()
+
+		dropdownMenu := page.Locator("#user-dropdown")
+		dropdownAsserter := locatorChecker.Locator(dropdownMenu)
+
+		err = dropdownAsserter.ToContainText("Sign Out")
+		if err != nil {
+			t.Fatalf("expected dropdown menu to contain 'Sign Out', got %v", err)
+		}
+
+		err = dropdownAsserter.ToContainText("Buddy TheElf")
+		if err != nil {
+			t.Fatalf("expected dropdown menu to contain 'Buddy TheElf', got %v", err)
+		}
+
+		err = dropdownAsserter.ToContainText("Settings")
+		if err != nil {
+			t.Fatalf("expected dropdown menu to contain 'Settings', got %v", err)
 		}
 	}
 }

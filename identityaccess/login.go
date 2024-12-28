@@ -34,7 +34,7 @@ type SignupValidationError struct {
 }
 
 func (s *SignupValidationError) Error() string {
-	return fmt.Sprintf("signup validation error: %v", s)
+	return fmt.Sprintf("signup validation error: %#v", s)
 }
 
 func (s *SignupValidationError) IsNil() bool {
@@ -96,6 +96,7 @@ func (a *Authenticator) Authenticate(ctx context.Context, email, password string
 	account, err := a.AccountRepository.FindAccountByEmail(ctx, email)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
+			a.Logger.Error("account not found", slog.String("email", email))
 			return store.Account{}, ErrInvalidCredentials
 		}
 		a.Logger.Error("error finding account by email", slog.Any("error", err), slog.String("email", email))
@@ -136,6 +137,7 @@ func (a *Authenticator) CreateAccount(ctx context.Context, req SignupReq) (store
 		a.Logger.Error("error hashing password", slog.Any("error", err))
 		return store.Account{}, err
 	}
+
 	account, err := a.AccountRepository.CreateAccount(ctx, req.Email, req.FirstName, req.LastName, hashedPassword)
 	if err != nil {
 		if errors.Is(err, store.ErrDuplicateEmailAddress) {

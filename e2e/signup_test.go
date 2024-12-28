@@ -93,7 +93,7 @@ func testSignupFailsIfEmailIsInUse(dbCtr *postgres.PostgresContainer, browser pl
 		testConn := helpers.SetupDBConn(ctx, t, dbCtr)
 		t.Cleanup(helpers.CleanupAndResetDB(ctx, t, dbCtr, testConn))
 
-		helpers.SeedAccount(ctx, t, testConn, "buddy@santa.com", "anotherpassword")
+		helpers.SeedAccountWithProfile(ctx, t, testConn, "buddy@santa.com", "anotherpassword", "Buddy", "TheElf")
 
 		page := helpers.OpenPage(t, browser, fmt.Sprintf("http://localhost:%s/signup", appPort))
 
