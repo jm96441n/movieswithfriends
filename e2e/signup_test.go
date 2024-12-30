@@ -7,14 +7,17 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
-	"github.com/jm96441n/movieswithfriends/e2e/helpers"
+	"github.com/jm96441n/movieswithfriends/e2e/internal/helpers"
 	"github.com/playwright-community/playwright-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 )
 
 func TestSignup(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	dbCtr := helpers.SetupDBContainer(ctx, t)
 	appCtr := helpers.SetupAppContainer(ctx, t, dbCtr)
@@ -40,10 +43,15 @@ func TestSignup(t *testing.T) {
 		t.Fatalf("could not create page: %v", err)
 	}
 
+	connPool := helpers.SetupDBConnPool(ctx, t, dbCtr)
+	defer func() {
+		connPool.Close()
+	}()
+
 	tests := map[string]func(*testing.T){
-		"testSignupIsSuccessful":             testSignupIsSuccessful(dbCtr, page, port.Port()),
-		"testSignupFailsIfEmailIsInUse":      testSignupFailsIfEmailIsInUse(dbCtr, page, port.Port()),
-		"testSignupFailsWithFormValidations": testSignupFailsWithFormValidations(dbCtr, page, port.Port()),
+		"testSignupIsSuccessful":             testSignupIsSuccessful(ctx, dbCtr, connPool, page, port.Port()),
+		"testSignupFailsIfEmailIsInUse":      testSignupFailsIfEmailIsInUse(ctx, dbCtr, connPool, page, port.Port()),
+		"testSignupFailsWithFormValidations": testSignupFailsWithFormValidations(ctx, dbCtr, connPool, page, port.Port()),
 	}
 
 	for name, testFn := range tests {
@@ -51,9 +59,9 @@ func TestSignup(t *testing.T) {
 	}
 }
 
-func testSignupIsSuccessful(dbCtr *postgres.PostgresContainer, page playwright.Page, appPort string) func(t *testing.T) {
+func testSignupIsSuccessful(ctx context.Context, dbCtr *postgres.PostgresContainer, testConn *pgxpool.Pool, page playwright.Page, appPort string) func(t *testing.T) {
 	return func(t *testing.T) {
-		helpers.Setup(t, dbCtr, page)
+		helpers.Setup(ctx, t, testConn, page)
 		t.Helper()
 
 		_, err := page.Goto(fmt.Sprintf("http://localhost:%s/signup", appPort))
@@ -96,9 +104,10 @@ func testSignupIsSuccessful(dbCtr *postgres.PostgresContainer, page playwright.P
 	}
 }
 
-func testSignupFailsIfEmailIsInUse(dbCtr *postgres.PostgresContainer, page playwright.Page, appPort string) func(t *testing.T) {
+func testSignupFailsIfEmailIsInUse(ctx context.Context, dbCtr *postgres.PostgresContainer, testConn *pgxpool.Pool, page playwright.Page, appPort string) func(t *testing.T) {
 	return func(t *testing.T) {
-		ctx, testConn := helpers.Setup(t, dbCtr, page)
+		time.Sleep(1 * time.Second)
+		helpers.Setup(ctx, t, testConn, page)
 
 		helpers.SeedAccountWithProfile(ctx, t, testConn, "buddy@santa.com", "anotherpassword", "Buddy", "TheElf")
 
@@ -142,9 +151,9 @@ func testSignupFailsIfEmailIsInUse(dbCtr *postgres.PostgresContainer, page playw
 	}
 }
 
-func testSignupFailsWithFormValidations(dbCtr *postgres.PostgresContainer, page playwright.Page, appPort string) func(t *testing.T) {
+func testSignupFailsWithFormValidations(ctx context.Context, dbCtr *postgres.PostgresContainer, testConn *pgxpool.Pool, page playwright.Page, appPort string) func(t *testing.T) {
 	return func(t *testing.T) {
-		helpers.Setup(t, dbCtr, page)
+		helpers.Setup(ctx, t, testConn, page)
 		_, err := page.Goto(fmt.Sprintf("http://localhost:%s/signup", appPort))
 		if err != nil {
 			t.Fatalf("could not goto signup page: %v", err)

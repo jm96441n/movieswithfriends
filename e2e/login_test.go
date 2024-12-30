@@ -6,14 +6,14 @@ import (
 	"regexp"
 	"strings"
 	"testing"
-	"time"
 
-	"github.com/jm96441n/movieswithfriends/e2e/helpers"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jm96441n/movieswithfriends/e2e/internal/helpers"
 	"github.com/playwright-community/playwright-go"
-	"github.com/testcontainers/testcontainers-go/modules/postgres"
 )
 
 func TestLogin(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	dbCtr := helpers.SetupDBContainer(ctx, t)
 	appCtr := helpers.SetupAppContainer(ctx, t, dbCtr)
@@ -40,9 +40,11 @@ func TestLogin(t *testing.T) {
 		t.Fatalf("could not create page: %v", err)
 	}
 
+	connPool := helpers.SetupDBConnPool(ctx, t, dbCtr)
+
 	tests := map[string]func(t *testing.T){
-		"testLoginIsSuccessful":                           testLoginIsSuccessful(dbCtr, page, port.Port()),
-		"testLoginFailsWhenUsernameOrPasswordIsIncorrect": testLoginFailsWhenUsernameOrPasswordIsIncorrect(dbCtr, page, port.Port()),
+		"testLoginIsSuccessful":                           testLoginIsSuccessful(ctx, connPool, page, port.Port()),
+		"testLoginFailsWhenUsernameOrPasswordIsIncorrect": testLoginFailsWhenUsernameOrPasswordIsIncorrect(ctx, connPool, page, port.Port()),
 	}
 
 	for name, testFn := range tests {
@@ -50,9 +52,9 @@ func TestLogin(t *testing.T) {
 	}
 }
 
-func testLoginIsSuccessful(dbCtr *postgres.PostgresContainer, page playwright.Page, appPort string) func(*testing.T) {
+func testLoginIsSuccessful(ctx context.Context, testConn *pgxpool.Pool, page playwright.Page, appPort string) func(*testing.T) {
 	return func(t *testing.T) {
-		ctx, testConn := helpers.Setup(t, dbCtr, page)
+		helpers.Setup(ctx, t, testConn, page)
 		helpers.SeedAccountWithProfile(ctx, t, testConn, "buddy@santa.com", "anotherpassword", "Buddy", "TheElf")
 
 		_, err := page.Goto(fmt.Sprintf("http://localhost:%s", appPort))
@@ -112,16 +114,12 @@ func testLoginIsSuccessful(dbCtr *postgres.PostgresContainer, page playwright.Pa
 		if err != nil {
 			t.Fatalf("expected dropdown menu to contain 'Settings', got %v", err)
 		}
-
-		// TODO: figure out why this sleep is necessary
-		time.Sleep(500 * time.Millisecond)
 	}
 }
 
-func testLoginFailsWhenUsernameOrPasswordIsIncorrect(dbCtr *postgres.PostgresContainer, page playwright.Page, appPort string) func(*testing.T) {
+func testLoginFailsWhenUsernameOrPasswordIsIncorrect(ctx context.Context, testConn *pgxpool.Pool, page playwright.Page, appPort string) func(*testing.T) {
 	return func(t *testing.T) {
-		ctx, testConn := helpers.Setup(t, dbCtr, page)
-
+		helpers.Setup(ctx, t, testConn, page)
 		helpers.SeedAccountWithProfile(ctx, t, testConn, "buddy@santa.com", "anotherpassword", "Buddy", "TheElf")
 
 		testCases := map[string]struct {

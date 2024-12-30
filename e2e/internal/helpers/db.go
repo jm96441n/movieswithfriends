@@ -4,11 +4,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/crypto/bcrypt"
 )
 
-func SeedAccountWithProfile(ctx context.Context, t *testing.T, conn *pgx.Conn, email, password, firstName, lastName string) {
+func SeedAccountWithProfile(ctx context.Context, t *testing.T, conn *pgxpool.Pool, email, password, firstName, lastName string) {
 	t.Helper()
 
 	txn, err := conn.Begin(ctx)
