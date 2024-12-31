@@ -19,8 +19,8 @@ func TestLogin(t *testing.T) {
 	connPool, page, port := helpers.SetupSuite(ctx, t)
 
 	tests := map[string]func(t *testing.T){
-		"testLoginIsSuccessful":                           testLoginIsSuccessful(ctx, connPool, page, port.Port()),
-		"testLoginFailsWhenUsernameOrPasswordIsIncorrect": testLoginFailsWhenUsernameOrPasswordIsIncorrect(ctx, connPool, page, port.Port()),
+		"testLoginIsSuccessful":                           testLoginIsSuccessful(ctx, connPool, page, port),
+		"testLoginFailsWhenUsernameOrPasswordIsIncorrect": testLoginFailsWhenUsernameOrPasswordIsIncorrect(ctx, connPool, page, port),
 	}
 
 	for name, testFn := range tests {

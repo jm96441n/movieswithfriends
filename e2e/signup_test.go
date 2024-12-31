@@ -20,9 +20,9 @@ func TestSignup(t *testing.T) {
 	connPool, page, port := helpers.SetupSuite(ctx, t)
 
 	tests := map[string]func(*testing.T){
-		"testSignupIsSuccessful":             testSignupIsSuccessful(ctx, connPool, page, port.Port()),
-		"testSignupFailsIfEmailIsInUse":      testSignupFailsIfEmailIsInUse(ctx, connPool, page, port.Port()),
-		"testSignupFailsWithFormValidations": testSignupFailsWithFormValidations(ctx, connPool, page, port.Port()),
+		"testSignupIsSuccessful":             testSignupIsSuccessful(ctx, connPool, page, port),
+		"testSignupFailsIfEmailIsInUse":      testSignupFailsIfEmailIsInUse(ctx, connPool, page, port),
+		"testSignupFailsWithFormValidations": testSignupFailsWithFormValidations(ctx, connPool, page, port),
 	}
 
 	for name, testFn := range tests {

@@ -1,4 +1,10 @@
-FROM golang:1.23-bookworm AS base
+## DEV BUILD
+FROM golang:1.23-bookworm AS dev-base
+
+RUN go install github.com/pressly/goose/v3/cmd/goose@latest
+RUN go install github.com/air-verse/air@latest
+
+FROM dev-base AS dev-code
 
 WORKDIR /go/src/app
 
@@ -6,22 +12,18 @@ COPY ./go.mod ./go.sum ./
 
 RUN go mod download
 
-## DEV BUILD
-FROM base AS dev-base
-
-RUN go install github.com/pressly/goose/v3/cmd/goose@latest
-RUN go install github.com/air-verse/air@latest
-
-FROM dev-base AS dev
+FROM dev-code AS dev
 
 WORKDIR /go/src/app
 
 CMD ["air"]
 
-
 ## PROD BUILD
-FROM base AS builder
+FROM golang:1.23-bookworm AS builder
 
+WORKDIR /go/src/app
+
+COPY ./go.mod ./go.sum ./
 COPY ./cmd ./cmd
 COPY ./web ./web
 COPY ./identityaccess/ ./identityaccess
@@ -29,6 +31,8 @@ COPY ./partymgmt/ ./partymgmt
 COPY ./ui ./ui
 COPY ./store ./store
 COPY ./migrations ./migrations
+
+RUN go mod download
 
 RUN CGO_ENABLED=0 go build -o /go/bin/app ./cmd/movieswithfriends/ 
 

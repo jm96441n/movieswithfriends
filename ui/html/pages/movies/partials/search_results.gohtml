@@ -1,7 +1,7 @@
 {{ define "search_results" }}
   {{- range .Movies }}
     <!-- Movie Card -->
-    <div class="col-md-6 col-lg-4">
+    <div id="{{ hyphenate .Title }}" class="col-md-6 col-lg-4">
       <div class="card h-100 border-0 shadow-sm">
         <img src="{{ .PosterURL }}" class="card-img-top" alt="Movie Poster" />
         <div class="card-body">
@@ -13,7 +13,8 @@
           </div>
           {{- if .Genres }}
             <p class="text-muted small mb-2">
-              {{ .ReleaseDate }} • {{ joinGenres .Genres }}
+              {{ .ReleaseDate }} •
+              {{ joinGenres .Genres }}
             </p>
           {{- else }}
             <p class="text-muted small mb-2">{{ .ReleaseDate }}</p>

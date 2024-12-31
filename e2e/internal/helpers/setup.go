@@ -4,11 +4,12 @@ import (
 	"context"
 	"testing"
 
-	"github.com/docker/go-connections/nat"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/playwright-community/playwright-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 )
+
+var Headless bool
 
 func Setup(ctx context.Context, t *testing.T, testConn *pgxpool.Pool, page playwright.Page) {
 	t.Helper()
@@ -19,7 +20,7 @@ func Setup(ctx context.Context, t *testing.T, testConn *pgxpool.Pool, page playw
 	})
 }
 
-func SetupSuite(ctx context.Context, t *testing.T) (*pgxpool.Pool, playwright.Page, nat.Port) {
+func SetupSuite(ctx context.Context, t *testing.T) (*pgxpool.Pool, playwright.Page, string) {
 	t.Helper()
 	dbCtr := SetupDBContainer(ctx, t)
 	appCtr := SetupAppContainer(ctx, t, dbCtr)
@@ -28,7 +29,7 @@ func SetupSuite(ctx context.Context, t *testing.T) (*pgxpool.Pool, playwright.Pa
 	Ok(t, err, "could not start playwright")
 
 	browser, err := pw.Chromium.Launch(playwright.BrowserTypeLaunchOptions{
-		Headless: playwright.Bool(true),
+		Headless: playwright.Bool(Headless),
 	})
 	Ok(t, err, "could not launch browser")
 
@@ -40,7 +41,7 @@ func SetupSuite(ctx context.Context, t *testing.T) (*pgxpool.Pool, playwright.Pa
 
 	connPool := SetupDBConnPool(ctx, t, dbCtr)
 
-	return connPool, page, port
+	return connPool, page, port.Port()
 }
 
 func SetupDBConnPool(ctx context.Context, t *testing.T, ctr *postgres.PostgresContainer) *pgxpool.Pool {
