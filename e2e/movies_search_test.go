@@ -29,8 +29,14 @@ func testSearchSuccessfulSearchFromSearchPage(ctx context.Context, testConn *pgx
 	return func(t *testing.T) {
 		helpers.Setup(ctx, t, testConn, page)
 
-		_, err := page.Goto(fmt.Sprintf("http://localhost:%s/movies", appPort))
-		helpers.Ok(t, err, "could not go to the search page")
+		_, err := page.Goto(fmt.Sprintf("http://localhost:%s", appPort))
+		helpers.Ok(t, err, "could not go to the index page")
+
+		err = page.Locator("#nav-search").Click()
+		helpers.Ok(t, err, "could not click search button")
+
+		curURL := page.URL()
+		helpers.Assert(t, strings.Contains(curURL, "/movies"), "expected to be on movie search page, got %s", curURL)
 
 		helpers.FillInField(t, "", "The Matrix", page)
 		page.Keyboard().Press("Enter")
@@ -53,7 +59,7 @@ func testSearchSuccessfulSearchFromSearchPage(ctx context.Context, testConn *pgx
 			err = locator.Locator("text='Details'").Click()
 			helpers.Ok(t, err, "could not click Details button for '%s'", title)
 
-			curURL := page.URL()
+			curURL = page.URL()
 			helpers.Assert(t, strings.Contains(curURL, "/movies/"), "expected to be on movie detail page, got %s", curURL)
 
 			helpers.Ok(t, asserter.Locator(page.Locator("#title")).ToHaveText(title), "'%s' title is not on page", title)
