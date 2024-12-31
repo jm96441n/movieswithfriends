@@ -7,51 +7,22 @@ import (
 	"slices"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jm96441n/movieswithfriends/e2e/internal/helpers"
 	"github.com/playwright-community/playwright-go"
-	"github.com/testcontainers/testcontainers-go/modules/postgres"
 )
 
 func TestSignup(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	dbCtr := helpers.SetupDBContainer(ctx, t)
-	appCtr := helpers.SetupAppContainer(ctx, t, dbCtr)
-
-	pw, err := playwright.Run()
-	if err != nil {
-		t.Fatalf("could not start playwright: %v", err)
-	}
-	browser, err := pw.Chromium.Launch(playwright.BrowserTypeLaunchOptions{
-		Headless: playwright.Bool(true),
-	})
-	if err != nil {
-		t.Fatalf("could not launch browser: %v", err)
-	}
-
-	port, err := appCtr.MappedPort(ctx, "4000")
-	if err != nil {
-		t.Fatalf("failed to get port mapping: %v", err)
-	}
-
-	page, err := browser.NewPage()
-	if err != nil {
-		t.Fatalf("could not create page: %v", err)
-	}
-
-	connPool := helpers.SetupDBConnPool(ctx, t, dbCtr)
-	defer func() {
-		connPool.Close()
-	}()
+	connPool, page, port := helpers.SetupSuite(ctx, t)
 
 	tests := map[string]func(*testing.T){
-		"testSignupIsSuccessful":             testSignupIsSuccessful(ctx, dbCtr, connPool, page, port.Port()),
-		"testSignupFailsIfEmailIsInUse":      testSignupFailsIfEmailIsInUse(ctx, dbCtr, connPool, page, port.Port()),
-		"testSignupFailsWithFormValidations": testSignupFailsWithFormValidations(ctx, dbCtr, connPool, page, port.Port()),
+		"testSignupIsSuccessful":             testSignupIsSuccessful(ctx, connPool, page, port.Port()),
+		"testSignupFailsIfEmailIsInUse":      testSignupFailsIfEmailIsInUse(ctx, connPool, page, port.Port()),
+		"testSignupFailsWithFormValidations": testSignupFailsWithFormValidations(ctx, connPool, page, port.Port()),
 	}
 
 	for name, testFn := range tests {
@@ -59,15 +30,13 @@ func TestSignup(t *testing.T) {
 	}
 }
 
-func testSignupIsSuccessful(ctx context.Context, dbCtr *postgres.PostgresContainer, testConn *pgxpool.Pool, page playwright.Page, appPort string) func(t *testing.T) {
+func testSignupIsSuccessful(ctx context.Context, testConn *pgxpool.Pool, page playwright.Page, appPort string) func(t *testing.T) {
 	return func(t *testing.T) {
 		helpers.Setup(ctx, t, testConn, page)
 		t.Helper()
 
 		_, err := page.Goto(fmt.Sprintf("http://localhost:%s/signup", appPort))
-		if err != nil {
-			t.Fatalf("could not goto signup page: %v", err)
-		}
+		helpers.Ok(t, err, "could not goto signup page")
 
 		helpers.FillInField(t, "First Name", "Buddy", page)
 		helpers.FillInField(t, "Last Name", "TheElf", page)
@@ -75,46 +44,33 @@ func testSignupIsSuccessful(ctx context.Context, dbCtr *postgres.PostgresContain
 		helpers.FillInField(t, "Password", "1Password", page)
 
 		err = page.Locator("button:has-text('Create Account')").Click()
-		if err != nil {
-			t.Fatalf("could not click create account button: %v", err)
-		}
+		helpers.Ok(t, err, "could not click create account button")
 
 		flashMsg := page.GetByText("Successfully signed up! Please log in.")
-		if flashMsg == nil {
-			t.Fatalf("expected success message, got nil")
-		}
+		helpers.Assert(t, flashMsg != nil, "expected success message, got nil")
 
 		curURL := page.URL()
-		if !strings.Contains(curURL, "/login") {
-			t.Fatalf("expected to be on login page, got %s", curURL)
-		}
+		helpers.Assert(t, strings.Contains(curURL, "/login"), "expected to be on login page, got %s", curURL)
 
 		helpers.FillInField(t, "Email Address", "buddy3@santa.com", page)
 		helpers.FillInField(t, "Password", "1Password", page)
 
 		err = page.Locator("button:has-text('Sign In')").Click()
-		if err != nil {
-			t.Fatalf("could not click sign in button: %v", err)
-		}
+		helpers.Ok(t, err, "could not click sign in button")
 
 		curURL = page.URL()
-		if !strings.Contains(curURL, "/profile") {
-			t.Fatalf("expected to be on profile page, got %s", curURL)
-		}
+		helpers.Assert(t, strings.Contains(curURL, "/profile"), "expected to be on profile page, got %s", curURL)
 	}
 }
 
-func testSignupFailsIfEmailIsInUse(ctx context.Context, dbCtr *postgres.PostgresContainer, testConn *pgxpool.Pool, page playwright.Page, appPort string) func(t *testing.T) {
+func testSignupFailsIfEmailIsInUse(ctx context.Context, testConn *pgxpool.Pool, page playwright.Page, appPort string) func(t *testing.T) {
 	return func(t *testing.T) {
-		time.Sleep(1 * time.Second)
 		helpers.Setup(ctx, t, testConn, page)
 
 		helpers.SeedAccountWithProfile(ctx, t, testConn, "buddy@santa.com", "anotherpassword", "Buddy", "TheElf")
 
 		_, err := page.Goto(fmt.Sprintf("http://localhost:%s/signup", appPort))
-		if err != nil {
-			t.Fatalf("could not goto signup page: %v", err)
-		}
+		helpers.Ok(t, err, "could not goto signup page")
 
 		helpers.FillInField(t, "First Name", "Buddy", page)
 		helpers.FillInField(t, "Last Name", "TheElf", page)
@@ -122,42 +78,32 @@ func testSignupFailsIfEmailIsInUse(ctx context.Context, dbCtr *postgres.Postgres
 		helpers.FillInField(t, "Password", "1Password", page)
 
 		err = page.Locator("button:has-text('Create Account')").Click()
-		if err != nil {
-			t.Fatalf("could not click create account button: %v", err)
-		}
+		helpers.Ok(t, err, "could not click create account button")
 
 		locatorChecker := playwright.NewPlaywrightAssertions()
 
 		flashMsg := page.GetByText("An account exists with this email. Try logging in or resetting your password.")
 		flashChecker := locatorChecker.Locator(flashMsg)
-		if err := flashChecker.Not().ToBeEmpty(); err != nil {
-			t.Fatal("expected error message in flash, got nothing")
-		}
+		helpers.Ok(t, flashChecker.Not().ToBeEmpty(), "could not get flash message")
 
 		regex := regexp.MustCompile(`.*alert-danger.*`)
 
 		if err := flashChecker.ToHaveClass(regex); err != nil {
 			s, err := flashMsg.GetAttribute("class")
-			if err != nil {
-				t.Fatalf("failed to get class attribute: %v", err)
-			}
+			helpers.Ok(t, err, "could not get class attribute")
 			t.Fatalf("expected flash message to be have class \"alert-danger\", it was %s", s)
 		}
 
 		curURL := page.URL()
-		if !strings.Contains(curURL, "/signup") {
-			t.Fatalf("expected to be on signup page, got %s", curURL)
-		}
+		helpers.Assert(t, strings.Contains(curURL, "/signup"), "expected to be on signup page, got %s", curURL)
 	}
 }
 
-func testSignupFailsWithFormValidations(ctx context.Context, dbCtr *postgres.PostgresContainer, testConn *pgxpool.Pool, page playwright.Page, appPort string) func(t *testing.T) {
+func testSignupFailsWithFormValidations(ctx context.Context, testConn *pgxpool.Pool, page playwright.Page, appPort string) func(t *testing.T) {
 	return func(t *testing.T) {
 		helpers.Setup(ctx, t, testConn, page)
 		_, err := page.Goto(fmt.Sprintf("http://localhost:%s/signup", appPort))
-		if err != nil {
-			t.Fatalf("could not goto signup page: %v", err)
-		}
+		helpers.Ok(t, err, "could not goto signup page")
 
 		expectedMsgs := []string{"First Name is required", "Last Name is required", "Email is required", "Password must contain:\nAt least 8 characters\nAt least one uppercase letter\nAt least one lowercase letter\nAt least one number"}
 		fieldVals := [][]string{
@@ -168,39 +114,25 @@ func testSignupFailsWithFormValidations(ctx context.Context, dbCtr *postgres.Pos
 		}
 
 		errMsgs := page.Locator(".invalid-feedback:visible")
-		if errMsgs == nil {
-			t.Fatalf("could not get error messages")
-		}
+		helpers.Assert(t, errMsgs != nil, "could not get error messages")
 
 		err = playwright.NewPlaywrightAssertions().Locator(errMsgs).ToHaveCount(0)
-		if err != nil {
-			t.Fatal("Expected 0 warnings before submission but there were some")
-		}
+		helpers.Ok(t, err, "Expected 0 warnings before submission but there were some")
 
 		for i := 0; i < 4; i++ {
 			err := page.Locator("button:has-text('Create Account')").Click()
-			if err != nil {
-				t.Fatalf("could not click create account button: %v", err)
-			}
+			helpers.Ok(t, err, "could not click create account button")
 
 			errMsgs := page.Locator(".invalid-feedback:visible")
-			if errMsgs == nil {
-				t.Fatalf("could not get error messages")
-			}
+			helpers.Assert(t, errMsgs != nil, "could not get error messages")
 
 			err = playwright.NewPlaywrightAssertions().Locator(errMsgs).ToHaveCount(len(expectedMsgs))
-			if err != nil {
-				t.Fatal("Expected 0 warnings before submission but there were some")
-			}
+			helpers.Ok(t, err, "Expected %d warnings before submission but there were not", len(expectedMsgs))
 
 			texts, err := errMsgs.AllInnerTexts()
-			if err != nil {
-				t.Fatalf("could not get error messages text: %v", err)
-			}
+			helpers.Ok(t, err, "could not get error messages text")
 
-			if !slices.Equal(texts, expectedMsgs) {
-				t.Fatalf("expected error messages to be %v, got %v", expectedMsgs, texts)
-			}
+			helpers.Assert(t, slices.Equal(texts, expectedMsgs), "expected error messages to be %v, got %v", expectedMsgs, texts)
 
 			helpers.FillInField(t, fieldVals[i][0], fieldVals[i][1], page)
 			expectedMsgs = expectedMsgs[1:]

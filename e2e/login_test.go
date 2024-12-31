@@ -14,33 +14,9 @@ import (
 
 func TestLogin(t *testing.T) {
 	t.Parallel()
+
 	ctx := context.Background()
-	dbCtr := helpers.SetupDBContainer(ctx, t)
-	appCtr := helpers.SetupAppContainer(ctx, t, dbCtr)
-
-	pw, err := playwright.Run()
-	if err != nil {
-		t.Fatalf("could not start playwright: %v", err)
-	}
-
-	browser, err := pw.Chromium.Launch(playwright.BrowserTypeLaunchOptions{
-		Headless: playwright.Bool(true),
-	})
-	if err != nil {
-		t.Fatalf("could not launch browser: %v", err)
-	}
-
-	port, err := appCtr.MappedPort(ctx, "4000")
-	if err != nil {
-		t.Fatalf("failed to get port mapping: %v", err)
-	}
-
-	page, err := browser.NewPage()
-	if err != nil {
-		t.Fatalf("could not create page: %v", err)
-	}
-
-	connPool := helpers.SetupDBConnPool(ctx, t, dbCtr)
+	connPool, page, port := helpers.SetupSuite(ctx, t)
 
 	tests := map[string]func(t *testing.T){
 		"testLoginIsSuccessful":                           testLoginIsSuccessful(ctx, connPool, page, port.Port()),
@@ -58,42 +34,28 @@ func testLoginIsSuccessful(ctx context.Context, testConn *pgxpool.Pool, page pla
 		helpers.SeedAccountWithProfile(ctx, t, testConn, "buddy@santa.com", "anotherpassword", "Buddy", "TheElf")
 
 		_, err := page.Goto(fmt.Sprintf("http://localhost:%s", appPort))
-		if err != nil {
-			t.Fatalf("could not goto: %v", err)
-		}
+		helpers.Ok(t, err, "could not goto index page")
 
 		err = page.Locator(".dropdown > #user-nav-dropdown-btn").Click()
-		if err != nil {
-			t.Fatal("failed to click dropown button")
-		}
+		helpers.Ok(t, err, "failed to click dropown button")
 
 		err = page.Locator("text=Sign In").Click()
-		if err != nil {
-			t.Fatal("failed to click link to sign in")
-		}
+		helpers.Ok(t, err, "failed to click link to sign in")
 
 		curURL := page.URL()
-		if !strings.Contains(curURL, "/login") {
-			t.Fatalf("expected to be on login page, got %s", curURL)
-		}
+		helpers.Assert(t, strings.Contains(curURL, "/login"), "expected to be on login page, got %s", curURL)
 
 		helpers.FillInField(t, "Email Address", "buddy@santa.com", page)
 		helpers.FillInField(t, "Password", "anotherpassword", page)
 
 		err = page.Locator("button:has-text('Sign In')").Click()
-		if err != nil {
-			t.Fatalf("could not click Sign In button: %v", err)
-		}
+		helpers.Ok(t, err, "could not click Sign In button")
 
 		curURL = page.URL()
-		if !strings.Contains(curURL, "/profile") {
-			t.Fatalf("expected to be on profile page, got %s", curURL)
-		}
+		helpers.Assert(t, strings.Contains(curURL, "/profile"), "expected to be on profile page, got %s", curURL)
 
 		err = page.Locator(".dropdown > #user-nav-dropdown-btn").Click()
-		if err != nil {
-			t.Fatal("failed to click dropown button")
-		}
+		helpers.Ok(t, err, "failed to click dropown button")
 
 		locatorChecker := playwright.NewPlaywrightAssertions()
 
@@ -101,19 +63,13 @@ func testLoginIsSuccessful(ctx context.Context, testConn *pgxpool.Pool, page pla
 		dropdownAsserter := locatorChecker.Locator(dropdownMenu)
 
 		err = dropdownAsserter.ToContainText("Sign Out")
-		if err != nil {
-			t.Fatalf("expected dropdown menu to contain 'Sign Out', got %v", err)
-		}
+		helpers.Ok(t, err, "expected dropdown menu to contain 'Sign Out', got %v", err)
 
 		err = dropdownAsserter.ToContainText("Buddy TheElf")
-		if err != nil {
-			t.Fatalf("expected dropdown menu to contain 'Buddy TheElf', got %v", err)
-		}
+		helpers.Ok(t, err, "expected dropdown menu to contain 'Buddy TheElf', got %v", err)
 
 		err = dropdownAsserter.ToContainText("Settings")
-		if err != nil {
-			t.Fatalf("expected dropdown menu to contain 'Settings', got %v", err)
-		}
+		helpers.Ok(t, err, "expected dropdown menu to contain 'Settings', got %v", err)
 	}
 }
 
@@ -143,19 +99,13 @@ func testLoginFailsWhenUsernameOrPasswordIsIncorrect(ctx context.Context, testCo
 		for name, tc := range testCases {
 			t.Run(name, func(t *testing.T) {
 				_, err := page.Goto(fmt.Sprintf("http://localhost:%s", appPort))
-				if err != nil {
-					t.Fatalf("could not goto: %v", err)
-				}
+				helpers.Ok(t, err, "could not goto index page")
 
 				err = page.Locator(".dropdown > #user-nav-dropdown-btn").Click()
-				if err != nil {
-					t.Fatal("failed to click dropown button")
-				}
+				helpers.Ok(t, err, "failed to click dropown button")
 
 				err = page.Locator("text=Sign In").Click()
-				if err != nil {
-					t.Fatal("failed to click link to sign in")
-				}
+				helpers.Ok(t, err, "failed to click link to sign in")
 
 				curURL := page.URL()
 				if !strings.Contains(curURL, "/login") {
@@ -171,25 +121,21 @@ func testLoginFailsWhenUsernameOrPasswordIsIncorrect(ctx context.Context, testCo
 				}
 
 				curURL = page.URL()
-				if !strings.Contains(curURL, "/login") {
-					t.Fatalf("expected to be on login page, got %s", curURL)
-				}
+				helpers.Assert(t, strings.Contains(curURL, "/login"), "expected to be on login page, got %s", curURL)
 
 				locatorChecker := playwright.NewPlaywrightAssertions()
 
 				flashMsg := page.GetByText("Email/Password combination is incorrect")
 				flashChecker := locatorChecker.Locator(flashMsg)
-				if err := flashChecker.Not().ToBeEmpty(); err != nil {
-					t.Fatal("expected error message in flash, got nothing")
-				}
+				helpers.Ok(t, flashChecker.Not().ToBeEmpty(), "expected error message in flash, got nothing")
 
 				regex := regexp.MustCompile(`.*alert-danger.*`)
 
-				if err := flashChecker.ToHaveClass(regex); err != nil {
+				err = flashChecker.ToHaveClass(regex)
+				if err != nil {
 					s, err := flashMsg.GetAttribute("class")
-					if err != nil {
-						t.Fatalf("failed to get class attribute: %v", err)
-					}
+					helpers.Ok(t, err, "failed to get class attribute")
+
 					t.Fatalf("expected flash message to be have class \"alert-danger\", it was %s", s)
 				}
 			})
