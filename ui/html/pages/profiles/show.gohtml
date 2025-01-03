@@ -13,10 +13,12 @@
         </div>
         <div class="col">
           <h1 class="h2 mb-1">
-            {{ .Profile.FirstName }} {{ .Profile.LastName }}
+            {{ .Profile.FirstName }}
+            {{ .Profile.LastName }}
           </h1>
           <p class="mb-0 text-light">
-            Member since {{ formatDate .Profile.CreatedAt }}
+            Member since
+            {{ formatDate .Profile.CreatedAt }}
           </p>
         </div>
         <div class="col-auto">
@@ -108,33 +110,33 @@
                 <p class="small text-muted mb-3">
                   {{ .MemberCount }} members • {{ .MovieCount }} movies in list
                 </p>
-                <div class="d-flex align-items-center mb-3">
-                  <div class="d-flex">
-                    <img
-                      src="https://placehold.co/32x32?text="
-                      class="rounded-circle border border-white"
-                      alt="Member"
-                    />
-                    <img
-                      src="https://placehold.co/32x32?text="
-                      class="rounded-circle border border-white -ms-2"
-                      alt="Member"
-                      style="margin-left: -0.5rem;"
-                    />
-                    <img
-                      src="https://placehold.co/32x32?text="
-                      class="rounded-circle border border-white -ms-2"
-                      alt="Member"
-                      style="margin-left: -0.5rem;"
-                    />
-                    <div
-                      class="rounded-circle bg-light border d-flex align-items-center justify-content-center"
-                      style="width: 32px; height: 32px; margin-left: -0.5rem;"
-                    >
-                      <small>+1</small>
-                    </div>
-                  </div>
-                </div>
+                <!-- <div class="d-flex align-items-center mb-3"> -->
+                <!--   <div class="d-flex"> -->
+                <!--     <img -->
+                <!--       src="https://placehold.co/32x32?text=" -->
+                <!--       class="rounded-circle border border-white" -->
+                <!--       alt="Member" -->
+                <!--     /> -->
+                <!--     <img -->
+                <!--       src="https://placehold.co/32x32?text=" -->
+                <!--       class="rounded-circle border border-white -ms-2" -->
+                <!--       alt="Member" -->
+                <!--       style="margin-left: -0.5rem;" -->
+                <!--     /> -->
+                <!--     <img -->
+                <!--       src="https://placehold.co/32x32?text=" -->
+                <!--       class="rounded-circle border border-white -ms-2" -->
+                <!--       alt="Member" -->
+                <!--       style="margin-left: -0.5rem;" -->
+                <!--     /> -->
+                <!--     <div -->
+                <!--       class="rounded-circle bg-light border d-flex align-items-center justify-content-center" -->
+                <!--       style="width: 32px; height: 32px; margin-left: -0.5rem;" -->
+                <!--     > -->
+                <!--       <small>+1</small> -->
+                <!--     </div> -->
+                <!--   </div> -->
+                <!-- </div> -->
                 <a
                   href="/parties/{{ .ID }}"
                   class="btn btn-outline-primary btn-sm"

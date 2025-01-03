@@ -54,7 +54,8 @@ type ProfilesTemplateData struct {
 }
 
 type PartiesTemplateData struct {
-	Party partymgmt.Party
+	Party   partymgmt.Party
+	Parties []store.PartiesForMemberResult
 	BaseTemplateData
 }
 

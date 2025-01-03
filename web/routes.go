@@ -103,6 +103,11 @@ func (a *Application) movieRoutes() []route {
 func (a *Application) partyRoutes() []route {
 	return []route{
 		{
+			path:               "GET /parties/",
+			handler:            a.PartiesIndexHandler,
+			authenticatedRoute: true,
+		},
+		{
 			path:               "GET /parties/new",
 			handler:            a.NewPartyHandler,
 			authenticatedRoute: true,

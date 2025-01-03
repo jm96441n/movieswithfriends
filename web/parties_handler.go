@@ -15,28 +15,35 @@ func (a *Application) CreatePartyHandler(w http.ResponseWriter, r *http.Request)
 	if err != nil {
 		a.Logger.Error("failed to get profile ID from session", slog.Any("error", err))
 		a.setErrorFlashMessage(w, r, "There was an error creating this party, try again.")
-		a.serverError(w, r, err)
+		data := a.NewPartiesTemplateData(r, w, "/parties")
+		a.render(w, r, http.StatusInternalServerError, "parties/new.gohtml", data)
 		return
 	}
 
 	err = r.ParseForm()
 	if err != nil {
 		a.Logger.Error("failed to get parseForm", slog.Any("error", err))
-		a.serverError(w, r, err)
+		a.setErrorFlashMessage(w, r, "There was an error creating this party, try again.")
+		data := a.NewPartiesTemplateData(r, w, "/parties")
+		a.render(w, r, http.StatusInternalServerError, "parties/new.gohtml", data)
 		return
 	}
 
 	name := r.FormValue("partyName")
 	if name == "" {
 		a.Logger.Error("failed to get partyName from form")
-		a.clientError(w, r, http.StatusBadRequest, "Name is required for creating a party")
+		a.setErrorFlashMessage(w, r, "A Name is required to create this party.")
+		data := a.NewPartiesTemplateData(r, w, "/parties")
+		a.render(w, r, http.StatusBadRequest, "parties/new.gohtml", data)
 		return
 	}
 
 	id, err := a.PartyService.CreateParty(ctx, profileID, name)
 	if err != nil {
-		a.Logger.Error("failed to get create party", slog.Any("error", err))
-		a.serverError(w, r, err)
+		a.Logger.Error("failed to create party", slog.Any("error", err))
+		a.setErrorFlashMessage(w, r, "There was an error creating this party, try again.")
+		data := a.NewPartiesTemplateData(r, w, "/parties")
+		a.render(w, r, http.StatusInternalServerError, "parties/new.gohtml", data)
 		return
 	}
 
@@ -53,6 +60,7 @@ func (a *Application) NewPartyHandler(w http.ResponseWriter, r *http.Request) {
 func (a *Application) PartyShowHandler(w http.ResponseWriter, r *http.Request) {
 	logger := a.Logger.With("handler", "PartyShowHandler")
 	ctx := r.Context()
+	a.Logger.Info("referrer", slog.Any("referrer", r.Referer()))
 	idParam := r.PathValue("id")
 	id, err := strconv.Atoi(idParam)
 	if err != nil {
@@ -72,6 +80,32 @@ func (a *Application) PartyShowHandler(w http.ResponseWriter, r *http.Request) {
 	templateData.Party = party
 
 	a.render(w, r, http.StatusOK, "parties/show.gohtml", templateData)
+}
+
+func (a *Application) PartiesIndexHandler(w http.ResponseWriter, r *http.Request) {
+	logger := a.Logger.With("handler", "PartyIndexHandler")
+	ctx := r.Context()
+
+	profileID, err := a.getProfileIDFromSession(r)
+	if err != nil {
+		a.Logger.Error("failed to get profile ID from session", slog.Any("error", err))
+		a.setErrorFlashMessage(w, r, "There was an error creating this party, try again.")
+		data := a.NewPartiesTemplateData(r, w, "/parties")
+		a.render(w, r, http.StatusInternalServerError, "parties/new.gohtml", data)
+		return
+	}
+
+	parties, err := a.PartiesRepository.GetPartiesForMember(ctx, profileID)
+	if err != nil {
+		logger.Error("failed to get parties for member", slog.Any("error", err))
+		a.serverError(w, r, err)
+		return
+	}
+
+	templateData := a.NewPartiesTemplateData(r, w, "/parties")
+	templateData.Parties = parties
+
+	a.render(w, r, http.StatusOK, "parties/index.gohtml", templateData)
 }
 
 func (a *Application) AddMovietoPartyHandler(w http.ResponseWriter, r *http.Request) {

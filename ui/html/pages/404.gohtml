@@ -1,0 +1,35 @@
+{{ define "title" }}Page Not Found{{ end }}
+{{ define "main" }}
+  <div class="container">
+    <div
+      class="row justify-content-center min-vh-100 align-items-center text-center"
+    >
+      <div class="col-md-6">
+        <!-- Icon -->
+        <div class="display-1 text-primary mb-4">
+          <i class="fas fa-film"></i>
+        </div>
+
+        <!-- Error Message -->
+        <h1 class="display-4 mb-4">404</h1>
+        <h2 class="h4 text-muted mb-4">This scene didn't make the final cut</h2>
+        <p class="text-muted mb-4">
+          The page you're looking for seems to be missing from our screening
+          lineup.
+        </p>
+
+        <!-- Action Buttons -->
+        <div class="d-flex gap-3 justify-content-center">
+          <a href="/" class="btn btn-primary">
+            <i class="fas fa-home me-2"></i>Go Home
+          </a>
+          {{ if .IsAuthenticated }}
+            <a href="/parties" class="btn btn-outline-primary">
+              <i class="fas fa-users me-2"></i>My Parties
+            </a>
+          {{ end }}
+        </div>
+      </div>
+    </div>
+  </div>
+{{ end }}
