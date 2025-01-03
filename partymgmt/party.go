@@ -98,6 +98,7 @@ type movieGetter interface {
 func (s *PartyService) GetPartyWithMovies(ctx context.Context, id int) (Party, error) {
 	results, err := s.DB.GetPartyByIDWithStats(ctx, id)
 	if err != nil {
+		s.Logger.Error("failed to get party by id", slog.Any("error", err))
 		return Party{}, err
 	}
 
@@ -112,6 +113,7 @@ func (s *PartyService) GetPartyWithMovies(ctx context.Context, id int) (Party, e
 
 	moviesByStatus, err := s.MoviesRepository.GetMoviesForParty(ctx, party.ID, 0)
 	if err != nil {
+		s.Logger.Error("failed to get movies for party", slog.Any("error", err))
 		return Party{}, err
 	}
 

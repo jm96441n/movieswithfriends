@@ -37,7 +37,7 @@ func (a *Application) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 	_, err = a.Auth.CreateAccount(ctx, req)
 	if err != nil {
 		if errors.Is(err, identityaccess.ErrAccountExists) {
-			a.setErrorFlashMessage(r, w, "An account exists with this email. Try logging in or resetting your password.")
+			a.setErrorFlashMessage(w, r, "An account exists with this email. Try logging in or resetting your password.")
 			http.Redirect(w, r, "/signup", http.StatusSeeOther)
 			return
 		}
@@ -72,7 +72,7 @@ func (a *Application) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	a.Logger.Debug("seeting flash message")
-	a.setInfoFlashMessage(r, w, "Successfully signed up! Please log in.")
+	a.setInfoFlashMessage(w, r, "Successfully signed up! Please log in.")
 
 	a.Logger.Debug("successfully signed up user", "userName", req.FirstName, "userEmail", req.Email)
 	http.Redirect(w, r, "/login", http.StatusSeeOther)

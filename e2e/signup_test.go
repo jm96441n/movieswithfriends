@@ -38,10 +38,10 @@ func testSignupIsSuccessful(ctx context.Context, testConn *pgxpool.Pool, page pl
 		_, err := page.Goto(fmt.Sprintf("http://localhost:%s/signup", appPort))
 		helpers.Ok(t, err, "could not goto signup page")
 
-		helpers.FillInField(t, "First Name", "Buddy", page)
-		helpers.FillInField(t, "Last Name", "TheElf", page)
-		helpers.FillInField(t, "Email", "buddy3@santa.com", page)
-		helpers.FillInField(t, "Password", "1Password", page)
+		helpers.FillInField(t, helpers.FormField{Label: "First Name", Value: "Buddy"}, page)
+		helpers.FillInField(t, helpers.FormField{Label: "Last Name", Value: "TheElf"}, page)
+		helpers.FillInField(t, helpers.FormField{Label: "Email", Value: "buddy3@santa.com"}, page)
+		helpers.FillInField(t, helpers.FormField{Label: "Password", Value: "1Password"}, page)
 
 		err = page.Locator("button:has-text('Create Account')").Click()
 		helpers.Ok(t, err, "could not click create account button")
@@ -52,8 +52,8 @@ func testSignupIsSuccessful(ctx context.Context, testConn *pgxpool.Pool, page pl
 		curURL := page.URL()
 		helpers.Assert(t, strings.Contains(curURL, "/login"), "expected to be on login page, got %s", curURL)
 
-		helpers.FillInField(t, "Email Address", "buddy3@santa.com", page)
-		helpers.FillInField(t, "Password", "1Password", page)
+		helpers.FillInField(t, helpers.FormField{Label: "Email Address", Value: "buddy3@santa.com"}, page)
+		helpers.FillInField(t, helpers.FormField{Label: "Password", Value: "1Password"}, page)
 
 		err = page.Locator("button:has-text('Sign In')").Click()
 		helpers.Ok(t, err, "could not click sign in button")
@@ -67,15 +67,15 @@ func testSignupFailsIfEmailIsInUse(ctx context.Context, testConn *pgxpool.Pool, 
 	return func(t *testing.T) {
 		helpers.Setup(ctx, t, testConn, page)
 
-		helpers.SeedAccountWithProfile(ctx, t, testConn, "buddy@santa.com", "anotherpassword", "Buddy", "TheElf")
+		helpers.SeedAccountWithProfile(ctx, t, testConn, helpers.TestAccountInfo{Email: "buddy@santa.com", Password: "anotherpassword", FirstName: "Buddy", LastName: "TheElf"})
 
 		_, err := page.Goto(fmt.Sprintf("http://localhost:%s/signup", appPort))
 		helpers.Ok(t, err, "could not goto signup page")
 
-		helpers.FillInField(t, "First Name", "Buddy", page)
-		helpers.FillInField(t, "Last Name", "TheElf", page)
-		helpers.FillInField(t, "Email", "buddy@santa.com", page)
-		helpers.FillInField(t, "Password", "1Password", page)
+		helpers.FillInField(t, helpers.FormField{Label: "First Name", Value: "Buddy"}, page)
+		helpers.FillInField(t, helpers.FormField{Label: "Last Name", Value: "TheElf"}, page)
+		helpers.FillInField(t, helpers.FormField{Label: "Email", Value: "buddy@santa.com"}, page)
+		helpers.FillInField(t, helpers.FormField{Label: "Password", Value: "1Password"}, page)
 
 		err = page.Locator("button:has-text('Create Account')").Click()
 		helpers.Ok(t, err, "could not click create account button")
@@ -134,7 +134,7 @@ func testSignupFailsWithFormValidations(ctx context.Context, testConn *pgxpool.P
 
 			helpers.Assert(t, slices.Equal(texts, expectedMsgs), "expected error messages to be %v, got %v", expectedMsgs, texts)
 
-			helpers.FillInField(t, fieldVals[i][0], fieldVals[i][1], page)
+			helpers.FillInField(t, helpers.FormField{Label: fieldVals[i][0], Value: fieldVals[i][1]}, page)
 			expectedMsgs = expectedMsgs[1:]
 		}
 	}

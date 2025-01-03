@@ -74,7 +74,6 @@ func (a *Application) staticRoutes() []route {
 			path: "/health",
 			handler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
-				return
 			},
 			authenticatedRoute: false,
 		},

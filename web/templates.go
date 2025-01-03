@@ -201,7 +201,7 @@ var functions = template.FuncMap{
 func NewTemplateCache(filesystem embed.FS) (map[string]*template.Template, error) {
 	cache := make(map[string]*template.Template)
 
-	fs.WalkDir(filesystem, "html/pages", func(path string, d fs.DirEntry, err error) error {
+	fs.WalkDir(filesystem, "html/pages", func(path string, d fs.DirEntry, _ error) error {
 		if d.IsDir() {
 			return nil
 		}

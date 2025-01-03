@@ -152,7 +152,7 @@ const getPartyByIDWithStatsQuery = `
     count(distinct party_movies.id_movie) as movie_count
   from parties
   join party_members on party_members.id_party = parties.id_party
-  join party_movies on party_movies.id_party = parties.id_party
+  left join party_movies on party_movies.id_party = parties.id_party
   where parties.id_party = $1
   group by parties.id_party;
 `

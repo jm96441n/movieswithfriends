@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -66,12 +67,12 @@ func (pg *PGStore) GetProfileStats(ctx context.Context, profileID int) (int, int
 	var numParties, watchTime, moviesWatched int
 	err := pg.db.QueryRow(ctx, getNumPartiesForProfileQuery, profileID).Scan(&numParties)
 	if err != nil {
-		pg.logger.Error("failed to get num parties for profile", err)
+		pg.logger.Error("failed to get num parties for profile", slog.Any("error", err))
 		return 0, 0, 0, err
 	}
 	err = pg.db.QueryRow(ctx, getTotalWatchTimeQuery, profileID).Scan(&watchTime, &moviesWatched)
 	if err != nil {
-		pg.logger.Error("failed to get total watch time", err)
+		pg.logger.Error("failed to get total watch time", slog.Any("error", err))
 		return 0, 0, 0, err
 	}
 	return numParties, watchTime, moviesWatched, nil

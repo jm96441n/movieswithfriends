@@ -38,7 +38,7 @@ func testSearchSuccessfulSearchFromSearchPage(ctx context.Context, testConn *pgx
 		curURL := page.URL()
 		helpers.Assert(t, strings.Contains(curURL, "/movies"), "expected to be on movie search page, got %s", curURL)
 
-		helpers.FillInField(t, "", "The Matrix", page)
+		helpers.FillInField(t, helpers.FormField{Label: "", Value: "The Matrix"}, page)
 		page.Keyboard().Press("Enter")
 		asserter := playwright.NewPlaywrightAssertions()
 

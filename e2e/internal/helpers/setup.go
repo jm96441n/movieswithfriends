@@ -14,7 +14,6 @@ var Headless bool
 func Setup(ctx context.Context, t *testing.T, testConn *pgxpool.Pool, page playwright.Page) {
 	t.Helper()
 	t.Cleanup(func() {
-		t.Logf("Cleaning up from test")
 		cleanupAndResetDB(ctx, t, testConn)
 		Ok(t, page.Context().ClearCookies(), "faild to clear browser cookies")
 	})

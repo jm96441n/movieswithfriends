@@ -14,6 +14,7 @@ func (a *Application) CreatePartyHandler(w http.ResponseWriter, r *http.Request)
 	profileID, err := a.getProfileIDFromSession(r)
 	if err != nil {
 		a.Logger.Error("failed to get profile ID from session", slog.Any("error", err))
+		a.setErrorFlashMessage(w, r, "There was an error creating this party, try again.")
 		a.serverError(w, r, err)
 		return
 	}
@@ -25,9 +26,9 @@ func (a *Application) CreatePartyHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	name := r.FormValue("name")
+	name := r.FormValue("partyName")
 	if name == "" {
-		a.Logger.Error("failed to get name from form")
+		a.Logger.Error("failed to get partyName from form")
 		a.clientError(w, r, http.StatusBadRequest, "Name is required for creating a party")
 		return
 	}

@@ -31,7 +31,7 @@ func TestLogin(t *testing.T) {
 func testLoginIsSuccessful(ctx context.Context, testConn *pgxpool.Pool, page playwright.Page, appPort string) func(*testing.T) {
 	return func(t *testing.T) {
 		helpers.Setup(ctx, t, testConn, page)
-		helpers.SeedAccountWithProfile(ctx, t, testConn, "buddy@santa.com", "anotherpassword", "Buddy", "TheElf")
+		helpers.SeedAccountWithProfile(ctx, t, testConn, helpers.TestAccountInfo{Email: "buddy@santa.com", Password: "anotherpassword", FirstName: "Buddy", LastName: "TheElf"})
 
 		_, err := page.Goto(fmt.Sprintf("http://localhost:%s", appPort))
 		helpers.Ok(t, err, "could not goto index page")
@@ -45,8 +45,8 @@ func testLoginIsSuccessful(ctx context.Context, testConn *pgxpool.Pool, page pla
 		curURL := page.URL()
 		helpers.Assert(t, strings.Contains(curURL, "/login"), "expected to be on login page, got %s", curURL)
 
-		helpers.FillInField(t, "Email Address", "buddy@santa.com", page)
-		helpers.FillInField(t, "Password", "anotherpassword", page)
+		helpers.FillInField(t, helpers.FormField{Label: "Email Address", Value: "buddy@santa.com"}, page)
+		helpers.FillInField(t, helpers.FormField{Label: "Password", Value: "anotherpassword"}, page)
 
 		err = page.Locator("button:has-text('Sign In')").Click()
 		helpers.Ok(t, err, "could not click Sign In button")
@@ -76,7 +76,7 @@ func testLoginIsSuccessful(ctx context.Context, testConn *pgxpool.Pool, page pla
 func testLoginFailsWhenUsernameOrPasswordIsIncorrect(ctx context.Context, testConn *pgxpool.Pool, page playwright.Page, appPort string) func(*testing.T) {
 	return func(t *testing.T) {
 		helpers.Setup(ctx, t, testConn, page)
-		helpers.SeedAccountWithProfile(ctx, t, testConn, "buddy@santa.com", "anotherpassword", "Buddy", "TheElf")
+		helpers.SeedAccountWithProfile(ctx, t, testConn, helpers.TestAccountInfo{Email: "buddy@santa.com", Password: "anotherpassword", FirstName: "Buddy", LastName: "TheElf"})
 
 		testCases := map[string]struct {
 			email    string
@@ -112,8 +112,8 @@ func testLoginFailsWhenUsernameOrPasswordIsIncorrect(ctx context.Context, testCo
 					t.Fatalf("expected to be on login page, got %s", curURL)
 				}
 
-				helpers.FillInField(t, "Email Address", tc.email, page)
-				helpers.FillInField(t, "Password", tc.password, page)
+				helpers.FillInField(t, helpers.FormField{Label: "Email Address", Value: tc.email}, page)
+				helpers.FillInField(t, helpers.FormField{Label: "Password", Value: tc.password}, page)
 
 				err = page.Locator("button:has-text('Sign In')").Click()
 				if err != nil {

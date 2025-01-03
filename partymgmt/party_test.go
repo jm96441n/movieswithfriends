@@ -156,3 +156,7 @@ func (m *mockPartyStore) GetPartyByShortID(ctx context.Context, shortID string) 
 func (m *mockPartyStore) CreatePartyMember(ctx context.Context, idMember, idParty int) error {
 	return m.errCreatePartyMember
 }
+
+func (m *mockPartyStore) GetPartyByIDWithStats(ctx context.Context, id int) (store.GetPartyByIDWithStatsResult, error) {
+	return store.GetPartyByIDWithStatsResult{}, nil
+}

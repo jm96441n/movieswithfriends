@@ -1,41 +1,49 @@
 {{ define "title" }}Create Party{{ end }}
 
 {{ define "main" }}
-  <div class="row">
-    <div class="col-4"></div>
-    <div class="col-4">
-      <div class="text-center mb-4">
-        <h3>Create A New Party</h3>
+  <div class="container py-5">
+    <div class="row justify-content-center">
+      <div class="col-lg-6">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body p-4">
+            <div class="text-center mb-4">
+              <div class="display-6 text-primary mb-2">
+                <i class="fas fa-film"></i>
+              </div>
+              <h1 class="h3 mb-3">Create New Party</h1>
+              <p class="text-muted mb-0">
+                Start a new movie watching party with friends
+              </p>
+            </div>
+
+            <form
+              method="POST"
+              action="/parties"
+              class="needs-validation"
+              novalidate
+            >
+              <div class="mb-4">
+                <label for="partyName" class="form-label">Party Name</label>
+                <input
+                  type="text"
+                  class="form-control form-control-lg"
+                  id="partyName"
+                  name="partyName"
+                  placeholder="Enter party name"
+                  required
+                />
+              </div>
+
+              <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-primary btn-lg">
+                  Create Party
+                </button>
+                <a href="/parties" class="btn btn-outline-secondary">Cancel</a>
+              </div>
+            </form>
+          </div>
+        </div>
       </div>
-      <form action="/parties" method="POST">
-        <div class="row g-3 mb-2 align-items-center">
-          <div class="col-2">
-            <label for="name" class="col-form-label">Name</label>
-          </div>
-          <div class="col-8">
-            <input
-              type="name"
-              class="form-control"
-              id="name"
-              name="name"
-              aria-describedby="nameHelp"
-            />
-          </div>
-          <div class="col-2">
-            <i
-              id="nameHelp"
-              class="fa-solid fa-circle-question"
-              data-bs-toggle="tooltip"
-              data-bs-placement="right"
-              data-bs-title="Name for the party"
-            ></i>
-          </div>
-        </div>
-        <div class="text-center">
-          <button type="submit" class="btn btn-primary">Submit</button>
-        </div>
-      </form>
     </div>
-    <div class="col-4"></div>
   </div>
 {{ end }}

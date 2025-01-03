@@ -6,6 +6,7 @@ toolchain go1.23.4
 
 require (
 	github.com/exaring/otelpgx v0.7.0
+	github.com/gorilla/securecookie v1.1.2
 	github.com/gorilla/sessions v1.4.0
 	github.com/hashicorp/go-retryablehttp v0.7.7
 	github.com/honeycombio/otel-config-go v1.17.0
@@ -47,7 +48,6 @@ require (
 	github.com/go-stack/stack v1.8.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/gorilla/securecookie v1.1.2 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.24.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect

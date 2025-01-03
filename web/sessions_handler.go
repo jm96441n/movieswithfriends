@@ -24,7 +24,7 @@ func (a *Application) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	account, err := a.Auth.Authenticate(r.Context(), r.FormValue("email"), r.FormValue("password"))
 	if err != nil {
 		if errors.Is(err, identityaccess.ErrInvalidCredentials) {
-			a.setErrorFlashMessage(r, w, "Email/Password combination is incorrect")
+			a.setErrorFlashMessage(w, r, "Email/Password combination is incorrect")
 			a.Logger.Error("Email/Password combo wrong")
 
 			http.Redirect(w, r, "/login", http.StatusSeeOther)

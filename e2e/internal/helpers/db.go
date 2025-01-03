@@ -8,7 +8,16 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func SeedAccountWithProfile(ctx context.Context, t *testing.T, conn *pgxpool.Pool, email, password, firstName, lastName string) {
+type TestAccountInfo struct {
+	AccountID int
+	ProfileID int
+	Email     string
+	Password  string
+	FirstName string
+	LastName  string
+}
+
+func SeedAccountWithProfile(ctx context.Context, t *testing.T, conn *pgxpool.Pool, accountInfo TestAccountInfo) TestAccountInfo {
 	t.Helper()
 
 	txn, err := conn.Begin(ctx)
@@ -16,15 +25,16 @@ func SeedAccountWithProfile(ctx context.Context, t *testing.T, conn *pgxpool.Poo
 
 	defer txn.Rollback(ctx)
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(accountInfo.Password), bcrypt.DefaultCost)
 	Ok(t, err, "failed to hash password")
 
-	var accountID int
-	err = txn.QueryRow(ctx, "INSERT INTO accounts (email, password) VALUES ($1, $2) returning id_account", email, hashedPassword).Scan(&accountID)
+	err = txn.QueryRow(ctx, "INSERT INTO accounts (email, password) VALUES ($1, $2) returning id_account", accountInfo.Email, hashedPassword).Scan(&accountInfo.AccountID)
 	Ok(t, err, "failed to insert account")
 
-	_, err = txn.Exec(ctx, "INSERT INTO profiles (first_name, last_name, id_account) VALUES ($1, $2, $3)", firstName, lastName, accountID)
+	err = txn.QueryRow(ctx, "INSERT INTO profiles (first_name, last_name, id_account) VALUES ($1, $2, $3) returning id_profile", accountInfo.FirstName, accountInfo.LastName, accountInfo.AccountID).Scan(&accountInfo.ProfileID)
 	Ok(t, err, "failed to insert profile")
 
 	Ok(t, txn.Commit(ctx), "failed to commit transaction")
+
+	return accountInfo
 }

@@ -157,19 +157,19 @@ func (a *Application) getProfileIDFromSession(r *http.Request) (int, error) {
 	return profileID, nil
 }
 
-func (a *Application) setInfoFlashMessage(r *http.Request, w http.ResponseWriter, msg string) {
-	a.setFlashMessage(r, w, FlashInfoKey, msg)
+func (a *Application) setInfoFlashMessage(w http.ResponseWriter, r *http.Request, msg string) {
+	a.setFlashMessage(w, r, FlashInfoKey, msg)
 }
 
-func (a *Application) setErrorFlashMessage(r *http.Request, w http.ResponseWriter, msg string) {
-	a.setFlashMessage(r, w, FlashErrorKey, msg)
+func (a *Application) setErrorFlashMessage(w http.ResponseWriter, r *http.Request, msg string) {
+	a.setFlashMessage(w, r, FlashErrorKey, msg)
 }
 
-func (a *Application) setWarningFlashMessage(r *http.Request, w http.ResponseWriter, msg string) {
-	a.setFlashMessage(r, w, FlashWarningKey, msg)
+func (a *Application) setWarningFlashMessage(w http.ResponseWriter, r *http.Request, msg string) {
+	a.setFlashMessage(w, r, FlashWarningKey, msg)
 }
 
-func (a *Application) setFlashMessage(r *http.Request, w http.ResponseWriter, key, msg string) {
+func (a *Application) setFlashMessage(w http.ResponseWriter, r *http.Request, key, msg string) {
 	session, err := a.SessionStore.Get(r, sessionName)
 	if err != nil {
 		a.Logger.Error("failed to get session", slog.Any("error", err))
@@ -179,5 +179,4 @@ func (a *Application) setFlashMessage(r *http.Request, w http.ResponseWriter, ke
 	a.Logger.Debug("adding flash message")
 	session.AddFlash(msg, key)
 	session.Save(r, w)
-	return
 }
