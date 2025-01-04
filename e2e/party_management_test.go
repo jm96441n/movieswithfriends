@@ -12,6 +12,8 @@ import (
 	"github.com/playwright-community/playwright-go"
 )
 
+var partyPathRegex = regexp.MustCompile(`localhost:\d+/parties/\d+`)
+
 func TestCreateParty(t *testing.T) {
 	t.Parallel()
 
@@ -27,7 +29,12 @@ func TestCreateParty(t *testing.T) {
 	}
 }
 
-var partyPathRegex = regexp.MustCompile(`localhost:\d+/parties/\d+`)
+func testPartyShowPageNavigation(ctx context.Context, testConn *pgxpool.Pool, page playwright.Page, appPort string) func(*testing.T) {
+	return func(t *testing.T) {
+		helpers.Setup(ctx, t, testConn, page)
+		// accountInfo := helpers.SeedAccountWithProfile(ctx, t, testConn, helpers.TestAccountInfo{})
+	}
+}
 
 func testCreatePartyIsSuccessful(ctx context.Context, testConn *pgxpool.Pool, page playwright.Page, appPort string) func(*testing.T) {
 	return func(t *testing.T) {
