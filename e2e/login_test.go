@@ -68,7 +68,7 @@ func testLoginIsSuccessful(ctx context.Context, testConn *pgxpool.Pool, page pla
 		err = dropdownAsserter.ToContainText("Buddy TheElf")
 		helpers.Ok(t, err, "expected dropdown menu to contain 'Buddy TheElf', got %v", err)
 
-		err = dropdownAsserter.ToContainText("Settings")
+		err = dropdownAsserter.ToContainText("Profile")
 		helpers.Ok(t, err, "expected dropdown menu to contain 'Settings', got %v", err)
 	}
 }
