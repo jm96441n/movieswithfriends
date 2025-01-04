@@ -9,6 +9,13 @@ import (
 	"github.com/jm96441n/movieswithfriends/partymgmt"
 )
 
+func (a *Application) NewPartyHandler(w http.ResponseWriter, r *http.Request) {
+	logger := a.Logger.With("handler", "NewPartyHandler")
+	logger.Info("calling NewPartyHandler")
+	templateData := a.NewPartiesTemplateData(r, w, "/parties")
+	a.render(w, r, http.StatusOK, "parties/new.gohtml", templateData)
+}
+
 func (a *Application) CreatePartyHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	profileID, err := a.getProfileIDFromSession(r)
@@ -47,32 +54,28 @@ func (a *Application) CreatePartyHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	a.setInfoFlashMessage(w, r, "Party successfully created!")
 	http.Redirect(w, r, fmt.Sprintf("/parties/%d", id), http.StatusSeeOther)
-}
-
-func (a *Application) NewPartyHandler(w http.ResponseWriter, r *http.Request) {
-	logger := a.Logger.With("handler", "NewPartyHandler")
-	logger.Info("calling NewPartyHandler")
-	templateData := a.NewPartiesTemplateData(r, w, "/parties")
-	a.render(w, r, http.StatusOK, "parties/new.gohtml", templateData)
 }
 
 func (a *Application) PartyShowHandler(w http.ResponseWriter, r *http.Request) {
 	logger := a.Logger.With("handler", "PartyShowHandler")
 	ctx := r.Context()
-	a.Logger.Info("referrer", slog.Any("referrer", r.Referer()))
+
 	idParam := r.PathValue("id")
 	id, err := strconv.Atoi(idParam)
 	if err != nil {
 		logger.Error("failed to get party ID from path", slog.Any("error", err))
-		a.clientError(w, r, http.StatusBadRequest, "Failed to find the party, please try again")
+		a.setErrorFlashMessage(w, r, "There was an issue getting this party, try again.")
+		http.Redirect(w, r, "/parties", http.StatusBadRequest)
 		return
 	}
 
 	party, err := a.PartyService.GetPartyWithMovies(ctx, id)
 	if err != nil {
 		logger.Error("failed to get party by ID", slog.Any("error", err))
-		a.serverError(w, r, err)
+		data := a.NewTemplateData(r, w, "/parties")
+		a.render(w, r, http.StatusNotFound, "404.gohtml", data)
 		return
 	}
 
