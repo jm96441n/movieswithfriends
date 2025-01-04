@@ -33,7 +33,6 @@ func TestSignup(t *testing.T) {
 func testSignupIsSuccessful(ctx context.Context, testConn *pgxpool.Pool, page playwright.Page, appPort string) func(t *testing.T) {
 	return func(t *testing.T) {
 		helpers.Setup(ctx, t, testConn, page)
-		t.Helper()
 
 		_, err := page.Goto(fmt.Sprintf("http://localhost:%s/signup", appPort))
 		helpers.Ok(t, err, "could not goto signup page")
