@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jm96441n/movieswithfriends/e2e/internal/helpers"
@@ -34,7 +33,22 @@ func testCanViewAndEditProfile(ctx context.Context, testConn *pgxpool.Pool, page
 
 		_, err := page.Goto(fmt.Sprintf("http://localhost:%s/profile", appPort))
 		helpers.Ok(t, err, "could not goto profile page")
-		time.Sleep(3 * time.Second)
+
+		pageAssertions := playwright.NewPlaywrightAssertions()
+
+		// Check the number of parties being shown
+		parties := page.Locator(".party-card")
+		helpers.Assert(t, parties != nil, "could not get error messages")
+
+		err = pageAssertions.Locator(parties).ToHaveCount(4) // 3 parties and 1 section for the "Create New Party" card
+		helpers.Ok(t, err, "expected 3 parties and the 'Create Party' card, got %v", err)
+
+		// Check the counts for movies watched
+		movieWatchCount := page.Locator("#count-movies-watched")
+		helpers.Assert(t, parties != nil, "could not get error messages")
+
+		err = pageAssertions.Locator(movieWatchCount).ToHaveText("8") // 2 movies from party1, 3 movies from party2, 3 movies from party3 -> 8
+		helpers.Ok(t, err, "expected 8 movies watched, got %v", err)
 	}
 }
 
