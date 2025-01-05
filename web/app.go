@@ -42,10 +42,6 @@ type ProfilesService interface {
 	GetProfileByID(context.Context, int) (identityaccess.Profile, error)
 }
 
-type MemberService interface {
-	GetWatchHistory(context.Context, int, int) ([]store.WatchedMoviesForMemberResult, error)
-}
-
 type MoviesService interface {
 	SearchMovies(context.Context, *slog.Logger, string) ([]partymgmt.TMDBMovie, error)
 	CreateMovie(context.Context, *slog.Logger, int) (*store.Movie, error)
@@ -69,7 +65,7 @@ type Application struct {
 	MoviesRepository  MovieRepository
 	PartyService      PartyService
 	PartiesRepository PartiesStoreService
-	MemberService     MemberService
+	MemberService     *partymgmt.MemberService
 	ProfilesService   ProfilesService
 	Auth              Authenticator
 	AccountRepository AccountRepository

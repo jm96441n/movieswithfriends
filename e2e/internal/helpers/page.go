@@ -1,12 +1,36 @@
 package helpers
 
 import (
+	"errors"
+	"net"
+	"net/http"
 	"os"
 	"testing"
 
 	"github.com/gorilla/securecookie"
 	"github.com/playwright-community/playwright-go"
 )
+
+func WaitForInput(t *testing.T) {
+	t.Helper()
+	listener, err := net.Listen("tcp", ":0")
+	Ok(t, err, "could not start listener")
+
+	mux := http.NewServeMux()
+	port := listener.Addr().(*net.TCPAddr).Port
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("input received\n"))
+		listener.Close()
+		t.Log("input received, continuing test")
+	})
+
+	t.Logf("Waiting for input on http://localhost:%d", port)
+	if err := http.Serve(listener, mux); !errors.Is(err, http.ErrServerClosed) {
+		t.Fatal(err)
+	}
+}
 
 func LoginAs(t *testing.T, page playwright.Page, info TestAccountInfo) {
 	t.Helper()
@@ -46,4 +70,12 @@ func FillInField(t *testing.T, ff FormField, page playwright.Page) {
 
 	err := field.Fill(ff.Value)
 	Ok(t, err, "could not fill %s", ff.Label)
+}
+
+func LocatorHasText(t *testing.T, page playwright.Page, pageAssertions playwright.PlaywrightAssertions, locator string, text string) {
+	node := page.Locator(locator)
+	Assert(t, node != nil, "could not get element at: %q", locator)
+
+	err := pageAssertions.Locator(node).ToHaveText(text)
+	Ok(t, err, "expected node %q to have text %q, got %v", locator, text, err)
 }

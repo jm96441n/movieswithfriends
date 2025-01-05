@@ -6,15 +6,11 @@ import (
 	"github.com/jm96441n/movieswithfriends/store"
 )
 
-type memberStore interface {
-	GetWatchedMoviesForMember(context.Context, int, int) ([]store.WatchedMoviesForMemberResult, error)
-}
-
 type MemberService struct {
-	db memberStore
+	db *store.PGStore
 }
 
-func NewMemberService(db memberStore) *MemberService {
+func NewMemberService(db *store.PGStore) *MemberService {
 	return &MemberService{db: db}
 }
 

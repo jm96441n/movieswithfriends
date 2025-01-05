@@ -42,7 +42,7 @@
               </div>
               <h6 class="card-subtitle text-muted">Movies Watched</h6>
             </div>
-            <h2 id="count-movies-watched" class="card-title mb-0">
+            <h2 id="count-watched-movies" class="card-title mb-0">
               {{ .Profile.Stats.MoviesWatched }}
             </h2>
           </div>
@@ -57,7 +57,7 @@
               </div>
               <h6 class="card-subtitle text-muted">Active Parties</h6>
             </div>
-            <h2 id="number-of-joined-parties" class="card-title mb-0">
+            <h2 id="count-joined-parties" class="card-title mb-0">
               {{ .Profile.Stats.NumberOfParties }}
             </h2>
           </div>
@@ -182,46 +182,7 @@
       </div>
       <div class="card border-0 shadow-sm">
         <div class="card-body p-0">
-          <div class="table-responsive">
-            <table class="table table-hover mb-0">
-              <thead class="table-light">
-                <tr>
-                  <th>Movie</th>
-                  <th>Date Watched</th>
-                  <th>Party</th>
-                  <!-- <th>Your Rating</th> -->
-                </tr>
-              </thead>
-              <tbody>
-                {{ range .WatchedMovies }}
-                  <tr>
-                    <td>
-                      <div class="d-flex align-items-center">
-                        <!-- <img src="https://placehold.co/48x48?text=" class="rounded me-2" alt="Movie"> -->
-                        <div>
-                          <h6 class="mb-0">{{ .Title }}</h6>
-                          <small class="text-muted">2h 15m</small>
-                        </div>
-                      </div>
-                    </td>
-                    <td>{{ formatWatchDate .WatchDate }}</td>
-                    <td>{{ .PartyName }}</td>
-                    <!-- TODO: uncomment when we add ratings
-                                <td>
-                                    <div class="text-warning">
-                                        <i class="fas fa-star"></i>
-                                        <i class="fas fa-star"></i>
-                                        <i class="fas fa-star"></i>
-                                        <i class="fas fa-star"></i>
-                                        <i class="far fa-star"></i>
-                                    </div>
-                                </td>
-                -->
-                  </tr>
-                {{ end }}
-              </tbody>
-            </table>
-          </div>
+          {{ template "recently_watched_list" . }}
         </div>
       </div>
     </div>

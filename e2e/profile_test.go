@@ -36,19 +36,28 @@ func testCanViewAndEditProfile(ctx context.Context, testConn *pgxpool.Pool, page
 
 		pageAssertions := playwright.NewPlaywrightAssertions()
 
+		// Check the counts for movies watched
+		helpers.LocatorHasText(t, page, pageAssertions, "#count-watched-movies", "8") // 2 movies from party1, 3 movies from party2, 3 movies from party3 -> 8
+
+		// Check the counts for joined parties
+		helpers.LocatorHasText(t, page, pageAssertions, "#count-joined-parties", "3") // 3 parties joined
+
+		// Check the watch time
+		helpers.LocatorHasText(t, page, pageAssertions, "#watch-time", "14h 52m") // (2 movies * 125 minutes each) + (3 movies * 120 minutes each) + (3 movies * 94 minutes each) = 250min + 360min + 282min = 892min = 14h 52m
+
 		// Check the number of parties being shown
 		parties := page.Locator(".party-card")
-		helpers.Assert(t, parties != nil, "could not get error messages")
+		helpers.Assert(t, parties != nil, "could not find items in .party-card")
 
 		err = pageAssertions.Locator(parties).ToHaveCount(4) // 3 parties and 1 section for the "Create New Party" card
 		helpers.Ok(t, err, "expected 3 parties and the 'Create Party' card, got %v", err)
 
-		// Check the counts for movies watched
-		movieWatchCount := page.Locator("#count-movies-watched")
-		helpers.Assert(t, parties != nil, "could not get error messages")
+		// check that we paginate watched movies to 5 in a list, we should see 5 currently and when we hit the next page button we should see 3
+		recentlyWatchedMovies := page.Locator(".recently-watched-movie")
+		helpers.Assert(t, recentlyWatchedMovies != nil, "could not find recently watched movies in .recently-watched-movie")
 
-		err = pageAssertions.Locator(movieWatchCount).ToHaveText("8") // 2 movies from party1, 3 movies from party2, 3 movies from party3 -> 8
-		helpers.Ok(t, err, "expected 8 movies watched, got %v", err)
+		err = pageAssertions.Locator(recentlyWatchedMovies).ToHaveCount(5)
+		helpers.Ok(t, err, "expected 5 recently watched movies, got %v", err)
 	}
 }
 
@@ -60,24 +69,28 @@ func setupProfileViewData(ctx context.Context, t *testing.T, testConn *pgxpool.P
 			NumMembers:       2,
 			NumMovies:        8,
 			NumWatchedMovies: 2,
+			MovieRuntime:     125,
 			CurrentAccount:   currentAccount,
 		},
 		{
 			NumMembers:       3,
 			NumMovies:        9,
 			NumWatchedMovies: 3,
+			MovieRuntime:     120,
 			CurrentAccount:   currentAccount,
 		},
 		{
 			NumMembers:       1,
 			NumMovies:        5,
 			NumWatchedMovies: 3,
+			MovieRuntime:     94,
 			CurrentAccount:   currentAccount,
 		},
 		{
 			NumMembers:       2,
 			NumMovies:        5,
 			NumWatchedMovies: 3,
+			MovieRuntime:     120,
 		},
 	}
 

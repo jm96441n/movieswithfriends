@@ -187,5 +187,10 @@ func (a *Application) profileRoutes() []route {
 			handler:            a.ProfileShowHandler,
 			authenticatedRoute: true,
 		},
+		{
+			path:               "GET /profile/watched",
+			handler:            a.GetPaginatedWatchHistoryHandler,
+			authenticatedRoute: true,
+		},
 	}
 }

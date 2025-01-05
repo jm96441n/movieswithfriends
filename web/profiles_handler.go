@@ -3,6 +3,7 @@ package web
 import (
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/jm96441n/movieswithfriends/store"
 )
@@ -47,4 +48,37 @@ func (a *Application) ProfileShowHandler(w http.ResponseWriter, r *http.Request)
 	templateData.Parties = parties
 	templateData.WatchedMovies = watchedMovies
 	a.render(w, r, http.StatusOK, "profiles/show.gohtml", templateData)
+}
+
+func (a *Application) GetPaginatedWatchHistoryHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	profileID, err := a.getProfileIDFromSession(r)
+	if err != nil {
+		a.serverError(w, r, err)
+		return
+	}
+
+	page := r.URL.Query().Get("page")
+
+	if page == "" {
+		page = "0"
+	}
+
+	pageNum, err := strconv.Atoi(page)
+	if err != nil {
+		a.serverError(w, r, err)
+		return
+	}
+
+	watchedMovies, err := a.MemberService.GetWatchHistory(ctx, profileID, pageNum)
+	if err != nil {
+		a.Logger.Error("failed to retrieve watched movies from db", "error", err)
+		a.serverError(w, r, err)
+		return
+	}
+
+	templateData := a.NewProfilesTemplateData(r, w, "/profile")
+	templateData.WatchedMovies = watchedMovies
+	a.render(w, r, http.StatusOK, "profiles/partials/recently_watched_list.gohtml", templateData)
 }

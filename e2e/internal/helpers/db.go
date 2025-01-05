@@ -47,6 +47,7 @@ type PartyConfig struct {
 	NumMovies        int
 	NumWatchedMovies int
 	CurrentAccount   TestAccountInfo
+	MovieRuntime     int
 	CurrentUserOwns  bool
 }
 
@@ -74,7 +75,7 @@ func SeedPartyWithUsersAndMovies(ctx context.Context, t *testing.T, conn *pgxpoo
 
 	movies := make([]int, 0, cfg.NumMovies)
 	for i := 0; i < cfg.NumMovies; i++ {
-		movies = append(movies, SeedMovie(ctx, t, conn, fmt.Sprintf("Movie %d", i)))
+		movies = append(movies, SeedMovie(ctx, t, conn, fmt.Sprintf("Movie %d", i), cfg.MovieRuntime))
 	}
 
 	partyID := SeedParty(ctx, t, conn, fmt.Sprintf("party name %d", partyNumber.Add(1)))
@@ -96,19 +97,20 @@ func SeedPartyWithUsersAndMovies(ctx context.Context, t *testing.T, conn *pgxpoo
 		accountAddedBy := accountInfos[idx%len(accountInfos)]
 		if cfg.NumWatchedMovies > 0 {
 			addWatchedMovieToParty(ctx, t, conn, partyID, movieID, accountAddedBy.AccountID)
+			cfg.NumWatchedMovies--
 			continue
 		}
 		addMovieToParty(ctx, t, conn, partyID, movieID, accountAddedBy.AccountID)
 	}
 }
 
-const insertMovieQuery = `INSERT INTO movies (title, poster_url, tmdb_id, overview, tagline) VALUES ($1, $2, $3, $4, $5) RETURNING id_movie`
+const insertMovieQuery = `INSERT INTO movies (title, poster_url, tmdb_id, overview, tagline, runtime) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id_movie`
 
-func SeedMovie(ctx context.Context, t *testing.T, conn *pgxpool.Pool, title string) int {
+func SeedMovie(ctx context.Context, t *testing.T, conn *pgxpool.Pool, title string, runtime int) int {
 	t.Helper()
 
 	var movieID int
-	err := conn.QueryRow(ctx, insertMovieQuery, title, "poster.com", 12345, "it's a movie", "still a movie").Scan(&movieID)
+	err := conn.QueryRow(ctx, insertMovieQuery, title, "poster.com", 12345, "it's a movie", "still a movie", runtime).Scan(&movieID)
 	Ok(t, err, "failed to insert movie")
 
 	return movieID

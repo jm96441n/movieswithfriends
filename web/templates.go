@@ -230,6 +230,7 @@ func NewTemplateCache(filesystem embed.FS) (map[string]*template.Template, error
 		// parse the base template file into a template set
 		ts, err := template.New(name).Funcs(functions).ParseFS(filesystem, patterns...)
 		if err != nil {
+			fmt.Println(err)
 			return err
 		}
 

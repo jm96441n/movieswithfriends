@@ -24,7 +24,7 @@ const getWatchedMoviesForMember = `
   JOIN parties ON parties.id_party = party_movies.id_party 
   WHERE party_members.id_member = $1 AND party_movies.watch_status = 'watched'
   ORDER BY party_movies.watch_date DESC
-  LIMIT 10
+  LIMIT 5
   OFFSET $2;
 `
 
