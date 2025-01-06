@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jm96441n/movieswithfriends/e2e/internal/helpers"
@@ -58,6 +59,8 @@ func testCanViewAndEditProfile(ctx context.Context, testConn *pgxpool.Pool, page
 
 		err = pageAssertions.Locator(recentlyWatchedMovies).ToHaveCount(5)
 		helpers.Ok(t, err, "expected 5 recently watched movies, got %v", err)
+
+		time.Sleep(30 * time.Minute)
 	}
 }
 

@@ -1,5 +1,5 @@
 {{ define "recently_watched_list" }}
-  <div class="table-responsive">
+  <div class="table-responsive" id="movies-table">
     <table class="table table-hover mb-0">
       <thead class="table-light">
         <tr>
@@ -42,14 +42,51 @@
     <!--- TODO: only show pagination if there are more than 5 watched movies --->
     <nav aria-label="Page navigation example">
       <ul class="pagination justify-content-center">
-        <li class="page-item">
-          <a class="page-link" href="#">Previous</a>
+        <li
+          class="page-item {{ disablePaginationLinkIfNoMorePages .CurPage 1 "lt" }}"
+        >
+          <a
+            hx-get="/profile/watched?page={{ previous .CurPage }}"
+            class="page-link"
+            hx-trigger="click"
+            hx-target="#movies-table"
+            hx-swap="outerHTML"
+            href="#"
+          >
+            Previous
+          </a>
         </li>
-        <li class="page-item"><a class="page-link" href="#">1</a></li>
-        <li class="page-item"><a class="page-link" href="#">2</a></li>
-        <li class="page-item"><a class="page-link" href="#">3</a></li>
-        <li class="page-item">
-          <a class="page-link" href="#">Next</a>
+        {{ range $n := pageNums .CurPage .NumPages }}
+          <li
+            class="page-item {{ activeIfCurrentPageForPagination $.CurPage $n }}"
+          >
+            <a
+              hx-get="/profile/watched?page={{ $n }}"
+              class="page-link"
+              hx-trigger="click"
+              hx-target="#movies-table"
+              hx-swap="outerHTML"
+              href="#"
+            >
+              {{ $n }}
+            </a>
+          </li>
+        {{ end }}
+
+
+        <li
+          class="page-item {{ disablePaginationLinkIfNoMorePages .CurPage .NumPages "gt" }}"
+        >
+          <a
+            hx-get="/profile/watched?page={{ next .CurPage }}"
+            class="page-link"
+            hx-trigger="click"
+            hx-target="#movies-table"
+            hx-swap="outerHTML"
+            href="#"
+          >
+            Next
+          </a>
         </li>
       </ul>
     </nav>

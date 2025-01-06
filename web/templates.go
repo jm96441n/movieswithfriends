@@ -50,6 +50,8 @@ type ProfilesTemplateData struct {
 	Profile       identityaccess.Profile
 	Parties       []store.PartiesForMemberResult
 	WatchedMovies []store.WatchedMoviesForMemberResult
+	NumPages      int
+	CurPage       int
 	BaseTemplateData
 }
 
@@ -196,6 +198,37 @@ var functions = template.FuncMap{
 		}
 
 		return "is-valid"
+	},
+	"activeIfCurrentPageForPagination": func(currentPage, targetPage int) string {
+		if currentPage == targetPage {
+			return "active"
+		}
+		return ""
+	},
+	"pageNums": func(curPage, numPages int) []int {
+		pages := make([]int, 0, 3)
+		for i := curPage; i <= numPages && i < curPage+3; i++ {
+			pages = append(pages, i)
+		}
+
+		return pages
+	},
+	"disablePaginationLinkIfNoMorePages": func(currentPage, disableIfEq int, op string) string {
+		cond := (currentPage <= disableIfEq)
+		if op == "gt" {
+			cond = currentPage >= disableIfEq
+		}
+
+		if cond {
+			return "disabled"
+		}
+		return ""
+	},
+	"previous": func(page int) int {
+		return page - 1
+	},
+	"next": func(page int) int {
+		return page + 1
 	},
 }
 

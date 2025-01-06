@@ -14,6 +14,16 @@ func NewMemberService(db *store.PGStore) *MemberService {
 	return &MemberService{db: db}
 }
 
-func (s *MemberService) GetWatchHistory(ctx context.Context, memberID, offset int) ([]store.WatchedMoviesForMemberResult, error) {
-	return s.db.GetWatchedMoviesForMember(ctx, memberID, offset)
+func (s *MemberService) GetWatchHistory(ctx context.Context, memberID, offset int) ([]store.WatchedMoviesForMemberResult, int, error) {
+	watchedMovies, err := s.db.GetWatchedMoviesForMember(ctx, memberID, offset)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	numRecords, err := s.db.GetWatchedMoviesCountForMember(ctx, memberID)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return watchedMovies, numRecords, nil
 }

@@ -36,22 +36,31 @@ func (a *Application) ProfileShowHandler(w http.ResponseWriter, r *http.Request)
 		a.serverError(w, r, err)
 	}
 
-	watchedMovies, err := a.MemberService.GetWatchHistory(ctx, profileID, 0)
+	watchedMovies, numMovies, err := a.MemberService.GetWatchHistory(ctx, profileID, 0)
 	if err != nil {
 		a.Logger.Error("failed to retrieve watched movies from db", "error", err)
 		a.serverError(w, r, err)
 		return
 	}
 
+	numPages := numMovies / 5
+	if numMovies > numPages*5 {
+		numPages++
+	}
+
 	templateData := a.NewProfilesTemplateData(r, w, "/profile")
 	templateData.Profile = profile
 	templateData.Parties = parties
 	templateData.WatchedMovies = watchedMovies
+	templateData.CurPage = 1
+	templateData.NumPages = numPages
 	a.render(w, r, http.StatusOK, "profiles/show.gohtml", templateData)
 }
 
 func (a *Application) GetPaginatedWatchHistoryHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	logger := a.Logger.With("handler", "GetPaginatedWatchHistoryHandler")
+	logger.Debug("getting paginated movies list")
 
 	profileID, err := a.getProfileIDFromSession(r)
 	if err != nil {
@@ -62,7 +71,7 @@ func (a *Application) GetPaginatedWatchHistoryHandler(w http.ResponseWriter, r *
 	page := r.URL.Query().Get("page")
 
 	if page == "" {
-		page = "0"
+		page = "1"
 	}
 
 	pageNum, err := strconv.Atoi(page)
@@ -71,14 +80,23 @@ func (a *Application) GetPaginatedWatchHistoryHandler(w http.ResponseWriter, r *
 		return
 	}
 
-	watchedMovies, err := a.MemberService.GetWatchHistory(ctx, profileID, pageNum)
+	offset := 5 * (pageNum - 1)
+
+	watchedMovies, numMovies, err := a.MemberService.GetWatchHistory(ctx, profileID, offset)
 	if err != nil {
 		a.Logger.Error("failed to retrieve watched movies from db", "error", err)
 		a.serverError(w, r, err)
 		return
 	}
 
+	numPages := numMovies / 5
+	if numMovies > numPages*5 {
+		numPages++
+	}
+
 	templateData := a.NewProfilesTemplateData(r, w, "/profile")
 	templateData.WatchedMovies = watchedMovies
-	a.render(w, r, http.StatusOK, "profiles/partials/recently_watched_list.gohtml", templateData)
+	templateData.CurPage = pageNum
+	templateData.NumPages = numPages
+	a.renderPartial(w, r, http.StatusOK, "profiles/partials/recently_watched_list.gohtml", templateData)
 }

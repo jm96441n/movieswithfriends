@@ -53,3 +53,21 @@ func (p *PGStore) GetWatchedMoviesForMember(ctx context.Context, idMember int, o
 
 	return movies, nil
 }
+
+const getWatchedMoviesCountForMember = `
+  SELECT count(party_movies.*)
+  FROM party_movies
+  JOIN party_members ON party_members.id_party = party_movies.id_party
+  WHERE party_members.id_member = $1 AND party_movies.watch_status = 'watched'
+`
+
+func (p *PGStore) GetWatchedMoviesCountForMember(ctx context.Context, idMember int) (int, error) {
+	var count int
+	err := p.db.QueryRow(ctx, getWatchedMoviesCountForMember, idMember).Scan(&count)
+	if err != nil {
+		p.logger.Error("failed to get watched movies count", "error", err)
+		return 0, err
+	}
+
+	return count, nil
+}
