@@ -40,20 +40,18 @@
     </table>
 
     <!--- TODO: only show pagination if there are more than 5 watched movies --->
-    <nav aria-label="Page navigation example">
+    <nav aria-label="Recently watched movies pagination">
       <ul class="pagination justify-content-center">
-        <li
-          class="page-item {{ disablePaginationLinkIfNoMorePages .CurPage 1 "lt" }}"
-        >
+        <li class="page-item">
           <a
-            hx-get="/profile/watched?page={{ previous .CurPage }}"
+            hx-get="/profile/watched?page=1"
             class="page-link"
             hx-trigger="click"
             hx-target="#movies-table"
             hx-swap="outerHTML"
             href="#"
           >
-            Previous
+            First
           </a>
         </li>
         {{ range $n := pageNums .CurPage .NumPages }}
@@ -74,18 +72,16 @@
         {{ end }}
 
 
-        <li
-          class="page-item {{ disablePaginationLinkIfNoMorePages .CurPage .NumPages "gt" }}"
-        >
+        <li class="page-item">
           <a
-            hx-get="/profile/watched?page={{ next .CurPage }}"
+            hx-get="/profile/watched?page={{ .NumPages }}"
             class="page-link"
             hx-trigger="click"
             hx-target="#movies-table"
             hx-swap="outerHTML"
             href="#"
           >
-            Next
+            Last
           </a>
         </li>
       </ul>

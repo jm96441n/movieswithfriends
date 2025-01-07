@@ -207,28 +207,25 @@ var functions = template.FuncMap{
 	},
 	"pageNums": func(curPage, numPages int) []int {
 		pages := make([]int, 0, 3)
-		for i := curPage; i <= numPages && i < curPage+3; i++ {
-			pages = append(pages, i)
+		// when on the first page show the following 2 pages
+		// when on the last page show the previous 2 pages
+		// when on a page in the middle show the previous page, current page, and next page
+		switch curPage {
+		case 1:
+			for i := curPage; i <= numPages && i < curPage+3; i++ {
+				pages = append(pages, i)
+			}
+		case numPages:
+			for i := max(1, curPage-2); i <= numPages; i++ {
+				pages = append(pages, i)
+			}
+		default:
+			for i := curPage - 1; i <= curPage+1; i++ {
+				pages = append(pages, i)
+			}
 		}
 
 		return pages
-	},
-	"disablePaginationLinkIfNoMorePages": func(currentPage, disableIfEq int, op string) string {
-		cond := (currentPage <= disableIfEq)
-		if op == "gt" {
-			cond = currentPage >= disableIfEq
-		}
-
-		if cond {
-			return "disabled"
-		}
-		return ""
-	},
-	"previous": func(page int) int {
-		return page - 1
-	},
-	"next": func(page int) int {
-		return page + 1
 	},
 }
 

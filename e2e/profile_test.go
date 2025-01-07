@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jm96441n/movieswithfriends/e2e/internal/helpers"
@@ -38,13 +37,13 @@ func testCanViewAndEditProfile(ctx context.Context, testConn *pgxpool.Pool, page
 		pageAssertions := playwright.NewPlaywrightAssertions()
 
 		// Check the counts for movies watched
-		helpers.LocatorHasText(t, page, pageAssertions, "#count-watched-movies", "8") // 2 movies from party1, 3 movies from party2, 3 movies from party3 -> 8
+		helpers.LocatorHasText(t, page, pageAssertions, "#count-watched-movies", "16") // 7 movies from party1, 6 movies from party2, 3 movies from party3 -> 16 movies watched
 
 		// Check the counts for joined parties
 		helpers.LocatorHasText(t, page, pageAssertions, "#count-joined-parties", "3") // 3 parties joined
 
 		// Check the watch time
-		helpers.LocatorHasText(t, page, pageAssertions, "#watch-time", "14h 52m") // (2 movies * 125 minutes each) + (3 movies * 120 minutes each) + (3 movies * 94 minutes each) = 250min + 360min + 282min = 892min = 14h 52m
+		helpers.LocatorHasText(t, page, pageAssertions, "#watch-time", "31h 17m") // (7 movies * 125 minutes each) + (6 movies * 120 minutes each) + (3 movies * 94 minutes each) = 875min + 720min + 282min = 1877min = 31h 17m
 
 		// Check the number of parties being shown
 		parties := page.Locator(".party-card")
@@ -60,7 +59,39 @@ func testCanViewAndEditProfile(ctx context.Context, testConn *pgxpool.Pool, page
 		err = pageAssertions.Locator(recentlyWatchedMovies).ToHaveCount(5)
 		helpers.Ok(t, err, "expected 5 recently watched movies, got %v", err)
 
-		time.Sleep(30 * time.Minute)
+		// check the pagination shows correctly
+		pagination := page.Locator(".pagination")
+		helpers.Assert(t, pagination != nil, "could not find pagination in .pagination")
+
+		err = pageAssertions.Locator(pagination).ToHaveText("First 1 2 3 Last")
+		helpers.Ok(t, err, "expected pagination to have text 'First 1 2 3 Last', got %v", err)
+
+		// go to third page of pagination and check that there are 5 videos in the list and the pagination shows correctly
+		helpers.Ok(t, pagination.Locator("text=3").Click(), "could not click button 3 in pagination")
+
+		err = pageAssertions.Locator(pagination).ToHaveText("First 2 3 4 Last")
+		helpers.Ok(t, err, "expected pagination to have text 'First 2 3 4 Last', got %v", err)
+
+		err = pageAssertions.Locator(recentlyWatchedMovies).ToHaveCount(5)
+		helpers.Ok(t, err, "expected 5 recently watched movies, got %v", err)
+
+		// click the Last button and show that pagination shows correctly
+		helpers.Ok(t, pagination.Locator("text=Last").Click(), "could not click 'Last' button in pagination")
+
+		err = pageAssertions.Locator(pagination).ToHaveText("First 2 3 4 Last")
+		helpers.Ok(t, err, "expected pagination to have text 'First 2 3 4 Last', got %v", err)
+
+		err = pageAssertions.Locator(recentlyWatchedMovies).ToHaveCount(1)
+		helpers.Ok(t, err, "expected 1 recently watched movies, got %v", err)
+
+		// click the First button and show that pagination shows correctly
+		helpers.Ok(t, pagination.Locator("text=First").Click(), "could not click 'First' button in pagination")
+
+		err = pageAssertions.Locator(pagination).ToHaveText("First 1 2 3 Last")
+		helpers.Ok(t, err, "expected pagination to have text 'First 1 2 3 Last', got %v", err)
+
+		err = pageAssertions.Locator(recentlyWatchedMovies).ToHaveCount(5)
+		helpers.Ok(t, err, "expected 5 recently watched movies, got %v", err)
 	}
 }
 
@@ -71,14 +102,14 @@ func setupProfileViewData(ctx context.Context, t *testing.T, testConn *pgxpool.P
 		{
 			NumMembers:       2,
 			NumMovies:        8,
-			NumWatchedMovies: 2,
+			NumWatchedMovies: 7,
 			MovieRuntime:     125,
 			CurrentAccount:   currentAccount,
 		},
 		{
 			NumMembers:       3,
 			NumMovies:        9,
-			NumWatchedMovies: 3,
+			NumWatchedMovies: 6,
 			MovieRuntime:     120,
 			CurrentAccount:   currentAccount,
 		},
