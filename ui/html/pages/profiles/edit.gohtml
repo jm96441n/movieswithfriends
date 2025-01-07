@@ -1,0 +1,122 @@
+{{ define "title" }}Edit Profile Page{{ end }}
+{{ define "main" }}
+  <div class="container py-5">
+    <div class="row justify-content-center">
+      <div class="col-lg-8">
+        <!-- Header -->
+        <h1 class="h3 mb-4">Edit Profile</h1>
+
+        <!-- Profile Form -->
+        <div class="card border-0 shadow-sm">
+          <div class="card-body p-4">
+            <!-- Profile Picture -->
+            <div class="text-center mb-4">
+              <img
+                src="https://placehold.co/128x128?text="
+                class="rounded-circle mb-3"
+                alt="Profile Picture"
+              />
+              <div>
+                <button type="button" class="btn btn-outline-primary btn-sm">
+                  <i class="fas fa-camera me-2"></i>Change Picture
+                </button>
+              </div>
+            </div>
+
+            <form>
+              <!-- Name Fields -->
+              <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                  <label for="firstName" class="form-label">First Name</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="firstName"
+                    value="{{ .Profile.FirstName }}"
+                    required
+                  />
+                </div>
+                <div class="col-md-6">
+                  <label for="lastName" class="form-label">Last Name</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="lastName"
+                    value="{{ .Profile.LastName }}"
+                    required
+                  />
+                </div>
+              </div>
+
+              <!-- Email Field -->
+              <div class="mb-3">
+                <label for="email" class="form-label">Email Address</label>
+                <input
+                  type="email"
+                  class="form-control"
+                  id="email"
+                  value="{{ .Profile.Email }}"
+                  required
+                />
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="d-flex gap-2 justify-content-end">
+                <a href="/profile" class="btn btn-outline-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary">
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Change Password Section -->
+        <div class="card border-0 shadow-sm mt-4">
+          <div class="card-body p-4">
+            <h2 class="h5 mb-4">Change Password</h2>
+            <form>
+              <div class="mb-3">
+                <label for="currentPassword" class="form-label"
+                  >Current Password</label
+                >
+                <input
+                  type="password"
+                  class="form-control"
+                  id="currentPassword"
+                  required
+                />
+              </div>
+
+              <div class="mb-3">
+                <label for="newPassword" class="form-label">New Password</label>
+                <input
+                  type="password"
+                  class="form-control"
+                  id="newPassword"
+                  required
+                />
+              </div>
+
+              <div class="mb-4">
+                <label for="confirmPassword" class="form-label"
+                  >Confirm New Password</label
+                >
+                <input
+                  type="password"
+                  class="form-control"
+                  id="confirmPassword"
+                  required
+                />
+              </div>
+
+              <button type="submit" class="btn btn-primary">
+                Update Password
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{{ end }}

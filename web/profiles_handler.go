@@ -19,14 +19,15 @@ func (a *Application) ProfileShowHandler(w http.ResponseWriter, r *http.Request)
 
 	profile, err := a.ProfilesService.GetProfileByID(ctx, profileID)
 	if err != nil {
+		status := http.StatusInternalServerError
 		if errors.Is(err, store.ErrNoRecord) {
 			a.Logger.Error("did not find profile in db", "profileID", profileID)
-			a.clientError(w, r, http.StatusNotFound, "uh oh")
-			return
+			status = http.StatusNotFound
 		}
 
-		a.Logger.Error("failed to retrieve profile from db", "error", err)
-		a.serverError(w, r, err)
+		a.setErrorFlashMessage(w, r, "There was an error loading your profile, please try logging in again")
+		a.logout(w, r)
+		http.Redirect(w, r, "/login", status)
 		return
 	}
 
@@ -55,6 +56,34 @@ func (a *Application) ProfileShowHandler(w http.ResponseWriter, r *http.Request)
 	templateData.CurPage = 1
 	templateData.NumPages = numPages
 	a.render(w, r, http.StatusOK, "profiles/show.gohtml", templateData)
+}
+
+func (a *Application) ProfileEditHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	profileID, err := a.getProfileIDFromSession(r)
+	if err != nil {
+		a.serverError(w, r, err)
+		return
+	}
+
+	profile, err := a.ProfilesService.GetProfileByID(ctx, profileID)
+	if err != nil {
+		status := http.StatusInternalServerError
+		if errors.Is(err, store.ErrNoRecord) {
+			a.Logger.Error("did not find profile in db", "profileID", profileID)
+			status = http.StatusNotFound
+		}
+
+		a.setErrorFlashMessage(w, r, "There was an error loading your profile, please try logging in again")
+		a.logout(w, r)
+		http.Redirect(w, r, "/login", status)
+		return
+	}
+
+	templateData := a.NewProfilesTemplateData(r, w, "/profile")
+	templateData.Profile = profile
+	a.render(w, r, http.StatusOK, "profiles/edit.gohtml", templateData)
 }
 
 func (a *Application) GetPaginatedWatchHistoryHandler(w http.ResponseWriter, r *http.Request) {

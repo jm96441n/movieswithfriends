@@ -58,16 +58,23 @@ func (a *Application) LoginHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *Application) LogoutHandler(w http.ResponseWriter, r *http.Request) {
-	session, err := a.SessionStore.Get(r, sessionName)
-	if err != nil {
-		a.serverError(w, r, err)
-		return
-	}
-	session.Options.MaxAge = -1
-	err = session.Save(r, w)
+	err := a.logout(w, r)
 	if err != nil {
 		a.serverError(w, r, err)
 		return
 	}
 	http.Redirect(w, r, "/login", http.StatusSeeOther)
+}
+
+func (a *Application) logout(w http.ResponseWriter, r *http.Request) error {
+	session, err := a.SessionStore.Get(r, sessionName)
+	if err != nil {
+		return err
+	}
+	session.Options.MaxAge = -1
+	err = session.Save(r, w)
+	if err != nil {
+		return err
+	}
+	return nil
 }
