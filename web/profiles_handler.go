@@ -98,5 +98,5 @@ func (a *Application) GetPaginatedWatchHistoryHandler(w http.ResponseWriter, r *
 	templateData.WatchedMovies = watchedMovies
 	templateData.CurPage = pageNum
 	templateData.NumPages = numPages
-	a.renderPartial(w, r, http.StatusOK, "profiles/partials/recently_watched_list.gohtml", templateData)
+	a.renderPartial(w, r, http.StatusOK, "profiles/partials/watch_list.gohtml", templateData)
 }
