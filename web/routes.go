@@ -189,6 +189,11 @@ func (a *Application) profileRoutes() []route {
 		},
 		{
 			path:               "GET /profile/edit",
+			handler:            a.ProfileEditPageHandler,
+			authenticatedRoute: true,
+		},
+		{
+			path:               "POST /profile",
 			handler:            a.ProfileEditHandler,
 			authenticatedRoute: true,
 		},

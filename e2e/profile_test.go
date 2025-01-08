@@ -16,7 +16,8 @@ func TestProfile(t *testing.T) {
 	connPool, page, port := helpers.SetupSuite(ctx, t)
 
 	tests := map[string]func(*testing.T){
-		"testCanViewAndEditProfile": testCanViewAndEditProfile(ctx, connPool, page, port),
+		"testCanViewProfile": testCanViewProfile(ctx, connPool, page, port),
+		"testCanEditProfile": testCanEditProfile(ctx, connPool, page, port),
 	}
 
 	for name, testFn := range tests {
@@ -24,7 +25,7 @@ func TestProfile(t *testing.T) {
 	}
 }
 
-func testCanViewAndEditProfile(ctx context.Context, testConn *pgxpool.Pool, page playwright.Page, appPort string) func(t *testing.T) {
+func testCanViewProfile(ctx context.Context, testConn *pgxpool.Pool, page playwright.Page, appPort string) func(t *testing.T) {
 	return func(t *testing.T) {
 		helpers.Setup(ctx, t, testConn, page)
 		currentAccount := helpers.SeedAccountWithProfile(ctx, t, testConn, helpers.TestAccountInfo{Email: "buddy@santa.com", Password: "anotherpassword", FirstName: "Buddy", LastName: "TheElf"})
@@ -92,6 +93,30 @@ func testCanViewAndEditProfile(ctx context.Context, testConn *pgxpool.Pool, page
 
 		err = pageAssertions.Locator(recentlyWatchedMovies).ToHaveCount(5)
 		helpers.Ok(t, err, "expected 5 recently watched movies, got %v", err)
+	}
+}
+
+func testCanEditProfile(ctx context.Context, testConn *pgxpool.Pool, page playwright.Page, appPort string) func(t *testing.T) {
+	return func(t *testing.T) {
+		helpers.Setup(ctx, t, testConn, page)
+		currentAccount := helpers.SeedAccountWithProfile(ctx, t, testConn, helpers.TestAccountInfo{Email: "buddy@santa.com", Password: "anotherpassword", FirstName: "Buddy", LastName: "TheElf"})
+		helpers.LoginAs(t, page, currentAccount)
+
+		_, err := page.Goto(fmt.Sprintf("http://localhost:%s/profile", appPort))
+		helpers.Ok(t, err, "could not goto profile page")
+
+		helpers.Ok(t, page.Locator("text=Edit Profile").Click(), "failed to click the 'Edit Profile' link")
+
+		curURL := page.URL()
+		helpers.Assert(t, curURL == fmt.Sprintf("http://localhost:%s/profile/edit", appPort), "expected to be on the edit profile page, got %s", curURL)
+
+		newName := "NewName"
+		newLastName := "NewLastName"
+		newEmail := "new@email.com"
+
+		helpers.FillInField(t, helpers.FormField{Label: "First Name", Value: newName}, page)
+		helpers.FillInField(t, helpers.FormField{Label: "Last Name", Value: newLastName}, page)
+		helpers.FillInField(t, helpers.FormField{Label: "Email", Value: newEmail}, page)
 	}
 }
 

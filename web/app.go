@@ -38,10 +38,6 @@ type PartyService interface {
 	GetPartyWithMovies(context.Context, int) (partymgmt.Party, error)
 }
 
-type ProfilesService interface {
-	GetProfileByID(context.Context, int) (identityaccess.Profile, error)
-}
-
 type MoviesService interface {
 	SearchMovies(context.Context, *slog.Logger, string) ([]partymgmt.TMDBMovie, error)
 	CreateMovie(context.Context, *slog.Logger, int) (*store.Movie, error)
@@ -66,7 +62,7 @@ type Application struct {
 	PartyService      PartyService
 	PartiesRepository PartiesStoreService
 	MemberService     *partymgmt.MemberService
-	ProfilesService   ProfilesService
+	ProfilesService   identityaccess.ProfileService
 	Auth              Authenticator
 	AccountRepository AccountRepository
 }

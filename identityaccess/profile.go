@@ -7,6 +7,11 @@ import (
 	"github.com/jm96441n/movieswithfriends/store"
 )
 
+type Account struct {
+	Email    string
+	Password []byte
+}
+
 type Profile struct {
 	ID        int
 	FirstName string
@@ -14,6 +19,16 @@ type Profile struct {
 	Email     string
 	CreatedAt time.Time
 	Stats     ProfileStats
+	AccountID int
+}
+
+type ProfileUpdateReq struct {
+	FirstName               string
+	LastName                string
+	Email                   string
+	CurrentPassword         string
+	NewPassword             string
+	NewPasswordConfirmation string
 }
 
 type ProfileStats struct {
@@ -22,17 +37,11 @@ type ProfileStats struct {
 	MoviesWatched   int
 }
 
-type ProfileRepository interface {
-	GetProfileByID(context.Context, int) (store.Profile, error)
-	GetProfileStats(context.Context, int) (int, int, int, error)
-	GetAccountEmailForProfile(context.Context, int) (string, error)
-}
-
 type ProfileService struct {
-	db ProfileRepository
+	db *store.PGStore
 }
 
-func NewProfileService(db ProfileRepository) *ProfileService {
+func NewProfileService(db *store.PGStore) *ProfileService {
 	return &ProfileService{db: db}
 }
 
@@ -64,4 +73,8 @@ func (p *ProfileService) GetProfileByID(ctx context.Context, id int) (Profile, e
 			MoviesWatched:   moviesWatched,
 		},
 	}, nil
+}
+
+func (p *ProfileService) UpdateProfile(ctx context.Context, req ProfileUpdateReq, profile Profile) error {
+	return nil
 }

@@ -23,14 +23,16 @@ const GetProfileByIDQuery = `
     profiles.first_name,
     profiles.last_name,
     profiles.id_account,
-    profiles.created_at
+    profiles.created_at,
+    accounts.id_account
   from profiles
+  join profiles on accounts.id_account = profiles.id_account
   where profiles.id_profile = $1`
 
 func (pg *PGStore) GetProfileByID(ctx context.Context, profileID int) (Profile, error) {
 	profile := Profile{}
 
-	err := pg.db.QueryRow(ctx, GetProfileByIDQuery, profileID).Scan(&profile.ID, &profile.FirstName, &profile.LastName, &profile.AccountID, &profile.CreatedAt)
+	err := pg.db.QueryRow(ctx, GetProfileByIDQuery, profileID).Scan(&profile.ID, &profile.FirstName, &profile.LastName, &profile.AccountID, &profile.CreatedAt, &profile.AccountID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return Profile{}, ErrNoRecord

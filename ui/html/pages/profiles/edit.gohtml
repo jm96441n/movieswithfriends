@@ -3,8 +3,13 @@
   <div class="container py-5">
     <div class="row justify-content-center">
       <div class="col-lg-8">
-        <!-- Header -->
-        <h1 class="h3 mb-4">Edit Profile</h1>
+        <!-- Back Button and Header -->
+        <div class="d-flex align-items-center mb-4">
+          <a href="/profile" class="btn btn-outline-secondary me-3">
+            <i class="fas fa-arrow-left me-2"></i>Back to Profile
+          </a>
+          <h1 class="h3 mb-0">Edit Profile</h1>
+        </div>
 
         <!-- Profile Form -->
         <div class="card border-0 shadow-sm">
@@ -23,7 +28,7 @@
               </div>
             </div>
 
-            <form>
+            <form action="/profile" method="POST" id="profile-form" novalidate>
               <!-- Name Fields -->
               <div class="row g-3 mb-3">
                 <div class="col-md-6">
@@ -60,42 +65,34 @@
                 />
               </div>
 
-              <!-- Action Buttons -->
-              <div class="d-flex gap-2 justify-content-end">
-                <a href="/profile" class="btn btn-outline-secondary">Cancel</a>
-                <button type="submit" class="btn btn-primary">
-                  Save Changes
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+              <hr class="my-4" />
 
-        <!-- Change Password Section -->
-        <div class="card border-0 shadow-sm mt-4">
-          <div class="card-body p-4">
-            <h2 class="h5 mb-4">Change Password</h2>
-            <form>
+              <h2 class="h5 mb-4">Change Password</h2>
+              <!-- Password Fields -->
               <div class="mb-3">
                 <label for="currentPassword" class="form-label"
                   >Current Password</label
                 >
                 <input
                   type="password"
-                  class="form-control"
+                  class="form-control password-field"
                   id="currentPassword"
-                  required
                 />
+                <div class="invalid-feedback">
+                  Required when changing password
+                </div>
               </div>
 
               <div class="mb-3">
                 <label for="newPassword" class="form-label">New Password</label>
                 <input
                   type="password"
-                  class="form-control"
+                  class="form-control password-field"
                   id="newPassword"
-                  required
                 />
+                <div class="invalid-feedback">
+                  Required when changing password
+                </div>
               </div>
 
               <div class="mb-4">
@@ -104,19 +101,60 @@
                 >
                 <input
                   type="password"
-                  class="form-control"
+                  class="form-control password-field"
                   id="confirmPassword"
-                  required
                 />
+                <div class="invalid-feedback">
+                  Required when changing password
+                </div>
               </div>
-
-              <button type="submit" class="btn btn-primary">
-                Update Password
-              </button>
+              <!-- Action Buttons -->
+              <div class="d-flex gap-2 justify-content-end">
+                <button type="submit" class="btn btn-primary">
+                  Save Changes
+                </button>
+              </div>
             </form>
           </div>
         </div>
       </div>
     </div>
   </div>
+  <script>
+    document
+      .getElementById('profileForm')
+      .addEventListener('submit', function (e) {
+        e.preventDefault()
+
+        // Get all password fields
+        const passwordFields = document.querySelectorAll('.password-field')
+        const passwordValues = Array.from(passwordFields).map((field) =>
+          field.value.trim()
+        )
+
+        // Check if any password field has a value
+        const anyPasswordFilled = passwordValues.some((value) => value !== '')
+        // Check if all password fields have values
+        const allPasswordsFilled = passwordValues.every((value) => value !== '')
+
+        // Reset validation state
+        passwordFields.forEach((field) => {
+          field.classList.remove('is-invalid')
+        })
+
+        // If any password field is filled, all must be filled
+        if (anyPasswordFilled && !allPasswordsFilled) {
+          passwordFields.forEach((field) => {
+            if (!field.value.trim()) {
+              field.classList.add('is-invalid')
+            }
+          })
+          return
+        }
+
+        // If we get here, either all password fields are empty or all are filled
+        // You can proceed with form submission
+        console.log('Form is valid, ready to submit')
+      })
+  </script>
 {{ end }}
