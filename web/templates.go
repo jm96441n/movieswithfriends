@@ -47,12 +47,23 @@ type MoviesTemplateData struct {
 }
 
 type ProfilesTemplateData struct {
-	Profile       identityaccess.Profile
-	Parties       []store.PartiesForMemberResult
-	WatchedMovies []store.WatchedMoviesForMemberResult
-	NumPages      int
-	CurPage       int
+	Profile           identityaccess.Profile
+	Parties           []store.PartiesForMemberResult
+	WatchedMovies     []store.WatchedMoviesForMemberResult
+	NumPages          int
+	CurPage           int
+	HasEmailError     *bool
+	HasPasswordError  *bool
+	HasFirstNameError *bool
+	HasLastNameError  *bool
 	BaseTemplateData
+}
+
+func (s *ProfilesTemplateData) InitHasErrorFields() {
+	s.HasEmailError = new(bool)
+	s.HasPasswordError = new(bool)
+	s.HasFirstNameError = new(bool)
+	s.HasLastNameError = new(bool)
 }
 
 type PartiesTemplateData struct {

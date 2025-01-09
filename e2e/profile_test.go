@@ -3,6 +3,7 @@ package e2e
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -99,25 +100,131 @@ func testCanViewProfile(ctx context.Context, testConn *pgxpool.Pool, page playwr
 func testCanEditProfile(ctx context.Context, testConn *pgxpool.Pool, page playwright.Page, appPort string) func(t *testing.T) {
 	return func(t *testing.T) {
 		helpers.Setup(ctx, t, testConn, page)
-		currentAccount := helpers.SeedAccountWithProfile(ctx, t, testConn, helpers.TestAccountInfo{Email: "buddy@santa.com", Password: "anotherpassword", FirstName: "Buddy", LastName: "TheElf"})
+		currentAccount := helpers.SeedAccountWithProfile(ctx, t, testConn, helpers.TestAccountInfo{
+			Email:     "buddy@santa.com",
+			Password:  "anotherpassword",
+			FirstName: "Buddy",
+			LastName:  "TheElf",
+		})
+
 		helpers.LoginAs(t, page, currentAccount)
+
+		pageAssertions := playwright.NewPlaywrightAssertions()
 
 		_, err := page.Goto(fmt.Sprintf("http://localhost:%s/profile", appPort))
 		helpers.Ok(t, err, "could not goto profile page")
+
+		newName := "NewName"
+		newLastName := "NewLastName"
+
+		nameCases := []struct {
+			expectedNameValue string
+			formField         helpers.FormField
+		}{
+			{
+				expectedNameValue: fmt.Sprintf("%s TheElf", newName),
+				formField:         helpers.FormField{Label: "First Name", Value: newName},
+			},
+			{
+				expectedNameValue: fmt.Sprintf("%s %s", newName, newLastName),
+				formField:         helpers.FormField{Label: "Last Name", Value: newLastName},
+			},
+		}
+
+		// Test the profile fields for changes
+		for _, field := range nameCases {
+			// navigate to profile edit page
+			helpers.Ok(t, page.Locator("text=Edit Profile").Click(), "failed to click the 'Edit Profile' link")
+
+			curURL := page.URL()
+			helpers.Assert(t, curURL == fmt.Sprintf("http://localhost:%s/profile/edit", appPort), "expected to be on the edit profile page, got %s", curURL)
+
+			// fill in specific field
+			helpers.FillInField(t, field.formField, page)
+
+			// persist changes
+			helpers.Ok(t, page.Locator("button:has-text('Save Changes')").Click(), "Could not click the 'Save Changes' button")
+
+			curURL = page.URL()
+			helpers.Assert(t, curURL == fmt.Sprintf("http://localhost:%s/profile", appPort), "expected to be on the profile page, got %s", curURL)
+
+			helpers.Ok(t, pageAssertions.Locator(page.Locator("#profile-name")).ToHaveText(field.expectedNameValue), "expected profile name field to have value %s", field.expectedNameValue)
+		}
+
+		newEmail := "new@email.com"
+		// newPassword := "1NewPassword"
+
+		// check email update
 
 		helpers.Ok(t, page.Locator("text=Edit Profile").Click(), "failed to click the 'Edit Profile' link")
 
 		curURL := page.URL()
 		helpers.Assert(t, curURL == fmt.Sprintf("http://localhost:%s/profile/edit", appPort), "expected to be on the edit profile page, got %s", curURL)
 
-		newName := "NewName"
-		newLastName := "NewLastName"
-		newEmail := "new@email.com"
+		// fill in email field
+		helpers.FillInField(t, helpers.FormField{Value: newEmail, Label: "Email Address"}, page)
 
-		helpers.FillInField(t, helpers.FormField{Label: "First Name", Value: newName}, page)
-		helpers.FillInField(t, helpers.FormField{Label: "Last Name", Value: newLastName}, page)
-		helpers.FillInField(t, helpers.FormField{Label: "Email", Value: newEmail}, page)
+		// persist changes
+		helpers.Ok(t, page.Locator("button:has-text('Save Changes')").Click(), "Could not click the 'Save Changes' button")
+
+		curURL = page.URL()
+		helpers.Assert(t, curURL == fmt.Sprintf("http://localhost:%s/profile", appPort), "expected to be on the profile page, got %s", curURL)
+
+		// logout and then login to try the new email
+		logoutViaDropdown(t, page)
+
+		// login with the new email
+		loginThroughUI(t, page, newEmail, "anotherpassword")
+
+		// check password update
+
+		// helpers.Ok(t, page.Locator("text=Edit Profile").Click(), "failed to click the 'Edit Profile' link")
+		//
+		// curURL = page.URL()
+		// helpers.Assert(t, curURL == fmt.Sprintf("http://localhost:%s/profile/edit", appPort), "expected to be on the edit profile page, got %s", curURL)
+		//
+		// // fill in password fields
+		// helpers.FillInField(t, helpers.FormField{Value: "anotherpassword", Label: "Current Password"}, page)
+		// helpers.FillInField(t, helpers.FormField{Value: newPassword, Label: "New Password"}, page)
+		// helpers.FillInField(t, helpers.FormField{Value: newPassword, Label: "Confirm New Password"}, page)
+		//
+		// // persist changes
+		// helpers.Ok(t, page.Locator("button:has-text('Save Changes')").Click(), "Could not click the 'Save Changes' button")
+		//
+		// curURL = page.URL()
+		// helpers.Assert(t, curURL == fmt.Sprintf("http://localhost:%s/profile", appPort), "expected to be on the profile page, got %s", curURL)
+		//
+		// // logout and then login to try the new email
+		// logoutViaDropdown(t, page)
+		//
+		// // login with the new email
+		// loginThroughUI(t, page, newEmail, newPassword)
 	}
+}
+
+func logoutViaDropdown(t *testing.T, page playwright.Page) {
+	t.Helper()
+	err := page.Locator(".dropdown > #user-nav-dropdown-btn").Click()
+	helpers.Ok(t, err, "failed to click dropown button")
+
+	err = page.Locator("text=Sign Out").Click()
+	helpers.Ok(t, err, "failed to click link to sign out")
+}
+
+func loginThroughUI(t *testing.T, page playwright.Page, email, password string) {
+	t.Helper()
+
+	curURL := page.URL()
+	helpers.Assert(t, strings.Contains(curURL, "/login"), "expected to be on login page, got %s", curURL)
+
+	helpers.FillInField(t, helpers.FormField{Label: "Email Address", Value: email}, page)
+	helpers.FillInField(t, helpers.FormField{Label: "Password", Value: password}, page)
+
+	err := page.Locator("button:has-text('Sign In')").Click()
+	helpers.Ok(t, err, "could not click Sign In button")
+
+	curURL = page.URL()
+	helpers.Assert(t, strings.Contains(curURL, "/profile"), "expected to be on profile page, got %s", curURL)
 }
 
 func setupProfileViewData(ctx context.Context, t *testing.T, testConn *pgxpool.Pool, currentAccount helpers.TestAccountInfo) {

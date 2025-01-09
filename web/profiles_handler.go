@@ -2,7 +2,6 @@ package web
 
 import (
 	"errors"
-	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -12,14 +11,15 @@ import (
 
 func (a *Application) ProfileShowHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-
 	logger := a.Logger.With("handler", "ProfileShowHandler")
-
-	logger.Info("calling")
+	logger.Debug("getting profile info")
 
 	profileID, err := a.getProfileIDFromSession(r)
 	if err != nil {
-		a.serverError(w, r, err)
+		logger.Error("failed to get profile id from session", "error", err)
+		a.setErrorFlashMessage(w, r, "There was an error loading your profile, please try logging in again")
+		a.logout(w, r)
+		http.Redirect(w, r, "/login", http.StatusInternalServerError)
 		return
 	}
 
@@ -27,8 +27,10 @@ func (a *Application) ProfileShowHandler(w http.ResponseWriter, r *http.Request)
 	if err != nil {
 		status := http.StatusInternalServerError
 		if errors.Is(err, store.ErrNoRecord) {
-			a.Logger.Error("did not find profile in db", "profileID", profileID)
+			logger.Error("did not find profile in db", "profileID", profileID)
 			status = http.StatusNotFound
+		} else {
+			logger.Error("failed to retrieve profile from db", "error", err)
 		}
 
 		a.setErrorFlashMessage(w, r, "There was an error loading your profile, please try logging in again")
@@ -39,13 +41,13 @@ func (a *Application) ProfileShowHandler(w http.ResponseWriter, r *http.Request)
 
 	parties, err := a.PartiesRepository.GetPartiesForMember(ctx, profileID)
 	if err != nil {
-		a.Logger.Error("failed to retrieve parties from db", "error", err)
+		logger.Error("failed to retrieve parties from db", "error", err)
 		a.serverError(w, r, err)
 	}
 
 	watchedMovies, numMovies, err := a.MemberService.GetWatchHistory(ctx, profileID, 0)
 	if err != nil {
-		a.Logger.Error("failed to retrieve watched movies from db", "error", err)
+		logger.Error("failed to retrieve watched movies from db", "error", err)
 		a.serverError(w, r, err)
 		return
 	}
@@ -61,6 +63,7 @@ func (a *Application) ProfileShowHandler(w http.ResponseWriter, r *http.Request)
 	templateData.WatchedMovies = watchedMovies
 	templateData.CurPage = 1
 	templateData.NumPages = numPages
+	logger.Info("successfully loaded profile info")
 	a.render(w, r, http.StatusOK, "profiles/show.gohtml", templateData)
 }
 
@@ -122,16 +125,47 @@ func (a *Application) ProfileEditHandler(w http.ResponseWriter, r *http.Request)
 
 	req, err := parseEditProfileForm(r)
 	if err != nil {
-		logger.Error("error parsing signup form", slog.Any("error", err))
-		a.setErrorFlashMessage(w, r, "There was an error processing your edit, try again.")
 		templateData := a.NewProfilesTemplateData(r, w, "/profile")
 		templateData.Profile = profile
+		a.setErrorFlashMessage(w, r, "There was an error editing your profile, please try again")
 
-		a.render(w, r, http.StatusBadRequest, "profiles/edit.gohtml", nil)
+		a.render(w, r, http.StatusBadRequest, "profiles/edit.gohtml", templateData)
 		return
 	}
 
-	err = profile.Update(ctx, req)
+	logger.Info("req to update profile", "req", req)
+
+	err = a.ProfilesService.UpdateProfile(ctx, req, profile)
+	if err != nil {
+		templateData := a.NewProfilesTemplateData(r, w, "/profile")
+		templateData.Profile = profile
+
+		var editErr *identityaccess.ProfileEditValidationError
+
+		a.setErrorFlashMessage(w, r, "There was an error editing your profile, please try again")
+		if errors.As(err, &editErr) {
+			templateData.InitHasErrorFields()
+
+			if editErr.EmailError != nil {
+				*templateData.HasEmailError = true
+			}
+
+			if editErr.PasswordError != nil {
+				*templateData.HasPasswordError = true
+			}
+
+			if editErr.FirstNameError != nil {
+				*templateData.HasFirstNameError = true
+			}
+
+			if editErr.LastNameError != nil {
+				*templateData.HasLastNameError = true
+			}
+		}
+
+		a.render(w, r, http.StatusBadRequest, "profiles/edit.gohtml", templateData)
+		return
+	}
 
 	a.setInfoFlashMessage(w, r, "Edited your profile!")
 	http.Redirect(w, r, "/profile", http.StatusSeeOther)

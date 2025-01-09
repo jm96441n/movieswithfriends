@@ -60,17 +60,7 @@ func (s SignupReq) Validate() error {
 	if s.Email == "" {
 		err.EmailError = ErrEmptyEmail
 	}
-	if len(s.Password) < 8 {
-		errors.Join(err.PasswordError, ErrPasswordTooShort)
-	}
-
-	if strings.ToLower(s.Password) == s.Password || strings.ToUpper(s.Password) == s.Password {
-		errors.Join(err.PasswordError, ErrPasswordMissingUppercaseChar)
-	}
-
-	if len(numRegex.FindAllString("abc123def987asdf", -1)) == 0 {
-		errors.Join(err.PasswordError, ErrPasswordMissingNumber)
-	}
+	err.PasswordError = validatePassword(s.Password)
 
 	if s.FirstName == "" {
 		err.FirstNameError = ErrMissingFirstName
@@ -82,6 +72,27 @@ func (s SignupReq) Validate() error {
 
 	if !err.IsNil() {
 		return &err
+	}
+
+	return nil
+}
+
+func validatePassword(password string) error {
+	var err error
+	if len(password) < 8 {
+		err = errors.Join(err, ErrPasswordTooShort)
+	}
+
+	if strings.ToLower(password) == password || strings.ToUpper(password) == password {
+		err = errors.Join(err, ErrPasswordMissingUppercaseChar)
+	}
+
+	if len(numRegex.FindAllString(password, -1)) == 0 {
+		err = errors.Join(err, ErrPasswordMissingNumber)
+	}
+
+	if err != nil {
+		return err
 	}
 
 	return nil

@@ -35,21 +35,25 @@
                   <label for="firstName" class="form-label">First Name</label>
                   <input
                     type="text"
-                    class="form-control"
+                    class="form-control {{ isInvalidClass .HasFirstNameError }}"
                     id="firstName"
                     value="{{ .Profile.FirstName }}"
+                    name="firstName"
                     required
                   />
+                  <div class="invalid-feedback">First Name is required</div>
                 </div>
                 <div class="col-md-6">
                   <label for="lastName" class="form-label">Last Name</label>
                   <input
                     type="text"
-                    class="form-control"
+                    class="form-control {{ isInvalidClass .HasLastNameError }}"
                     id="lastName"
                     value="{{ .Profile.LastName }}"
+                    name="lastName"
                     required
                   />
+                  <div class="invalid-feedback">Last Name is required</div>
                 </div>
               </div>
 
@@ -58,11 +62,13 @@
                 <label for="email" class="form-label">Email Address</label>
                 <input
                   type="email"
-                  class="form-control"
+                  class="form-control {{ isInvalidClass .HasEmailError }}"
                   id="email"
                   value="{{ .Profile.Email }}"
+                  name="email"
                   required
                 />
+                <div class="invalid-feedback">Email is required</div>
               </div>
 
               <hr class="my-4" />
@@ -77,6 +83,7 @@
                   type="password"
                   class="form-control password-field"
                   id="currentPassword"
+                  name="currentPassword"
                 />
                 <div class="invalid-feedback">
                   Required when changing password
@@ -89,6 +96,7 @@
                   type="password"
                   class="form-control password-field"
                   id="newPassword"
+                  name="newPassword"
                 />
                 <div class="invalid-feedback">
                   Required when changing password
@@ -103,6 +111,7 @@
                   type="password"
                   class="form-control password-field"
                   id="confirmPassword"
+                  name="confirmPassword"
                 />
                 <div class="invalid-feedback">
                   Required when changing password

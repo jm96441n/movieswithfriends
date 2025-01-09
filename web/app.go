@@ -62,7 +62,7 @@ type Application struct {
 	PartyService      PartyService
 	PartiesRepository PartiesStoreService
 	MemberService     *partymgmt.MemberService
-	ProfilesService   identityaccess.ProfileService
+	ProfilesService   *identityaccess.ProfileService
 	Auth              Authenticator
 	AccountRepository AccountRepository
 }

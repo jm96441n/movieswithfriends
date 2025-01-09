@@ -24,9 +24,8 @@ const GetProfileByIDQuery = `
     profiles.last_name,
     profiles.id_account,
     profiles.created_at,
-    accounts.id_account
+    profiles.id_account
   from profiles
-  join profiles on accounts.id_account = profiles.id_account
   where profiles.id_profile = $1`
 
 func (pg *PGStore) GetProfileByID(ctx context.Context, profileID int) (Profile, error) {
@@ -87,4 +86,12 @@ func (pg *PGStore) GetAccountEmailForProfile(ctx context.Context, profileID int)
 		return "", err
 	}
 	return email, nil
+}
+
+func (p *PGStore) UpdateProfile(ctx context.Context, firstName, lastName, email string, profileID int) error {
+	_, err := p.db.Exec(ctx, `update profiles set first_name = $1, last_name = $2 where id_profile = $3`, firstName, lastName, profileID)
+	if err != nil {
+		return err
+	}
+	return nil
 }

@@ -104,3 +104,12 @@ func (pg *PGStore) GetAccountAndProfileInfo(ctx context.Context, id int) (Accoun
 	}
 	return account, nil
 }
+
+func (p *PGStore) UpdateAccountEmail(ctx context.Context, email string, accountID int) error {
+	p.logger.Info("UpdateAccountEmail", slog.Any("email", email), slog.Any("accountID", accountID))
+	_, err := p.db.Exec(ctx, `update accounts set email = $1 where id_account = $2`, email, accountID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
