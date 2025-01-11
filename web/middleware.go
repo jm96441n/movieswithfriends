@@ -66,7 +66,7 @@ func (a *Application) authenticateMiddleware() func(http.HandlerFunc) http.Handl
 					})
 				}
 
-				account, err := a.AccountRepository.GetAccountAndProfileInfo(req.Context(), id)
+				profile, err := a.ProfilesService.GetProfileByID(req.Context(), profileID)
 				if err != nil {
 					logger.Error("error fetching account info", slog.Any("error", err))
 					a.serverError(w, req, err)
@@ -75,8 +75,8 @@ func (a *Application) authenticateMiddleware() func(http.HandlerFunc) http.Handl
 
 				ctx := context.WithValue(req.Context(), isAuthenticatedContextKey, true)
 				ctx = context.WithValue(ctx, partiesForNavContextKey, partiesForNav)
-				ctx = context.WithValue(ctx, emailContextKey, account.Email)
-				ctx = context.WithValue(ctx, fullNameContextKey, account.Profile.FirstName+" "+account.Profile.LastName)
+				ctx = context.WithValue(ctx, emailContextKey, profile.Account.Email)
+				ctx = context.WithValue(ctx, fullNameContextKey, profile.FirstName+" "+profile.LastName)
 				req = req.WithContext(ctx)
 			}
 

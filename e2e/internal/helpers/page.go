@@ -62,9 +62,9 @@ type FormField struct {
 	Value string
 }
 
-func FillInField(t *testing.T, ff FormField, page playwright.Page) {
+func FillInField(t *testing.T, ff FormField, page playwright.Page, options ...playwright.PageGetByLabelOptions) {
 	t.Helper()
-	field := page.GetByLabel(ff.Label)
+	field := page.GetByLabel(ff.Label, options...)
 
 	Assert(t, field != nil, "could not find field labeled by %q", ff.Label)
 
@@ -78,4 +78,13 @@ func LocatorHasText(t *testing.T, page playwright.Page, pageAssertions playwrigh
 
 	err := pageAssertions.Locator(node).ToHaveText(text)
 	Ok(t, err, "expected node %q to have text %q, got %v", locator, text, err)
+}
+
+func InfoFlashMessageShouldBe(t *testing.T, page playwright.Page, pageAssertions playwright.PlaywrightAssertions, message string) {
+	t.Helper()
+	locator := page.Locator(".alert-primary")
+
+	Assert(t, locator != nil, "could not find info flash message")
+
+	Ok(t, pageAssertions.Locator(locator).ToHaveText(message), "expected info flash message to be %q", message)
 }

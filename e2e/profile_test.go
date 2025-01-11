@@ -149,10 +149,12 @@ func testCanEditProfile(ctx context.Context, testConn *pgxpool.Pool, page playwr
 			helpers.Assert(t, curURL == fmt.Sprintf("http://localhost:%s/profile", appPort), "expected to be on the profile page, got %s", curURL)
 
 			helpers.Ok(t, pageAssertions.Locator(page.Locator("#profile-name")).ToHaveText(field.expectedNameValue), "expected profile name field to have value %s", field.expectedNameValue)
+
+			helpers.InfoFlashMessageShouldBe(t, page, pageAssertions, "Edited your profile!")
 		}
 
 		newEmail := "new@email.com"
-		// newPassword := "1NewPassword"
+		newPassword := "1NewPassword"
 
 		// check email update
 
@@ -170,6 +172,7 @@ func testCanEditProfile(ctx context.Context, testConn *pgxpool.Pool, page playwr
 		curURL = page.URL()
 		helpers.Assert(t, curURL == fmt.Sprintf("http://localhost:%s/profile", appPort), "expected to be on the profile page, got %s", curURL)
 
+		// time.Sleep(30 * time.Minute)
 		// logout and then login to try the new email
 		logoutViaDropdown(t, page)
 
@@ -178,27 +181,27 @@ func testCanEditProfile(ctx context.Context, testConn *pgxpool.Pool, page playwr
 
 		// check password update
 
-		// helpers.Ok(t, page.Locator("text=Edit Profile").Click(), "failed to click the 'Edit Profile' link")
-		//
-		// curURL = page.URL()
-		// helpers.Assert(t, curURL == fmt.Sprintf("http://localhost:%s/profile/edit", appPort), "expected to be on the edit profile page, got %s", curURL)
-		//
-		// // fill in password fields
-		// helpers.FillInField(t, helpers.FormField{Value: "anotherpassword", Label: "Current Password"}, page)
-		// helpers.FillInField(t, helpers.FormField{Value: newPassword, Label: "New Password"}, page)
-		// helpers.FillInField(t, helpers.FormField{Value: newPassword, Label: "Confirm New Password"}, page)
-		//
-		// // persist changes
-		// helpers.Ok(t, page.Locator("button:has-text('Save Changes')").Click(), "Could not click the 'Save Changes' button")
-		//
-		// curURL = page.URL()
-		// helpers.Assert(t, curURL == fmt.Sprintf("http://localhost:%s/profile", appPort), "expected to be on the profile page, got %s", curURL)
-		//
-		// // logout and then login to try the new email
-		// logoutViaDropdown(t, page)
-		//
-		// // login with the new email
-		// loginThroughUI(t, page, newEmail, newPassword)
+		helpers.Ok(t, page.Locator("text=Edit Profile").Click(), "failed to click the 'Edit Profile' link")
+
+		curURL = page.URL()
+		helpers.Assert(t, curURL == fmt.Sprintf("http://localhost:%s/profile/edit", appPort), "expected to be on the edit profile page, got %s", curURL)
+
+		// fill in password fields
+		helpers.FillInField(t, helpers.FormField{Value: "anotherpassword", Label: "Current Password"}, page)
+		helpers.FillInField(t, helpers.FormField{Value: newPassword, Label: "New Password"}, page, playwright.PageGetByLabelOptions{Exact: playwright.Bool(true)})
+		helpers.FillInField(t, helpers.FormField{Value: newPassword, Label: "Confirm New Password"}, page)
+
+		// persist changes
+		helpers.Ok(t, page.Locator("button:has-text('Save Changes')").Click(), "Could not click the 'Save Changes' button")
+
+		curURL = page.URL()
+		helpers.Assert(t, curURL == fmt.Sprintf("http://localhost:%s/profile", appPort), "expected to be on the profile page, got %s", curURL)
+
+		// logout and then login to try the new email
+		logoutViaDropdown(t, page)
+
+		// login with the new email
+		loginThroughUI(t, page, newEmail, newPassword)
 	}
 }
 

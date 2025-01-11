@@ -47,7 +47,7 @@ type MoviesTemplateData struct {
 }
 
 type ProfilesTemplateData struct {
-	Profile           identityaccess.Profile
+	Profile           *identityaccess.Profile
 	Parties           []store.PartiesForMemberResult
 	WatchedMovies     []store.WatchedMoviesForMemberResult
 	NumPages          int

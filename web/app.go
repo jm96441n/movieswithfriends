@@ -43,16 +43,6 @@ type MoviesService interface {
 	CreateMovie(context.Context, *slog.Logger, int) (*store.Movie, error)
 }
 
-type Authenticator interface {
-	CreateAccount(context.Context, identityaccess.SignupReq) (store.Account, error)
-	AccountExists(context.Context, int) (bool, error)
-	Authenticate(context.Context, string, string) (store.Account, error)
-}
-
-type AccountRepository interface {
-	GetAccountAndProfileInfo(context.Context, int) (store.Account, error)
-}
-
 type Application struct {
 	Logger            *slog.Logger
 	TemplateCache     map[string]*template.Template
@@ -63,8 +53,7 @@ type Application struct {
 	PartiesRepository PartiesStoreService
 	MemberService     *partymgmt.MemberService
 	ProfilesService   *identityaccess.ProfileService
-	Auth              Authenticator
-	AccountRepository AccountRepository
+	Auth              *identityaccess.Authenticator
 }
 
 func (a *Application) serverError(w http.ResponseWriter, r *http.Request, err error) {

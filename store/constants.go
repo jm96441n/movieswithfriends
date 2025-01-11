@@ -2,6 +2,8 @@ package store
 
 import "errors"
 
+const pgUniqueViolationCode = "23505"
+
 // errors
 var (
 	ErrNoRecord                        = errors.New("store: no matching record found")
@@ -18,5 +20,3 @@ const (
 	WatchStatusSelected  WatchStatusEnum = "selected"
 	WatchStatusWatched   WatchStatusEnum = "watched"
 )
-
-const pgUniqueViolationCode = "23505"

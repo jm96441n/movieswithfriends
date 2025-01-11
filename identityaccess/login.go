@@ -8,15 +8,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/jm96441n/movieswithfriends/store"
+	"github.com/jm96441n/movieswithfriends/identityaccess/store"
 	"golang.org/x/crypto/bcrypt"
 )
-
-type accountRepository interface {
-	FindAccountByEmail(context.Context, string) (store.Account, error)
-	CreateAccount(context.Context, string, string, string, []byte) (store.Account, error)
-	AccountExists(context.Context, int) (bool, error)
-}
 
 type SignupReq struct {
 	Email     string `json:"email"`
@@ -100,11 +94,11 @@ func validatePassword(password string) error {
 
 type Authenticator struct {
 	Logger            *slog.Logger
-	AccountRepository accountRepository
+	ProfileRepository *store.ProfileRepository
 }
 
 func (a *Authenticator) Authenticate(ctx context.Context, email, password string) (store.Account, error) {
-	account, err := a.AccountRepository.FindAccountByEmail(ctx, email)
+	account, err := a.ProfileRepository.FindAccountByEmail(ctx, email)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			a.Logger.Error("account not found", slog.String("email", email))
@@ -128,7 +122,7 @@ func (a *Authenticator) Authenticate(ctx context.Context, email, password string
 }
 
 func (a *Authenticator) AccountExists(ctx context.Context, accountID int) (bool, error) {
-	found, err := a.AccountRepository.AccountExists(ctx, accountID)
+	found, err := a.ProfileRepository.AccountExists(ctx, accountID)
 	if err != nil {
 		if errors.Is(err, store.ErrNoRecord) {
 			return false, nil
@@ -143,13 +137,14 @@ func (a *Authenticator) CreateAccount(ctx context.Context, req SignupReq) (store
 	if err != nil {
 		return store.Account{}, err
 	}
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+
+	hashedPassword, err := hashPassword(req.Password)
 	if err != nil {
 		a.Logger.Error("error hashing password", slog.Any("error", err))
 		return store.Account{}, err
 	}
 
-	account, err := a.AccountRepository.CreateAccount(ctx, req.Email, req.FirstName, req.LastName, hashedPassword)
+	account, err := a.ProfileRepository.CreateAccount(ctx, req.Email, req.FirstName, req.LastName, hashedPassword)
 	if err != nil {
 		if errors.Is(err, store.ErrDuplicateEmailAddress) {
 			a.Logger.Debug("email exists for account")
@@ -159,4 +154,8 @@ func (a *Authenticator) CreateAccount(ctx context.Context, req SignupReq) (store
 		return store.Account{}, err
 	}
 	return account, nil
+}
+
+func hashPassword(password string) ([]byte, error) {
+	return bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 }

@@ -4,13 +4,19 @@ import (
 	"context"
 	"crypto/rand"
 	_ "embed"
+	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"os"
 	"time"
 
+	"github.com/exaring/otelpgx"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jm96441n/movieswithfriends/identityaccess"
+	iamstore "github.com/jm96441n/movieswithfriends/identityaccess/store"
 	"github.com/jm96441n/movieswithfriends/partymgmt"
 	"github.com/jm96441n/movieswithfriends/store"
 	"github.com/jm96441n/movieswithfriends/ui"
@@ -81,13 +87,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	creds, err := store.NewCreds(dbUser, dbPassword)
+	creds, err := newDBCreds(dbUser, dbPassword)
 	if err != nil {
 		logger.Error(err.Error())
 		os.Exit(1)
 	}
 
-	db, err := store.NewPostgesStore(creds, os.Getenv("DB_HOST"), os.Getenv("DB_DATABASE_NAME"), logger)
+	connPool, err := createConnPool(os.Getenv("DB_HOST"), os.Getenv("DB_DATABASE_NAME"), creds)
 	if err != nil {
 		logger.Error(err.Error())
 		os.Exit(1)
@@ -127,6 +133,12 @@ func main() {
 
 	sessionStore := sessions.NewCookieStore(sessionKey)
 
+	db, err := store.NewPostgesStore(store.Creds(creds), os.Getenv("DB_HOST"), os.Getenv("DB_DATABASE_NAME"), logger)
+	if err != nil {
+		logger.Error("could not generate secure key", slog.Any("err", err))
+		os.Exit(1)
+	}
+
 	app := web.Application{
 		TemplateCache:     tmplCache,
 		Logger:            logger,
@@ -135,13 +147,14 @@ func main() {
 		MoviesRepository:  db,
 		PartyService:      &partymgmt.PartyService{DB: db, MoviesRepository: db, Logger: logger},
 		PartiesRepository: db,
-		ProfilesService:   identityaccess.NewProfileService(db),
-		MemberService:     partymgmt.NewMemberService(db),
+		ProfilesService: identityaccess.NewProfileService(
+			iamstore.NewProfileRepository(connPool),
+		),
+		MemberService: partymgmt.NewMemberService(db),
 		Auth: &identityaccess.Authenticator{
 			Logger:            logger,
-			AccountRepository: db,
+			ProfileRepository: iamstore.NewProfileRepository(connPool),
 		},
-		AccountRepository: db,
 	}
 
 	addr := os.Getenv("ADDR")
@@ -167,3 +180,57 @@ func main() {
 	logger.Error(err.Error())
 	os.Exit(1)
 }
+
+type DBCreds struct {
+	Username string
+	Password string
+}
+
+func newDBCreds(username, pw string) (DBCreds, error) {
+	if username == "" {
+		return DBCreds{}, ErrMissingDBUsername
+	}
+
+	if pw == "" {
+		return DBCreds{}, ErrMissingDBPassword
+	}
+	return DBCreds{
+		Username: username,
+		Password: url.QueryEscape(pw),
+	}, nil
+}
+
+func createConnPool(host string, dbname string, creds DBCreds) (*pgxpool.Pool, error) {
+	if host == "" {
+		return nil, ErrMissingDBHost
+	}
+
+	if dbname == "" {
+		return nil, ErrMissingDBDatabaseName
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*120)
+	defer cancel()
+
+	connString := fmt.Sprintf("postgres://%s:%s@%s/%s", creds.Username, creds.Password, host, dbname)
+	cfg, err := pgxpool.ParseConfig(connString)
+	if err != nil {
+		return nil, fmt.Errorf("create connection pool: %w", err)
+	}
+
+	cfg.ConnConfig.Tracer = otelpgx.NewTracer()
+	db, err := pgxpool.NewWithConfig(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	db.Ping(ctx)
+	return db, nil
+}
+
+var (
+	ErrMissingDBUsername     = errors.New("DB_USERNAME env var is missing")
+	ErrMissingDBPassword     = errors.New("DB_PASSWORD env var is missing")
+	ErrMissingDBHost         = errors.New("DB_HOST env var is missing")
+	ErrMissingDBDatabaseName = errors.New("DB_DATABASE_NAME env var is missing")
+)

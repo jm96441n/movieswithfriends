@@ -23,7 +23,7 @@ func (a *Application) ProfileShowHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	profile, err := a.ProfilesService.GetProfileByID(ctx, profileID)
+	profile, err := a.ProfilesService.GetProfileByIDWithStats(ctx, logger, profileID)
 	if err != nil {
 		status := http.StatusInternalServerError
 		if errors.Is(err, store.ErrNoRecord) {
@@ -70,6 +70,8 @@ func (a *Application) ProfileShowHandler(w http.ResponseWriter, r *http.Request)
 func (a *Application) ProfileEditPageHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
+	logger := a.Logger.With("handler", "ProfileEditPageHandler")
+
 	profileID, err := a.getProfileIDFromSession(r)
 	if err != nil {
 		a.setErrorFlashMessage(w, r, "There was an error loading your profile, please try logging in again")
@@ -78,7 +80,7 @@ func (a *Application) ProfileEditPageHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	profile, err := a.ProfilesService.GetProfileByID(ctx, profileID)
+	profile, err := a.ProfilesService.GetProfileByIDWithStats(ctx, logger, profileID)
 	if err != nil {
 		status := http.StatusInternalServerError
 		if errors.Is(err, store.ErrNoRecord) {
@@ -109,7 +111,7 @@ func (a *Application) ProfileEditHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	profile, err := a.ProfilesService.GetProfileByID(ctx, profileID)
+	profile, err := a.ProfilesService.GetProfileByIDWithStats(ctx, logger, profileID)
 	if err != nil {
 		status := http.StatusInternalServerError
 		if errors.Is(err, store.ErrNoRecord) {
@@ -135,7 +137,7 @@ func (a *Application) ProfileEditHandler(w http.ResponseWriter, r *http.Request)
 
 	logger.Info("req to update profile", "req", req)
 
-	err = a.ProfilesService.UpdateProfile(ctx, req, profile)
+	err = profile.Update(ctx, logger, req)
 	if err != nil {
 		templateData := a.NewProfilesTemplateData(r, w, "/profile")
 		templateData.Profile = profile

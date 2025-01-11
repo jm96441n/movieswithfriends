@@ -4,12 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 
-	"github.com/jm96441n/movieswithfriends/store"
+	"github.com/jm96441n/movieswithfriends/identityaccess/store"
 )
 
 type Account struct {
+	ID       int
 	Email    string
 	Password []byte
 }
@@ -21,7 +23,9 @@ type Profile struct {
 	Email     string
 	CreatedAt time.Time
 	Stats     ProfileStats
+	Account   Account
 	AccountID int
+	db        *store.ProfileRepository
 }
 
 type ProfileUpdateReq struct {
@@ -40,36 +44,30 @@ type ProfileStats struct {
 }
 
 type ProfileService struct {
-	db *store.PGStore
+	db *store.ProfileRepository
 }
 
-func NewProfileService(db *store.PGStore) *ProfileService {
+func NewProfileService(db *store.ProfileRepository) *ProfileService {
 	return &ProfileService{db: db}
 }
 
-func (p *ProfileService) GetProfileByID(ctx context.Context, id int) (Profile, error) {
+func (p *ProfileService) GetProfileByIDWithStats(ctx context.Context, logger *slog.Logger, id int) (*Profile, error) {
 	profile, err := p.db.GetProfileByID(ctx, id)
 	if err != nil {
-		return Profile{}, err
+		return nil, err
 	}
 
-	numParties, watchTime, moviesWatched, err := p.db.GetProfileStats(ctx, id)
+	numParties, watchTime, moviesWatched, err := p.db.GetProfileStats(ctx, logger, id)
 	if err != nil {
-		return Profile{}, err
+		return nil, err
 	}
 
-	email, err := p.db.GetAccountEmailForProfile(ctx, id)
-	if err != nil {
-		return Profile{}, err
-	}
-
-	return Profile{
+	return &Profile{
 		ID:        profile.ID,
 		FirstName: profile.FirstName,
 		LastName:  profile.LastName,
-		Email:     email,
 		CreatedAt: profile.CreatedAt,
-		AccountID: profile.AccountID,
+		db:        p.db,
 		Stats: ProfileStats{
 			NumberOfParties: numParties,
 			WatchTime:       watchTime,
@@ -78,25 +76,69 @@ func (p *ProfileService) GetProfileByID(ctx context.Context, id int) (Profile, e
 	}, nil
 }
 
-func (p *ProfileService) UpdateProfile(ctx context.Context, req ProfileUpdateReq, profile Profile) error {
+func (p *ProfileService) GetProfileByID(ctx context.Context, profileID int) (Profile, error) {
+	profile, err := p.db.GetProfileByID(ctx, profileID)
+	if err != nil {
+		if errors.Is(err, store.ErrNoRecord) {
+			return Profile{}, err
+		}
+		return Profile{}, err
+	}
+
+	return convertResult(profile), nil
+}
+
+func convertResult(profile store.GetProfileByIDResult) Profile {
+	return Profile{
+		ID:        profile.ID,
+		FirstName: profile.FirstName,
+		LastName:  profile.LastName,
+		CreatedAt: profile.CreatedAt,
+		Account: Account{
+			ID:    profile.AccountID,
+			Email: profile.AccountEmail,
+		},
+	}
+}
+
+func (p *Profile) Update(ctx context.Context, logger *slog.Logger, req ProfileUpdateReq) error {
 	err := validateUpdateRequest(req)
 	if err != nil {
 		return err
 	}
 
-	if req.NewPassword == "" {
-		err = p.db.UpdateProfile(ctx, req.FirstName, req.LastName, req.Email, profile.ID)
-		if err != nil {
-			return err
-		}
-
-		err = p.db.UpdateAccountEmail(ctx, req.Email, profile.AccountID)
-		if err != nil {
-			return err
-		}
-
-		return nil
+	updateProfileAttrs := store.ProfileUpdateAttrs{
+		ID:        p.ID,
+		FirstName: req.FirstName,
+		LastName:  req.LastName,
 	}
+
+	updateAccountAttrs := store.AccountUpdateAttrs{
+		ID:    p.Account.ID,
+		Email: req.Email,
+	}
+
+	if req.NewPassword != "" {
+		pw, err := hashPassword(req.NewPassword)
+		if err != nil {
+			logger.Error("error hashing password", slog.Any("error", err))
+			return err
+		}
+		logger.Debug("setting new password")
+		updateAccountAttrs.Password = pw
+	}
+
+	err = p.db.UpdateProfileAndAccount(ctx, updateAccountAttrs, updateProfileAttrs)
+	if err != nil {
+		logger.Error("error updating profile and account", slog.Any("error", err))
+		return err
+	}
+
+	p.FirstName = req.FirstName
+	p.LastName = req.LastName
+	p.Account.Email = req.Email
+
+	logger.Info("updated profile")
 
 	return nil
 }
