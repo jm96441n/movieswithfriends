@@ -9,6 +9,7 @@ Application to randomly select movies to watch with friends.
 **identityaccess.Profile**
 
 - Account
+- ProfileStats
 
 **partymgmt.Party**
 

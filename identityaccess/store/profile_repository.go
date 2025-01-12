@@ -7,12 +7,15 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type ProfileRepository struct {
 	db *pgxpool.Pool
 }
+
+const pgUniqueViolationCode = "23505"
 
 func NewProfileRepository(db *pgxpool.Pool) *ProfileRepository {
 	return &ProfileRepository{db: db}
@@ -27,21 +30,13 @@ type GetProfileByIDResult struct {
 	AccountID    int
 }
 
-type Profile struct {
-	ID        int       `json:"id"`
-	FirstName string    `json:"first_name"`
-	LastName  string    `json:"last_name"`
-	CreatedAt time.Time `json:"created_at"`
-	AccountID int
-}
-
 const GetProfileByIDQuery = `
   select 
     profiles.id_profile,
     profiles.first_name,
     profiles.last_name,
     profiles.created_at,
-    accounts.email
+    accounts.email,
     accounts.id_account
   from profiles
   join accounts on profiles.id_account = accounts.id_account
@@ -66,14 +61,20 @@ func (p *ProfileRepository) GetProfileByID(ctx context.Context, profileID int) (
 
 const insertProfileQuery = `insert into profiles (first_name, last_name, id_account) values ($1, $2, $3) returning id_profile`
 
-func (p *ProfileRepository) CreateProfileWithTxn(ctx context.Context, txn pgx.Tx, firstName, lastName string, accountID int) (Profile, error) {
-	profile := Profile{FirstName: firstName, LastName: lastName, AccountID: accountID}
+func (p *ProfileRepository) CreateProfileWithTxn(ctx context.Context, txn pgx.Tx, firstName, lastName string, accountID int) (int, error) {
+	var profileID int
 
-	err := txn.QueryRow(ctx, insertProfileQuery, firstName, lastName, accountID).Scan(&profile.ID)
+	err := txn.QueryRow(ctx, insertProfileQuery, firstName, lastName, accountID).Scan(&profileID)
 	if err != nil {
-		return Profile{}, err
+		return 0, err
 	}
-	return profile, nil
+	return profileID, nil
+}
+
+type GetProfileStatsResult struct {
+	NumParties    int
+	WatchTime     int
+	MoviesWatched int
 }
 
 const getNumPartiesForProfileQuery = `select count(*) from party_members where id_member = $1;`
@@ -85,17 +86,164 @@ const getTotalWatchTimeQuery = `
   where party_members.id_member = $1 AND party_movies.watch_status = 'watched';
 `
 
-func (p *ProfileRepository) GetProfileStats(ctx context.Context, logger *slog.Logger, profileID int) (int, int, int, error) {
-	var numParties, watchTime, moviesWatched int
-	err := p.db.QueryRow(ctx, getNumPartiesForProfileQuery, profileID).Scan(&numParties)
+func (p *ProfileRepository) GetProfileStats(ctx context.Context, logger *slog.Logger, profileID int) (GetProfileStatsResult, error) {
+	res := GetProfileStatsResult{}
+	err := p.db.QueryRow(ctx, getNumPartiesForProfileQuery, profileID).Scan(&res.NumParties)
 	if err != nil {
 		logger.Debug("failed to get num parties for profile", slog.Any("error", err))
-		return 0, 0, 0, err
+		return GetProfileStatsResult{}, err
 	}
-	err = p.db.QueryRow(ctx, getTotalWatchTimeQuery, profileID).Scan(&watchTime, &moviesWatched)
+	err = p.db.QueryRow(ctx, getTotalWatchTimeQuery, profileID).Scan(&res.WatchTime, &res.MoviesWatched)
 	if err != nil {
 		logger.Debug("failed to get total watch time", slog.Any("error", err))
-		return 0, 0, 0, err
+		return GetProfileStatsResult{}, err
 	}
-	return numParties, watchTime, moviesWatched, nil
+	return res, nil
+}
+
+const insertAccountQuery = `insert into accounts (email, password) values ($1, $2) returning id_account`
+
+var (
+	ErrDuplicateEmailAddress = errors.New("email address already exists")
+	ErrNotFound              = errors.New("not found")
+)
+
+type CreateProfileResult struct {
+	AccountID int
+	ProfileID int
+}
+
+func (p *ProfileRepository) CreateProfile(ctx context.Context, email, firstName, lastName string, password []byte) (CreateProfileResult, error) {
+	txn, err := p.db.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return CreateProfileResult{}, err
+	}
+
+	defer txn.Rollback(ctx)
+
+	res := CreateProfileResult{}
+
+	err = txn.QueryRow(ctx, insertAccountQuery, email, password).Scan(&res.AccountID)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			if pgErr.Code == pgUniqueViolationCode {
+				if pgErr.ConstraintName == "unique_email_addresses" {
+					return CreateProfileResult{}, ErrDuplicateEmailAddress
+				}
+			}
+		}
+		return CreateProfileResult{}, err
+	}
+
+	res.ProfileID, err = p.CreateProfileWithTxn(ctx, txn, firstName, lastName, res.AccountID)
+	if err != nil {
+		return CreateProfileResult{}, err
+	}
+
+	err = txn.Commit(ctx)
+	if err != nil {
+		return CreateProfileResult{}, err
+	}
+
+	return res, nil
+}
+
+const findProfileByEmailQuery = `
+select accounts.id_account, accounts.email, accounts.password, profiles.id_profile from accounts 
+join profiles on profiles.id_account = accounts.id_account
+where accounts.email = $1
+`
+
+type FindProfileByEmailResult struct {
+	AccountID       int
+	AccountEmail    string
+	AccountPassword []byte
+	ProfileID       int
+}
+
+func (p *ProfileRepository) FindProfileByEmail(ctx context.Context, email string) (FindProfileByEmailResult, error) {
+	res := FindProfileByEmailResult{}
+	err := p.db.QueryRow(ctx, findProfileByEmailQuery, email).Scan(&res.AccountID, &res.AccountEmail, &res.AccountPassword, &res.ProfileID)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return FindProfileByEmailResult{}, ErrNotFound
+		}
+		return FindProfileByEmailResult{}, err
+	}
+	return res, nil
+}
+
+const accountExistsQuery = `SELECT EXISTS(select true from accounts where id_account = $1)`
+
+func (p *ProfileRepository) AccountExists(ctx context.Context, id int) (bool, error) {
+	var exists bool
+
+	err := p.db.QueryRow(ctx, accountExistsQuery, id).Scan(&exists)
+
+	return exists, err
+}
+
+type AccountUpdateAttrs struct {
+	ID       int
+	Email    string
+	Password []byte
+}
+
+type ProfileUpdateAttrs struct {
+	ID        int
+	FirstName string
+	LastName  string
+}
+
+func (p *ProfileRepository) UpdateProfileAndAccount(ctx context.Context, accountAttrs AccountUpdateAttrs, profileAttrs ProfileUpdateAttrs) error {
+	txn, err := p.db.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return err
+	}
+
+	defer txn.Rollback(ctx)
+
+	err = updateAccount(ctx, txn, accountAttrs)
+	if err != nil {
+		return err
+	}
+
+	err = updateProfile(ctx, txn, profileAttrs)
+	if err != nil {
+		return err
+	}
+
+	err = txn.Commit(ctx)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func updateAccount(ctx context.Context, txn pgx.Tx, attrs AccountUpdateAttrs) error {
+	if len(attrs.Password) == 0 {
+		_, err := txn.Exec(ctx, `update accounts set email = $1 where id_account = $2`, attrs.Email, attrs.ID)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	_, err := txn.Exec(ctx, `update accounts set email = $1, password = $2 where id_account = $3`, attrs.Email, attrs.Password, attrs.ID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func updateProfile(ctx context.Context, txn pgx.Tx, attrs ProfileUpdateAttrs) error {
+	_, err := txn.Exec(ctx, `update profiles set first_name = $1, last_name = $2 where id_profile = $3`, attrs.FirstName, attrs.LastName, attrs.ID)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

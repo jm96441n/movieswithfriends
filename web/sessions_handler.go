@@ -21,7 +21,7 @@ func (a *Application) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	account, err := a.Auth.Authenticate(r.Context(), r.FormValue("email"), r.FormValue("password"))
+	profile, err := a.Auth.Authenticate(r.Context(), r.FormValue("email"), r.FormValue("password"))
 	if err != nil {
 		if errors.Is(err, identityaccess.ErrInvalidCredentials) {
 			a.setErrorFlashMessage(w, r, "Email/Password combination is incorrect")
@@ -42,10 +42,10 @@ func (a *Application) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		a.serverError(w, r, err)
 		return
 	}
-	session.Values["accountID"] = account.ID
-	session.Values["profileID"] = account.Profile.ID
-	session.Values["fullName"] = account.Profile.FirstName + " " + account.Profile.LastName
-	session.Values["email"] = account.Email
+	session.Values["accountID"] = profile.Account.ID
+	session.Values["profileID"] = profile.ID
+	session.Values["fullName"] = profile.FirstName + " " + profile.LastName
+	session.Values["email"] = profile.Account.Email
 
 	err = session.Save(r, w)
 	if err != nil {

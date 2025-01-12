@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/jm96441n/movieswithfriends/identityaccess/store"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Account struct {
@@ -20,11 +21,9 @@ type Profile struct {
 	ID        int
 	FirstName string
 	LastName  string
-	Email     string
 	CreatedAt time.Time
 	Stats     ProfileStats
 	Account   Account
-	AccountID int
 	db        *store.ProfileRepository
 }
 
@@ -57,7 +56,7 @@ func (p *ProfileService) GetProfileByIDWithStats(ctx context.Context, logger *sl
 		return nil, err
 	}
 
-	numParties, watchTime, moviesWatched, err := p.db.GetProfileStats(ctx, logger, id)
+	stats, err := p.db.GetProfileStats(ctx, logger, id)
 	if err != nil {
 		return nil, err
 	}
@@ -68,10 +67,14 @@ func (p *ProfileService) GetProfileByIDWithStats(ctx context.Context, logger *sl
 		LastName:  profile.LastName,
 		CreatedAt: profile.CreatedAt,
 		db:        p.db,
+		Account: Account{
+			ID:    profile.AccountID,
+			Email: profile.AccountEmail,
+		},
 		Stats: ProfileStats{
-			NumberOfParties: numParties,
-			WatchTime:       watchTime,
-			MoviesWatched:   moviesWatched,
+			NumberOfParties: stats.NumParties,
+			WatchTime:       stats.WatchTime,
+			MoviesWatched:   stats.MoviesWatched,
 		},
 	}, nil
 }
@@ -99,6 +102,42 @@ func convertResult(profile store.GetProfileByIDResult) Profile {
 			Email: profile.AccountEmail,
 		},
 	}
+}
+
+func (p *ProfileService) CreateProfile(ctx context.Context, logger *slog.Logger, req SignupReq) (Profile, error) {
+	err := req.Validate()
+	if err != nil {
+		return Profile{}, err
+	}
+
+	hashedPassword, err := hashPassword(req.Password)
+	if err != nil {
+		logger.Error("error hashing password", slog.Any("error", err))
+		return Profile{}, err
+	}
+
+	res, err := p.db.CreateProfile(ctx, req.Email, req.FirstName, req.LastName, hashedPassword)
+	if err != nil {
+		if errors.Is(err, store.ErrDuplicateEmailAddress) {
+			logger.Debug("email exists for account")
+			return Profile{}, ErrAccountExists
+		}
+		logger.Error("error creating account", slog.Any("error", err))
+		return Profile{}, err
+	}
+	return Profile{
+		ID:        res.ProfileID,
+		FirstName: req.FirstName,
+		LastName:  req.LastName,
+		Account: Account{
+			ID:    res.AccountID,
+			Email: req.Email,
+		},
+	}, nil
+}
+
+func hashPassword(password string) ([]byte, error) {
+	return bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 }
 
 func (p *Profile) Update(ctx context.Context, logger *slog.Logger, req ProfileUpdateReq) error {

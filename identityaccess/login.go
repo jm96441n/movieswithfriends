@@ -97,28 +97,41 @@ type Authenticator struct {
 	ProfileRepository *store.ProfileRepository
 }
 
-func (a *Authenticator) Authenticate(ctx context.Context, email, password string) (store.Account, error) {
-	account, err := a.ProfileRepository.FindAccountByEmail(ctx, email)
+func (a *Authenticator) Authenticate(ctx context.Context, email, password string) (Profile, error) {
+	res, err := a.ProfileRepository.FindProfileByEmail(ctx, email)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			a.Logger.Error("account not found", slog.String("email", email))
-			return store.Account{}, ErrInvalidCredentials
+			return Profile{}, ErrInvalidCredentials
 		}
-		a.Logger.Error("error finding account by email", slog.Any("error", err), slog.String("email", email))
-		return store.Account{}, err
+		a.Logger.Error("error finding profile by email", slog.Any("error", err), slog.String("email", email))
+		return Profile{}, err
 	}
 
-	err = bcrypt.CompareHashAndPassword(account.Password, []byte(password))
+	profile := convertProfileByEmailToProfile(res)
+
+	err = bcrypt.CompareHashAndPassword(profile.Account.Password, []byte(password))
 	if err != nil {
 		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
 			a.Logger.Error("incorrect password", slog.Any("error", err))
-			return store.Account{}, fmt.Errorf("%w: %s", ErrInvalidCredentials, err)
+			return Profile{}, fmt.Errorf("%w: %s", ErrInvalidCredentials, err)
 		}
 		a.Logger.Error("error comparing password", slog.Any("error", err))
-		return store.Account{}, err
+		return Profile{}, err
 	}
 
-	return account, nil
+	return profile, nil
+}
+
+func convertProfileByEmailToProfile(res store.FindProfileByEmailResult) Profile {
+	return Profile{
+		ID: res.ProfileID,
+		Account: Account{
+			ID:       res.AccountID,
+			Email:    res.AccountEmail,
+			Password: res.AccountPassword,
+		},
+	}
 }
 
 func (a *Authenticator) AccountExists(ctx context.Context, accountID int) (bool, error) {
@@ -130,32 +143,4 @@ func (a *Authenticator) AccountExists(ctx context.Context, accountID int) (bool,
 		return false, err
 	}
 	return found, nil
-}
-
-func (a *Authenticator) CreateAccount(ctx context.Context, req SignupReq) (store.Account, error) {
-	err := req.Validate()
-	if err != nil {
-		return store.Account{}, err
-	}
-
-	hashedPassword, err := hashPassword(req.Password)
-	if err != nil {
-		a.Logger.Error("error hashing password", slog.Any("error", err))
-		return store.Account{}, err
-	}
-
-	account, err := a.ProfileRepository.CreateAccount(ctx, req.Email, req.FirstName, req.LastName, hashedPassword)
-	if err != nil {
-		if errors.Is(err, store.ErrDuplicateEmailAddress) {
-			a.Logger.Debug("email exists for account")
-			return store.Account{}, ErrAccountExists
-		}
-		a.Logger.Error("error creating account", slog.Any("error", err))
-		return store.Account{}, err
-	}
-	return account, nil
-}
-
-func hashPassword(password string) ([]byte, error) {
-	return bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 }

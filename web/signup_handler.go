@@ -23,6 +23,7 @@ func (a *Application) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
 	ctx, cancel := context.WithTimeout(r.Context(), time.Millisecond*500)
 	r = r.WithContext(ctx)
+	logger := a.Logger.With("handler", "SignUpHandler")
 
 	defer cancel()
 	defer r.Body.Close()
@@ -34,7 +35,7 @@ func (a *Application) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = a.Auth.CreateAccount(ctx, req)
+	_, err = a.ProfilesService.CreateProfile(ctx, logger, req)
 	if err != nil {
 		if errors.Is(err, identityaccess.ErrAccountExists) {
 			a.setErrorFlashMessage(w, r, "An account exists with this email. Try logging in or resetting your password.")
