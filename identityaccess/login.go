@@ -98,9 +98,9 @@ type Authenticator struct {
 }
 
 func (a *Authenticator) Authenticate(ctx context.Context, email, password string) (Profile, error) {
-	res, err := a.ProfileRepository.FindProfileByEmail(ctx, email)
+	res, err := a.ProfileRepository.GetProfileByEmail(ctx, email)
 	if err != nil {
-		if errors.Is(err, store.ErrNotFound) {
+		if errors.Is(err, store.ErrNoRecord) {
 			a.Logger.Error("account not found", slog.String("email", email))
 			return Profile{}, ErrInvalidCredentials
 		}
@@ -123,7 +123,7 @@ func (a *Authenticator) Authenticate(ctx context.Context, email, password string
 	return profile, nil
 }
 
-func convertProfileByEmailToProfile(res store.FindProfileByEmailResult) Profile {
+func convertProfileByEmailToProfile(res store.GetProfileByEmailResult) Profile {
 	return Profile{
 		ID: res.ProfileID,
 		Account: Account{

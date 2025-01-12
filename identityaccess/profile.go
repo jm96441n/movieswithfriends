@@ -167,7 +167,7 @@ func (p *Profile) Update(ctx context.Context, logger *slog.Logger, req ProfileUp
 		updateAccountAttrs.Password = pw
 	}
 
-	err = p.db.UpdateProfileAndAccount(ctx, updateAccountAttrs, updateProfileAttrs)
+	err = p.db.UpdateProfile(ctx, updateAccountAttrs, updateProfileAttrs)
 	if err != nil {
 		logger.Error("error updating profile and account", slog.Any("error", err))
 		return err

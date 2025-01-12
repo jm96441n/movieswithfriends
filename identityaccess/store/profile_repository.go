@@ -17,6 +17,11 @@ type ProfileRepository struct {
 
 const pgUniqueViolationCode = "23505"
 
+var (
+	ErrNoRecord              = errors.New("store: no matching record found")
+	ErrDuplicateEmailAddress = errors.New("email address already exists")
+)
+
 func NewProfileRepository(db *pgxpool.Pool) *ProfileRepository {
 	return &ProfileRepository{db: db}
 }
@@ -42,8 +47,6 @@ const GetProfileByIDQuery = `
   join accounts on profiles.id_account = accounts.id_account
   where profiles.id_profile = $1`
 
-var ErrNoRecord = errors.New("store: no matching record found")
-
 func (p *ProfileRepository) GetProfileByID(ctx context.Context, profileID int) (GetProfileByIDResult, error) {
 	profile := GetProfileByIDResult{}
 
@@ -59,16 +62,29 @@ func (p *ProfileRepository) GetProfileByID(ctx context.Context, profileID int) (
 	return profile, nil
 }
 
-const insertProfileQuery = `insert into profiles (first_name, last_name, id_account) values ($1, $2, $3) returning id_profile`
+const getProfileByEmailQuery = `
+select accounts.id_account, accounts.email, accounts.password, profiles.id_profile from accounts 
+join profiles on profiles.id_account = accounts.id_account
+where accounts.email = $1
+`
 
-func (p *ProfileRepository) CreateProfileWithTxn(ctx context.Context, txn pgx.Tx, firstName, lastName string, accountID int) (int, error) {
-	var profileID int
+type GetProfileByEmailResult struct {
+	AccountID       int
+	AccountEmail    string
+	AccountPassword []byte
+	ProfileID       int
+}
 
-	err := txn.QueryRow(ctx, insertProfileQuery, firstName, lastName, accountID).Scan(&profileID)
+func (p *ProfileRepository) GetProfileByEmail(ctx context.Context, email string) (GetProfileByEmailResult, error) {
+	res := GetProfileByEmailResult{}
+	err := p.db.QueryRow(ctx, getProfileByEmailQuery, email).Scan(&res.AccountID, &res.AccountEmail, &res.AccountPassword, &res.ProfileID)
 	if err != nil {
-		return 0, err
+		if err == pgx.ErrNoRows {
+			return GetProfileByEmailResult{}, ErrNoRecord
+		}
+		return GetProfileByEmailResult{}, err
 	}
-	return profileID, nil
+	return res, nil
 }
 
 type GetProfileStatsResult struct {
@@ -101,13 +117,6 @@ func (p *ProfileRepository) GetProfileStats(ctx context.Context, logger *slog.Lo
 	return res, nil
 }
 
-const insertAccountQuery = `insert into accounts (email, password) values ($1, $2) returning id_account`
-
-var (
-	ErrDuplicateEmailAddress = errors.New("email address already exists")
-	ErrNotFound              = errors.New("not found")
-)
-
 type CreateProfileResult struct {
 	AccountID int
 	ProfileID int
@@ -123,20 +132,12 @@ func (p *ProfileRepository) CreateProfile(ctx context.Context, email, firstName,
 
 	res := CreateProfileResult{}
 
-	err = txn.QueryRow(ctx, insertAccountQuery, email, password).Scan(&res.AccountID)
+	res.AccountID, err = p.createAccountWithTxn(ctx, txn, email, password)
 	if err != nil {
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) {
-			if pgErr.Code == pgUniqueViolationCode {
-				if pgErr.ConstraintName == "unique_email_addresses" {
-					return CreateProfileResult{}, ErrDuplicateEmailAddress
-				}
-			}
-		}
 		return CreateProfileResult{}, err
 	}
 
-	res.ProfileID, err = p.CreateProfileWithTxn(ctx, txn, firstName, lastName, res.AccountID)
+	res.ProfileID, err = p.createProfileWithTxn(ctx, txn, firstName, lastName, res.AccountID)
 	if err != nil {
 		return CreateProfileResult{}, err
 	}
@@ -149,29 +150,37 @@ func (p *ProfileRepository) CreateProfile(ctx context.Context, email, firstName,
 	return res, nil
 }
 
-const findProfileByEmailQuery = `
-select accounts.id_account, accounts.email, accounts.password, profiles.id_profile from accounts 
-join profiles on profiles.id_account = accounts.id_account
-where accounts.email = $1
-`
+const insertProfileQuery = `insert into profiles (first_name, last_name, id_account) values ($1, $2, $3) returning id_profile`
 
-type FindProfileByEmailResult struct {
-	AccountID       int
-	AccountEmail    string
-	AccountPassword []byte
-	ProfileID       int
+func (p *ProfileRepository) createProfileWithTxn(ctx context.Context, txn pgx.Tx, firstName, lastName string, accountID int) (int, error) {
+	var profileID int
+
+	err := txn.QueryRow(ctx, insertProfileQuery, firstName, lastName, accountID).Scan(&profileID)
+	if err != nil {
+		return 0, err
+	}
+	return profileID, nil
 }
 
-func (p *ProfileRepository) FindProfileByEmail(ctx context.Context, email string) (FindProfileByEmailResult, error) {
-	res := FindProfileByEmailResult{}
-	err := p.db.QueryRow(ctx, findProfileByEmailQuery, email).Scan(&res.AccountID, &res.AccountEmail, &res.AccountPassword, &res.ProfileID)
+const insertAccountQuery = `insert into accounts (email, password) values ($1, $2) returning id_account`
+
+func (p *ProfileRepository) createAccountWithTxn(ctx context.Context, txn pgx.Tx, email string, password []byte) (int, error) {
+	var accountID int
+
+	err := txn.QueryRow(ctx, insertAccountQuery, email, password).Scan(&accountID)
 	if err != nil {
-		if err == pgx.ErrNoRows {
-			return FindProfileByEmailResult{}, ErrNotFound
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			if pgErr.Code == pgUniqueViolationCode {
+				if pgErr.ConstraintName == "unique_email_addresses" {
+					return 0, ErrDuplicateEmailAddress
+				}
+			}
 		}
-		return FindProfileByEmailResult{}, err
+		return 0, err
 	}
-	return res, nil
+
+	return accountID, nil
 }
 
 const accountExistsQuery = `SELECT EXISTS(select true from accounts where id_account = $1)`
@@ -196,7 +205,7 @@ type ProfileUpdateAttrs struct {
 	LastName  string
 }
 
-func (p *ProfileRepository) UpdateProfileAndAccount(ctx context.Context, accountAttrs AccountUpdateAttrs, profileAttrs ProfileUpdateAttrs) error {
+func (p *ProfileRepository) UpdateProfile(ctx context.Context, accountAttrs AccountUpdateAttrs, profileAttrs ProfileUpdateAttrs) error {
 	txn, err := p.db.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		return err
@@ -226,6 +235,15 @@ func updateAccount(ctx context.Context, txn pgx.Tx, attrs AccountUpdateAttrs) er
 	if len(attrs.Password) == 0 {
 		_, err := txn.Exec(ctx, `update accounts set email = $1 where id_account = $2`, attrs.Email, attrs.ID)
 		if err != nil {
+			var pgErr *pgconn.PgError
+			if errors.As(err, &pgErr) {
+				if pgErr.Code == pgUniqueViolationCode {
+					if pgErr.ConstraintName == "unique_email_addresses" {
+						return ErrDuplicateEmailAddress
+					}
+				}
+			}
+
 			return err
 		}
 		return nil
