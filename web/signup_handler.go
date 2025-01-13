@@ -90,6 +90,5 @@ func parseSignUpForm(r *http.Request) (identityaccess.SignupReq, error) {
 		Password:  r.FormValue("password"),
 		FirstName: r.FormValue("firstName"),
 		LastName:  r.FormValue("lastName"),
-		PartyID:   r.FormValue("partyID"),
 	}, nil
 }

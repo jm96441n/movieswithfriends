@@ -88,20 +88,7 @@ func (p *ProfileService) GetProfileByID(ctx context.Context, profileID int) (Pro
 		return Profile{}, err
 	}
 
-	return convertResult(profile), nil
-}
-
-func convertResult(profile store.GetProfileByIDResult) Profile {
-	return Profile{
-		ID:        profile.ID,
-		FirstName: profile.FirstName,
-		LastName:  profile.LastName,
-		CreatedAt: profile.CreatedAt,
-		Account: Account{
-			ID:    profile.AccountID,
-			Email: profile.AccountEmail,
-		},
-	}
+	return convertGetProfileResultToProfile(profile), nil
 }
 
 func (p *ProfileService) CreateProfile(ctx context.Context, logger *slog.Logger, req SignupReq) (Profile, error) {
@@ -224,4 +211,18 @@ func validateUpdateRequest(req ProfileUpdateReq) error {
 	}
 
 	return nil
+}
+
+func convertGetProfileResultToProfile(res store.GetProfileResult) Profile {
+	return Profile{
+		ID:        res.ID,
+		FirstName: res.FirstName,
+		LastName:  res.LastName,
+		CreatedAt: res.CreatedAt,
+		Account: Account{
+			ID:       res.AccountID,
+			Email:    res.AccountEmail,
+			Password: res.AccountPassword,
+		},
+	}
 }

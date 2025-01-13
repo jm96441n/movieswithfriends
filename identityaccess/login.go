@@ -17,7 +17,6 @@ type SignupReq struct {
 	Password  string `json:"password"`
 	FirstName string `json:"firstName"`
 	LastName  string `json:"lastName"`
-	PartyID   string `json:"partyID"`
 }
 
 type SignupValidationError struct {
@@ -108,7 +107,7 @@ func (a *Authenticator) Authenticate(ctx context.Context, email, password string
 		return Profile{}, err
 	}
 
-	profile := convertProfileByEmailToProfile(res)
+	profile := convertGetProfileResultToProfile(res)
 
 	err = bcrypt.CompareHashAndPassword(profile.Account.Password, []byte(password))
 	if err != nil {
@@ -121,17 +120,6 @@ func (a *Authenticator) Authenticate(ctx context.Context, email, password string
 	}
 
 	return profile, nil
-}
-
-func convertProfileByEmailToProfile(res store.GetProfileByEmailResult) Profile {
-	return Profile{
-		ID: res.ProfileID,
-		Account: Account{
-			ID:       res.AccountID,
-			Email:    res.AccountEmail,
-			Password: res.AccountPassword,
-		},
-	}
 }
 
 func (a *Authenticator) AccountExists(ctx context.Context, accountID int) (bool, error) {

@@ -17,15 +17,10 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-var (
-	testContainerDB *postgres.PostgresContainer
-	once            = &sync.Once{}
-)
+var containerOnce = &sync.Once{}
 
-func SetupConnPool(ctx context.Context, t *testing.T, schemaName string) *pgxpool.Pool {
+func SetupConnPool(ctx context.Context, t *testing.T, schemaName string, testContainerDB *postgres.PostgresContainer) *pgxpool.Pool {
 	t.Helper()
-
-	setupDBContainer(ctx, t)
 
 	connString, err := testContainerDB.ConnectionString(ctx, "sslmode=disable")
 	if err != nil {
@@ -38,7 +33,7 @@ func SetupConnPool(ctx context.Context, t *testing.T, schemaName string) *pgxpoo
 		t.Fatal(err)
 	}
 
-	_, err = db.ExecContext(ctx, fmt.Sprintf("CREATE SCHEMA %s", schemaName))
+	_, err = db.ExecContext(ctx, fmt.Sprintf("CREATE SCHEMA IF NOT EXISTS %s", schemaName))
 	if err != nil {
 		t.Log(err)
 		t.Fatal(err)
@@ -67,27 +62,23 @@ func SetupConnPool(ctx context.Context, t *testing.T, schemaName string) *pgxpoo
 	return pool
 }
 
-func setupDBContainer(ctx context.Context, t *testing.T) {
-	t.Helper()
-	once.Do(func() {
-		var err error
-		testContainerDB, err = postgres.Run(
-			ctx,
-			"postgres:bullseye",
-			postgres.WithDatabase("movieswithfriends"),
-			postgres.WithUsername("postgres"),
-			postgres.WithPassword("postgres"),
-			postgres.WithSQLDriver("pgx"),
-			testcontainers.WithWaitStrategy(
-				wait.ForLog("database system is ready to accept connections").
-					WithOccurrence(2).WithStartupTimeout(5*time.Second)),
-		)
-
-		testcontainers.CleanupContainer(t, testContainerDB)
-		if err != nil {
-			t.Fatal(err)
-		}
-	})
+func SetupDBContainer(ctx context.Context, ctr *postgres.PostgresContainer) error {
+	testCtr, err := postgres.Run(
+		ctx,
+		"postgres:bullseye",
+		postgres.WithDatabase("movieswithfriends"),
+		postgres.WithUsername("postgres"),
+		postgres.WithPassword("postgres"),
+		postgres.WithSQLDriver("pgx"),
+		testcontainers.WithWaitStrategy(
+			wait.ForLog("database system is ready to accept connections").
+				WithOccurrence(2).WithStartupTimeout(5*time.Second)),
+	)
+	*ctr = *testCtr
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func runMigrations(connString string) error {
@@ -117,6 +108,7 @@ func runMigrations(connString string) error {
 
 func CleanupAndResetDB(ctx context.Context, t *testing.T, testConn *pgxpool.Pool, schemaName string) {
 	t.Helper()
+	t.Log("Cleaning up and resetting db")
 	// this truncates all tables, using the snapshot restore functionality from testcontainers was causing connection drop errors between tests
 	_, err := testConn.Exec(ctx, fmt.Sprintf(`DO $$ 
 DECLARE 
