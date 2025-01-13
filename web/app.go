@@ -32,12 +32,6 @@ type PartiesStoreService interface {
 	SelectMovieForParty(context.Context, int) error
 }
 
-type PartyService interface {
-	CreateParty(context.Context, int, string) (int, error)
-	AddFriendToParty(context.Context, int, string) error
-	GetPartyWithMovies(context.Context, int) (partymgmt.Party, error)
-}
-
 type MoviesService interface {
 	SearchMovies(context.Context, *slog.Logger, string) ([]partymgmt.TMDBMovie, error)
 	CreateMovie(context.Context, *slog.Logger, int) (*store.Movie, error)
@@ -49,7 +43,7 @@ type Application struct {
 	SessionStore      *sessions.CookieStore
 	MoviesService     MoviesService
 	MoviesRepository  MovieRepository
-	PartyService      PartyService
+	PartyService      *partymgmt.PartyService
 	PartiesRepository PartiesStoreService
 	MemberService     *partymgmt.MemberService
 	ProfilesService   *identityaccess.ProfileService

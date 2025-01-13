@@ -11,12 +11,10 @@ import (
 
 func TestAddFriendToParty_HappyPath(t *testing.T) {
 	t.Parallel()
-	svc := &partymgmt.PartyService{
-		DB: &mockPartyStore{},
-	}
+	svc := &partymgmt.PartyService{}
 
 	idMember := 1
-	err := svc.AddFriendToParty(context.Background(), idMember, "shortID")
+	err := svc.AddNewMemberToParty(context.Background(), idMember, "shortID")
 	if err != nil {
 		t.Errorf("expected nil, got %v", err)
 	}
@@ -48,15 +46,10 @@ func TestAddFriendToParty_SadPath(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			svc := &partymgmt.PartyService{
-				DB: &mockPartyStore{
-					errGetPartyByShortID: tc.errGetPartyByShortID,
-					errCreatePartyMember: tc.errCreatePartyMember,
-				},
-			}
+			svc := &partymgmt.PartyService{}
 
 			idMember := 1
-			err := svc.AddFriendToParty(context.Background(), idMember, "shortID")
+			err := svc.AddNewMemberToParty(context.Background(), idMember, "shortID")
 			if err == nil {
 				t.Errorf("expected error, got nil")
 			}
@@ -80,11 +73,7 @@ func TestCreateParty_HappyPath(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			svc := &partymgmt.PartyService{
-				DB: &mockPartyStore{
-					numTimesToErrOnCreateParty: tc.numTimesToErrOnCreateParty,
-				},
-			}
+			svc := &partymgmt.PartyService{}
 			idMember := 1
 			name := "name"
 			id, err := svc.CreateParty(context.Background(), idMember, name)
@@ -113,12 +102,7 @@ func TestCreateParty_SadPath(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			svc := &partymgmt.PartyService{
-				DB: &mockPartyStore{
-					numTimesToErrOnCreateParty: tc.numTimesToErrOnCreateParty,
-					errOnCreateParty:           true,
-				},
-			}
+			svc := &partymgmt.PartyService{}
 			idMember := 1
 			name := "name"
 			_, err := svc.CreateParty(context.Background(), idMember, name)
@@ -127,36 +111,4 @@ func TestCreateParty_SadPath(t *testing.T) {
 			}
 		})
 	}
-}
-
-type mockPartyStore struct {
-	errGetPartyByShortID error
-	errCreatePartyMember error
-
-	numTimesToErrOnCreateParty int
-	errOnCreateParty           bool
-}
-
-func (m *mockPartyStore) CreateParty(ctx context.Context, idMember int, name string, shortID string) (int, error) {
-	if m.numTimesToErrOnCreateParty > 0 {
-		m.numTimesToErrOnCreateParty--
-		return 0, store.ErrDuplicatePartyShortID
-	}
-
-	if (m.numTimesToErrOnCreateParty == 0) && m.errOnCreateParty {
-		return 0, errors.New("error")
-	}
-	return 1, nil
-}
-
-func (m *mockPartyStore) GetPartyByShortID(ctx context.Context, shortID string) (store.Party, error) {
-	return store.Party{}, m.errGetPartyByShortID
-}
-
-func (m *mockPartyStore) CreatePartyMember(ctx context.Context, idMember, idParty int) error {
-	return m.errCreatePartyMember
-}
-
-func (m *mockPartyStore) GetPartyByIDWithStats(ctx context.Context, id int) (store.GetPartyByIDWithStatsResult, error) {
-	return store.GetPartyByIDWithStatsResult{}, nil
 }

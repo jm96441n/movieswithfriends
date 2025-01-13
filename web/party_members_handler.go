@@ -25,7 +25,7 @@ func (a *Application) AddMemberToPartyHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	// Add the friend to the party
-	err = a.PartyService.AddFriendToParty(ctx, friendID, partyShortID)
+	err = a.PartyService.AddNewMemberToParty(ctx, friendID, partyShortID)
 	if err != nil {
 		a.Logger.Error("failed to add friend to party", slog.Any("error", err))
 		a.serverError(w, r, err)

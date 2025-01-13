@@ -6,25 +6,19 @@ import (
 	"log/slog"
 	"math/rand"
 
+	partystore "github.com/jm96441n/movieswithfriends/partymgmt/store"
 	"github.com/jm96441n/movieswithfriends/store"
 )
 
-type partyStore interface {
-	CreateParty(context.Context, int, string, string) (int, error)
-	GetPartyByShortID(context.Context, string) (store.Party, error)
-	CreatePartyMember(context.Context, int, int) error
-	GetPartyByIDWithStats(context.Context, int) (store.GetPartyByIDWithStatsResult, error)
-}
+var ErrMemberExistsInParty = errors.New("member already exists in party")
 
-type movieStore interface {
-	GetMoviesForParty(context.Context, int, int) (store.MoviesByStatus, error)
-}
+const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
 // TOOD: should this exist? maybe just pass db to functions that need it
 type PartyService struct {
 	Logger           *slog.Logger
-	DB               partyStore
-	MoviesRepository movieStore
+	DB               *partystore.PartyRepository
+	MoviesRepository *store.PGStore
 }
 
 type Party struct {
@@ -39,11 +33,7 @@ type Party struct {
 	SelectedMovie   *store.SelectedMovie
 }
 
-var ErrMemberExistsInParty = errors.New("member already exists in party")
-
-const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-
-func (s *PartyService) AddFriendToParty(ctx context.Context, idMember int, shortID string) error {
+func (s *PartyService) AddNewMemberToParty(ctx context.Context, idMember int, shortID string) error {
 	party, err := s.DB.GetPartyByShortID(ctx, shortID)
 	if err != nil {
 		return err
@@ -85,14 +75,6 @@ func (s *PartyService) CreateParty(ctx context.Context, idMember int, name strin
 	}
 
 	return id, nil
-}
-
-type partyGetter interface {
-	GetPartyByIDWithStats(context.Context, int) (store.GetPartyByIDWithStatsResult, error)
-}
-
-type movieGetter interface {
-	GetMoviesForParty(context.Context, int, int) ([]store.Movie, error)
 }
 
 func (s *PartyService) GetPartyWithMovies(ctx context.Context, id int) (Party, error) {
