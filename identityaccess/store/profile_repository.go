@@ -179,7 +179,7 @@ func (p *ProfileRepository) createAccountWithTxn(ctx context.Context, txn pgx.Tx
 	return accountID, nil
 }
 
-const accountExistsQuery = `SELECT EXISTS(select true from accounts where id_account = $1)`
+const accountExistsQuery = `SELECT EXISTS(select 1 from accounts where id_account = $1)`
 
 func (p *ProfileRepository) AccountExists(ctx context.Context, id int) (bool, error) {
 	var exists bool

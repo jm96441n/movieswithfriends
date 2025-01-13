@@ -34,6 +34,11 @@ func (s *SignupValidationError) IsNil() bool {
 	return s.EmailError == nil && s.PasswordError == nil && s.FirstNameError == nil && s.LastNameError == nil
 }
 
+func (s *SignupValidationError) Is(err error) bool {
+	_, ok := err.(*SignupValidationError)
+	return ok
+}
+
 var (
 	ErrEmptyEmail                   = errors.New("email is required")
 	ErrPasswordTooShort             = errors.New("password must be at least 8 characters long")
@@ -125,9 +130,6 @@ func (a *Authenticator) Authenticate(ctx context.Context, email, password string
 func (a *Authenticator) AccountExists(ctx context.Context, accountID int) (bool, error) {
 	found, err := a.ProfileRepository.AccountExists(ctx, accountID)
 	if err != nil {
-		if errors.Is(err, store.ErrNoRecord) {
-			return false, nil
-		}
 		return false, err
 	}
 	return found, nil

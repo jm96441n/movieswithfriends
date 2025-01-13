@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sync"
 	"testing"
 	"time"
@@ -82,7 +83,13 @@ func SetupDBContainer(ctx context.Context, ctr *postgres.PostgresContainer) erro
 }
 
 func runMigrations(connString string) error {
-	goose.SetBaseFS(os.DirFS("../../migrations"))
+	path, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
+	migrationPath := getMigrationPath(path)
+	goose.SetBaseFS(os.DirFS(migrationPath))
 
 	if err := goose.SetDialect("postgres"); err != nil {
 		return err
@@ -104,6 +111,21 @@ func runMigrations(connString string) error {
 	}
 
 	return nil
+}
+
+// recurse up the current path until you hit the root of the module which is where the migrations are stored
+func getMigrationPath(path string) string {
+	_, err := os.Stat(filepath.Join(path, "go.mod"))
+
+	if err == nil {
+		return filepath.Join(path, "migrations")
+	}
+
+	if path == "/" {
+		panic("went too far!")
+	}
+
+	return getMigrationPath(filepath.Dir(path))
 }
 
 func CleanupAndResetDB(ctx context.Context, t *testing.T, testConn *pgxpool.Pool, schemaName string) {
