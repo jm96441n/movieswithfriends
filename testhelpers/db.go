@@ -18,10 +18,15 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-var containerOnce = &sync.Once{}
+var (
+	containerOnce   = &sync.Once{}
+	testContainerDB *postgres.PostgresContainer
+)
 
-func SetupConnPool(ctx context.Context, t *testing.T, schemaName string, testContainerDB *postgres.PostgresContainer) *pgxpool.Pool {
+func SetupConnPool(ctx context.Context, t *testing.T, schemaName string) *pgxpool.Pool {
 	t.Helper()
+
+	setupDBContainer(ctx, t)
 
 	connString, err := testContainerDB.ConnectionString(ctx, "sslmode=disable")
 	if err != nil {
@@ -63,23 +68,22 @@ func SetupConnPool(ctx context.Context, t *testing.T, schemaName string, testCon
 	return pool
 }
 
-func SetupDBContainer(ctx context.Context, ctr *postgres.PostgresContainer) error {
-	testCtr, err := postgres.Run(
-		ctx,
-		"postgres:bullseye",
-		postgres.WithDatabase("movieswithfriends"),
-		postgres.WithUsername("postgres"),
-		postgres.WithPassword("postgres"),
-		postgres.WithSQLDriver("pgx"),
-		testcontainers.WithWaitStrategy(
-			wait.ForLog("database system is ready to accept connections").
-				WithOccurrence(2).WithStartupTimeout(5*time.Second)),
-	)
-	*ctr = *testCtr
-	if err != nil {
-		return err
-	}
-	return nil
+func setupDBContainer(ctx context.Context, t *testing.T) {
+	var err error
+	containerOnce.Do(func() {
+		testContainerDB, err = postgres.Run(
+			ctx,
+			"postgres:bullseye",
+			postgres.WithDatabase("movieswithfriends"),
+			postgres.WithUsername("postgres"),
+			postgres.WithPassword("postgres"),
+			postgres.WithSQLDriver("pgx"),
+			testcontainers.WithWaitStrategy(
+				wait.ForLog("database system is ready to accept connections").
+					WithOccurrence(2).WithStartupTimeout(5*time.Second)),
+		)
+		Ok(t, err, "failed to setup db container")
+	})
 }
 
 func runMigrations(connString string) error {

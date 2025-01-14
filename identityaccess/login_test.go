@@ -110,7 +110,7 @@ func TestAuthenticator_Authenticate(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	schemaName := "identityaccess_authenticator_authenticate_schema"
-	connPool := SetupConnPool(ctx, t, schemaName)
+	connPool := testhelpers.SetupConnPool(ctx, t, schemaName)
 
 	t.Cleanup(func() { testhelpers.CleanupAndResetDB(ctx, t, connPool, schemaName) })
 	existingUserEmail := "email@email.com"
@@ -160,7 +160,7 @@ func TestAccountExists(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	schemaName := "identityaccess_authenticator_account_exists_schema"
-	connPool := SetupConnPool(ctx, t, schemaName)
+	connPool := testhelpers.SetupConnPool(ctx, t, schemaName)
 
 	t.Cleanup(func() { testhelpers.CleanupAndResetDB(ctx, t, connPool, schemaName) })
 	existingUserEmail := "email@email.com"

@@ -16,14 +16,21 @@ const baseSchemaName = "partymgmt"
 func TestCreatePartyMember(t *testing.T) {
 	ctx := context.Background()
 	testCases := map[string]struct {
-		expectedErr error
+		expectedErr      error
+		backgroundSeedFn func(context.Context, *testing.T, *pgxpool.Pool, int, int)
 	}{
 		"successAddMember": {
-			expectedErr: nil,
+			expectedErr:      nil,
+			backgroundSeedFn: func(ctx context.Context, t *testing.T, conn *pgxpool.Pool, id int, partyID int) {},
 		},
 		// TODO:: seed this correctly
 		"memberAlreadyExistsInParty": {
 			expectedErr: store.ErrMemberPartyCombinationNotUnique,
+			backgroundSeedFn: func(ctx context.Context, t *testing.T, conn *pgxpool.Pool, id int, partyID int) {
+				query := `insert into party_members (id_member, id_party) values($1, $2)`
+				_, err := conn.Exec(ctx, query, id, partyID)
+				testhelpers.Ok(t, err, "failed to insert party member")
+			},
 		},
 	}
 
@@ -31,11 +38,12 @@ func TestCreatePartyMember(t *testing.T) {
 		t.Run(name, func(tt *testing.T) {
 			tt.Parallel()
 			schemaName := fmt.Sprintf("%s_create_party_member_%s_schema", baseSchemaName, name)
-			connPool := SetupConnPool(ctx, t, schemaName)
+			connPool := testhelpers.SetupConnPool(ctx, t, schemaName)
 
 			t.Cleanup(func() { testhelpers.CleanupAndResetDB(ctx, t, connPool, schemaName) })
 
 			idMember, idParty := seedPartyAndProfile(ctx, t, connPool)
+			tc.backgroundSeedFn(ctx, t, connPool, idMember, idParty)
 			repo := store.NewPartyRepository(connPool)
 
 			err := repo.CreatePartyMember(context.Background(), idMember, idParty)
@@ -43,26 +51,6 @@ func TestCreatePartyMember(t *testing.T) {
 		})
 	}
 }
-
-// func testCreatePartyMemberFailsOnDuplicatePartyMember(ctx context.Context, ctr *postgres.PostgresContainer) func(t *testing.T) {
-// 	return func(t *testing.T) {
-// 		db, testConn := setupDB(ctx, t, ctr)
-// 		t.Cleanup(cleanupAndResetDB(ctx, t, ctr, testConn, db))
-//
-// 		idMember, idParty := seedCreatePartyMemberBackground(t, testConn)
-//
-// 		err := db.CreatePartyMember(context.Background(), idMember, idParty)
-// 		if err != nil {
-// 			t.Error(err)
-// 			return
-// 		}
-//
-// 		err = db.CreatePartyMember(context.Background(), idMember, idParty)
-// 		if !errors.Is(err, store.ErrMemberPartyCombinationNotUnique) {
-// 			t.Errorf("expected %v, got %v", store.ErrMemberPartyCombinationNotUnique, err)
-// 		}
-// 	}
-// }
 
 func seedPartyAndProfile(ctx context.Context, t *testing.T, conn *pgxpool.Pool) (int, int) {
 	t.Helper()

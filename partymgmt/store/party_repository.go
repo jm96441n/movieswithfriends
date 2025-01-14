@@ -36,8 +36,8 @@ type PartyMovie struct {
 }
 
 const (
-	createPartyQuery       = `INSERT INTO parties (name, short_id) VALUES ($1, $2) returning id_party;`
-	createPartyMemberQuery = `INSERT INTO party_members (id_member, id_party, owner) VALUES ($1, $2, true);`
+	createPartyQuery              = `INSERT INTO parties (name, short_id) VALUES ($1, $2) returning id_party;`
+	createPartyMemberAsOwnerQuery = `INSERT INTO party_members (id_member, id_party, owner) VALUES ($1, $2, true);`
 )
 
 func (p *PartyRepository) CreateParty(ctx context.Context, idMember int, name, shortID string) (int, error) {
@@ -63,7 +63,7 @@ func (p *PartyRepository) CreateParty(ctx context.Context, idMember int, name, s
 		return 0, err
 	}
 
-	_, err = txn.Exec(ctx, createPartyMemberQuery, idMember, id)
+	_, err = txn.Exec(ctx, createPartyMemberAsOwnerQuery, idMember, id)
 	if err != nil {
 		return 0, err
 	}

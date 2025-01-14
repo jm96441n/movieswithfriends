@@ -19,7 +19,7 @@ func TestGetProfileByID(t *testing.T) {
 	ctx := context.Background()
 	t.Parallel()
 	schemaName := fmt.Sprintf("%s_get_profile_by_id_schema", baseSchemaName)
-	connPool := SetupConnPool(ctx, t, schemaName)
+	connPool := testhelpers.SetupConnPool(ctx, t, schemaName)
 
 	t.Cleanup(func() { testhelpers.CleanupAndResetDB(ctx, t, connPool, schemaName) })
 	expectedFirstName := "FistName"
@@ -73,7 +73,7 @@ func TestGetProfileByEmail(t *testing.T) {
 	t.Parallel()
 	schemaName := fmt.Sprintf("%s_get_profile_by_email_schema", baseSchemaName)
 	ctx := context.Background()
-	connPool := SetupConnPool(ctx, t, schemaName)
+	connPool := testhelpers.SetupConnPool(ctx, t, schemaName)
 
 	t.Cleanup(func() { testhelpers.CleanupAndResetDB(ctx, t, connPool, schemaName) })
 
@@ -140,7 +140,7 @@ func TestCreateProfile(t *testing.T) {
 		t.Run(name, func(tt *testing.T) {
 			tt.Parallel()
 			schemaName := fmt.Sprintf("%s_create_profile_schema_%s", baseSchemaName, name)
-			connPool := SetupConnPool(ctx, tt, schemaName)
+			connPool := testhelpers.SetupConnPool(ctx, tt, schemaName)
 			tt.Cleanup(func() { testhelpers.CleanupAndResetDB(ctx, tt, connPool, schemaName) })
 
 			// seed existing profile
@@ -164,7 +164,7 @@ func TestAccountExists(t *testing.T) {
 	t.Parallel()
 	schemaName := fmt.Sprintf("%s_account_exists_schema", baseSchemaName)
 	ctx := context.Background()
-	connPool := SetupConnPool(ctx, t, schemaName)
+	connPool := testhelpers.SetupConnPool(ctx, t, schemaName)
 	t.Cleanup(func() { testhelpers.CleanupAndResetDB(ctx, t, connPool, schemaName) })
 
 	_, existingAccountID, _ := seedProfile(ctx, t, connPool, "FirstName", "LastName", "email@email.com", []byte("password"))
@@ -288,7 +288,7 @@ func TestUpdateProfile(t *testing.T) {
 		t.Run(name, func(tt *testing.T) {
 			tt.Parallel()
 			schemaName := fmt.Sprintf("%s_update_profile_schema_%s", baseSchemaName, name)
-			connPool := SetupConnPool(ctx, tt, schemaName)
+			connPool := testhelpers.SetupConnPool(ctx, tt, schemaName)
 			tt.Cleanup(func() {
 				testhelpers.CleanupAndResetDB(ctx, tt, connPool, schemaName)
 				connPool.Close()
