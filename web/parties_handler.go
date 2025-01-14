@@ -89,16 +89,16 @@ func (a *Application) PartiesIndexHandler(w http.ResponseWriter, r *http.Request
 	logger := a.Logger.With("handler", "PartyIndexHandler")
 	ctx := r.Context()
 
-	profileID, err := a.getProfileIDFromSession(r)
+	profile, err := a.getProfileFromSession(r)
 	if err != nil {
-		a.Logger.Error("failed to get profile ID from session", slog.Any("error", err))
+		a.Logger.Error("failed to get profile from session", slog.Any("error", err))
 		a.setErrorFlashMessage(w, r, "There was an error creating this party, try again.")
 		data := a.NewPartiesTemplateData(r, w, "/parties")
 		a.render(w, r, http.StatusInternalServerError, "parties/new.gohtml", data)
 		return
 	}
 
-	parties, err := a.PartiesRepository.GetPartiesForMember(ctx, profileID)
+	parties, err := profile.GetParties(ctx)
 	if err != nil {
 		logger.Error("failed to get parties for member", slog.Any("error", err))
 		a.serverError(w, r, err)
@@ -179,7 +179,7 @@ func (a *Application) MarkMovieAsWatchedHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	err = a.PartiesRepository.MarkMovieAsWatched(ctx, idParty, idMovie)
+	err = a.PartiesRepository.MarkPartyMovieAsWatched(ctx, idParty, idMovie)
 	if err != nil {
 		a.serverError(w, r, err)
 		return

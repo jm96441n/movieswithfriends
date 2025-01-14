@@ -11,6 +11,7 @@ import (
 
 	"github.com/jm96441n/movieswithfriends/identityaccess"
 	"github.com/jm96441n/movieswithfriends/partymgmt"
+	partymgmtstore "github.com/jm96441n/movieswithfriends/partymgmt/store"
 	"github.com/jm96441n/movieswithfriends/store"
 )
 
@@ -41,14 +42,14 @@ type BaseTemplateData struct {
 type MoviesTemplateData struct {
 	Movies      []partymgmt.TMDBMovie
 	Movie       store.Movie
-	Parties     []store.Party
+	Parties     []partymgmtstore.Party
 	SearchValue string
 	BaseTemplateData
 }
 
 type ProfilesTemplateData struct {
 	Profile           *identityaccess.Profile
-	Parties           []store.PartiesForMemberResult
+	Parties           []identityaccess.ProfileParty
 	WatchedMovies     []store.WatchedMoviesForMemberResult
 	NumPages          int
 	CurPage           int
@@ -68,7 +69,7 @@ func (s *ProfilesTemplateData) InitHasErrorFields() {
 
 type PartiesTemplateData struct {
 	Party   partymgmt.Party
-	Parties []store.PartiesForMemberResult
+	Parties []identityaccess.ProfileParty
 	BaseTemplateData
 }
 
@@ -271,14 +272,12 @@ func NewTemplateCache(filesystem embed.FS) (map[string]*template.Template, error
 		// parse the base template file into a template set
 		ts, err := template.New(name).Funcs(functions).ParseFS(filesystem, patterns...)
 		if err != nil {
-			fmt.Println(err)
 			return err
 		}
 
 		cache[name] = ts
 		return nil
 	})
-
 	return cache, nil
 }
 

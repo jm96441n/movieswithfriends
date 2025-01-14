@@ -18,6 +18,7 @@ import (
 	"github.com/jm96441n/movieswithfriends/identityaccess"
 	iamstore "github.com/jm96441n/movieswithfriends/identityaccess/store"
 	"github.com/jm96441n/movieswithfriends/partymgmt"
+	partymgmtstore "github.com/jm96441n/movieswithfriends/partymgmt/store"
 	"github.com/jm96441n/movieswithfriends/store"
 	"github.com/jm96441n/movieswithfriends/ui"
 	"github.com/jm96441n/movieswithfriends/web"
@@ -140,13 +141,17 @@ func main() {
 	}
 
 	app := web.Application{
-		TemplateCache:     tmplCache,
-		Logger:            logger,
-		SessionStore:      sessionStore,
-		MoviesService:     partymgmt.NewMovieService(tmdbClient, db),
-		MoviesRepository:  db,
-		PartyService:      &partymgmt.PartyService{DB: db, MoviesRepository: db, Logger: logger},
-		PartiesRepository: db,
+		TemplateCache:    tmplCache,
+		Logger:           logger,
+		SessionStore:     sessionStore,
+		MoviesService:    partymgmt.NewMovieService(tmdbClient, db),
+		MoviesRepository: db,
+		PartyService: &partymgmt.PartyService{
+			DB:               partymgmtstore.NewPartyRepository(connPool),
+			MoviesRepository: db,
+			Logger:           logger,
+		},
+		PartiesRepository: partymgmtstore.NewPartyRepository(connPool),
 		ProfilesService: identityaccess.NewProfileService(
 			iamstore.NewProfileRepository(connPool),
 		),

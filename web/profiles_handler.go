@@ -39,7 +39,7 @@ func (a *Application) ProfileShowHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	parties, err := a.PartiesRepository.GetPartiesForMember(ctx, profileID)
+	parties, err := profile.GetParties(ctx)
 	if err != nil {
 		logger.Error("failed to retrieve parties from db", "error", err)
 		a.serverError(w, r, err)

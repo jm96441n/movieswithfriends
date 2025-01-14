@@ -13,23 +13,18 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/jm96441n/movieswithfriends/identityaccess"
 	"github.com/jm96441n/movieswithfriends/partymgmt"
+	partymgmtstore "github.com/jm96441n/movieswithfriends/partymgmt/store"
 	"github.com/jm96441n/movieswithfriends/store"
 )
 
-var ErrFailedToGetProfileIDFromSession = errors.New("failed to get profile id from session")
+var (
+	ErrFailedToGetProfileIDFromSession = errors.New("failed to get profile id from session")
+	ErrFailedToGetAccountIDFromSession = errors.New("failed to get accountl id from session")
+)
 
 type MovieRepository interface {
 	GetMovieByID(context.Context, int) (store.Movie, error)
 	GetMoviesForParty(context.Context, int, int) (store.MoviesByStatus, error)
-}
-
-type PartiesStoreService interface {
-	GetPartiesByMemberIDForCurrentMovie(context.Context, int, int) ([]store.Party, error)
-	GetPartiesForMember(context.Context, int) ([]store.PartiesForMemberResult, error)
-	GetPartyByID(context.Context, int) (store.Party, error)
-	AddMovieToParty(context.Context, int, int, int) error
-	MarkMovieAsWatched(context.Context, int, int) error
-	SelectMovieForParty(context.Context, int) error
 }
 
 type MoviesService interface {
@@ -44,7 +39,7 @@ type Application struct {
 	MoviesService     MoviesService
 	MoviesRepository  MovieRepository
 	PartyService      *partymgmt.PartyService
-	PartiesRepository PartiesStoreService
+	PartiesRepository *partymgmtstore.PartyRepository
 	MemberService     *partymgmt.MemberService
 	ProfilesService   *identityaccess.ProfileService
 	Auth              *identityaccess.Authenticator
@@ -116,11 +111,47 @@ func (a *Application) renderPartial(w http.ResponseWriter, r *http.Request, stat
 	buf.WriteTo(w)
 }
 
+func (a *Application) getAccountIDFromSession(r *http.Request) (int, error) {
+	session, err := a.SessionStore.Get(r, sessionName)
+	if err != nil {
+		session, err = a.SessionStore.New(r, sessionName)
+		if err != nil {
+			a.Logger.Debug("failed to create new session")
+			return 0, nil
+		}
+	}
+
+	sessionAccountID := session.Values["accountID"]
+	accountID, ok := sessionAccountID.(int)
+	if !ok {
+		return 0, ErrFailedToGetAccountIDFromSession
+	}
+
+	return accountID, nil
+}
+
+func (a *Application) getProfileFromSession(r *http.Request) (identityaccess.Profile, error) {
+	profileID, err := a.getProfileIDFromSession(r)
+	if err != nil {
+		return identityaccess.Profile{}, err
+	}
+
+	profile, err := a.ProfilesService.GetProfileByID(r.Context(), profileID)
+	if err != nil {
+		return identityaccess.Profile{}, err
+	}
+
+	return profile, nil
+}
+
 func (a *Application) getProfileIDFromSession(r *http.Request) (int, error) {
 	session, err := a.SessionStore.Get(r, sessionName)
 	if err != nil {
-		a.Logger.Error("failed to get session", slog.Any("error", err))
-		return 0, nil
+		session, err = a.SessionStore.New(r, sessionName)
+		if err != nil {
+			a.Logger.Debug("failed to create new session")
+			return 0, nil
+		}
 	}
 
 	sessionProfileID := session.Values["profileID"]

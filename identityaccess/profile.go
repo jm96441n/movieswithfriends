@@ -87,8 +87,10 @@ func (p *ProfileService) GetProfileByID(ctx context.Context, profileID int) (Pro
 		}
 		return Profile{}, err
 	}
+	prof := convertGetProfileResultToProfile(profile)
+	prof.db = p.db
 
-	return convertGetProfileResultToProfile(profile), nil
+	return prof, nil
 }
 
 func (p *ProfileService) CreateProfile(ctx context.Context, logger *slog.Logger, req SignupReq) (Profile, error) {
@@ -167,6 +169,32 @@ func (p *Profile) Update(ctx context.Context, logger *slog.Logger, req ProfileUp
 	logger.Info("updated profile")
 
 	return nil
+}
+
+type ProfileParty struct {
+	ID          int
+	Name        string
+	MemberCount int
+	MovieCount  int
+}
+
+func (p *Profile) GetParties(ctx context.Context) ([]ProfileParty, error) {
+	parties, err := p.db.GetParties(ctx, p.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	var res []ProfileParty
+	for _, party := range parties {
+		res = append(res, ProfileParty{
+			ID:          party.ID,
+			Name:        party.Name,
+			MemberCount: party.MemberCount,
+			MovieCount:  party.MovieCount,
+		})
+	}
+
+	return res, nil
 }
 
 var (

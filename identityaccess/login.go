@@ -113,6 +113,7 @@ func (a *Authenticator) Authenticate(ctx context.Context, email, password string
 	}
 
 	profile := convertGetProfileResultToProfile(res)
+	profile.db = a.ProfileRepository
 
 	err = bcrypt.CompareHashAndPassword(profile.Account.Password, []byte(password))
 	if err != nil {

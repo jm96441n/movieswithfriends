@@ -2,6 +2,7 @@ package web
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"net/http"
 )
@@ -22,26 +23,17 @@ func (a *Application) authenticateMiddleware() func(http.HandlerFunc) http.Handl
 			ctx := req.Context()
 			logger := a.Logger
 
-			session, err := a.SessionStore.Get(req, sessionName)
+			id, err := a.getAccountIDFromSession(req)
 			if err != nil {
-				logger.DebugContext(ctx, "failed to get session, trying to create a new one", slog.Any("error", err))
-				session, err = a.SessionStore.New(req, sessionName)
-				if err != nil {
-					logger.ErrorContext(ctx, "failed to create a new session", slog.Any("error", err))
-					a.serverError(w, req, err)
+				if errors.Is(err, ErrFailedToGetAccountIDFromSession) {
+					next.ServeHTTP(w, req)
 					return
 				}
-			}
-
-			accountID := session.Values["accountID"]
-
-			if accountID == nil {
-				logger.DebugContext(ctx, "no accountID in session")
-				next.ServeHTTP(w, req)
+				a.logout(w, req)
+				a.setErrorFlashMessage(w, req, "Please log in first.")
+				http.Redirect(w, req, "/login", http.StatusInternalServerError)
 				return
 			}
-
-			id := accountID.(int)
 
 			exists, err := a.Auth.AccountExists(req.Context(), id)
 			if err != nil {
@@ -51,8 +43,13 @@ func (a *Application) authenticateMiddleware() func(http.HandlerFunc) http.Handl
 			}
 
 			if exists {
-				profileID := session.Values["profileID"].(int)
-				partiesForProfile, err := a.PartiesRepository.GetPartiesForMember(req.Context(), profileID)
+				profile, err := a.getProfileFromSession(req)
+				if err != nil {
+					logger.ErrorContext(ctx, "error fetching profile", slog.Any("error", err))
+					a.serverError(w, req, err)
+					return
+				}
+				partiesForProfile, err := profile.GetParties(req.Context())
 				if err != nil {
 					logger.Error("error fetching parties for profile", slog.Any("error", err))
 					a.serverError(w, req, err)
@@ -64,13 +61,6 @@ func (a *Application) authenticateMiddleware() func(http.HandlerFunc) http.Handl
 						ID:   p.ID,
 						Name: p.Name,
 					})
-				}
-
-				profile, err := a.ProfilesService.GetProfileByID(req.Context(), profileID)
-				if err != nil {
-					logger.Error("error fetching account info", slog.Any("error", err))
-					a.serverError(w, req, err)
-					return
 				}
 
 				ctx := context.WithValue(req.Context(), isAuthenticatedContextKey, true)

@@ -6,8 +6,8 @@ import (
 	"log/slog"
 	"math/rand"
 
-	partystore "github.com/jm96441n/movieswithfriends/partymgmt/store"
-	"github.com/jm96441n/movieswithfriends/store"
+	"github.com/jm96441n/movieswithfriends/partymgmt/store"
+	legacystore "github.com/jm96441n/movieswithfriends/store"
 )
 
 var ErrMemberExistsInParty = errors.New("member already exists in party")
@@ -17,8 +17,8 @@ const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 // TOOD: should this exist? maybe just pass db to functions that need it
 type PartyService struct {
 	Logger           *slog.Logger
-	DB               *partystore.PartyRepository
-	MoviesRepository *store.PGStore
+	DB               *store.PartyRepository
+	MoviesRepository *legacystore.PGStore
 }
 
 type Party struct {
@@ -28,9 +28,23 @@ type Party struct {
 	MemberCount     int
 	MovieCount      int
 	WatchedCount    int
-	WatchedMovies   []*store.WatchedMovie
-	UnwatchedMovies []*store.UnwatchedMovie
-	SelectedMovie   *store.SelectedMovie
+	WatchedMovies   []*legacystore.WatchedMovie
+	UnwatchedMovies []*legacystore.UnwatchedMovie
+	SelectedMovie   *legacystore.SelectedMovie
+	db              *store.PartyRepository
+}
+
+func (p *Party) AddMember(ctx context.Context, idMember int) error {
+	err := p.db.CreatePartyMember(ctx, idMember, p.ID)
+
+	if errors.Is(err, store.ErrMemberPartyCombinationNotUnique) {
+		return errors.Join(ErrMemberExistsInParty, err)
+	}
+
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *PartyService) AddNewMemberToParty(ctx context.Context, idMember int, shortID string) error {
@@ -104,6 +118,19 @@ func (s *PartyService) GetPartyWithMovies(ctx context.Context, id int) (Party, e
 	party.SelectedMovie = moviesByStatus.SelectedMovie
 
 	return party, nil
+}
+
+func (s *PartyService) GetPartyByShortID(ctx context.Context, shortID string) (Party, error) {
+	res, err := s.DB.GetPartyByShortID(ctx, shortID)
+	if err != nil {
+		return Party{}, err
+	}
+
+	return Party{
+		ID:      res.ID,
+		Name:    res.Name,
+		ShortID: res.ShortID,
+	}, nil
 }
 
 // generate a random 6 character string

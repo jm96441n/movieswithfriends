@@ -80,7 +80,7 @@ func setupDBContainer(ctx context.Context, t *testing.T) {
 			postgres.WithSQLDriver("pgx"),
 			testcontainers.WithWaitStrategy(
 				wait.ForLog("database system is ready to accept connections").
-					WithOccurrence(2).WithStartupTimeout(5*time.Second)),
+					WithOccurrence(2).WithStartupTimeout(10*time.Second)),
 		)
 		Ok(t, err, "failed to setup db container")
 	})
