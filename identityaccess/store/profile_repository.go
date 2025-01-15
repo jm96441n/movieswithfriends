@@ -121,53 +121,6 @@ func (p *ProfileRepository) GetProfileStats(ctx context.Context, logger *slog.Lo
 	return res, nil
 }
 
-const GetPartiesForProfileIDQuery = `
-  with current_member_parties as (
-    select 
-      parties.id_party,
-      parties.name
-    from parties
-    join party_members on party_members.id_party = parties.id_party
-    where party_members.id_member = $1
-  )
-    select 
-      current_member_parties.id_party,
-      current_member_parties.name,
-      count(distinct party_members.id_member) as member_count,
-      count(distinct party_movies.id_movie) as movie_count
-    from party_members
-    left join party_movies on party_movies.id_party = party_members.id_party
-    join current_member_parties on current_member_parties.id_party = party_members.id_party
-    where party_members.id_party = current_member_parties.id_party
-    group by current_member_parties.id_party, current_member_parties.name;
-`
-
-type PartiesForProfileResult struct {
-	ID          int
-	Name        string
-	MemberCount int
-	MovieCount  int
-}
-
-func (p *ProfileRepository) GetParties(ctx context.Context, profileID int) ([]PartiesForProfileResult, error) {
-	rows, err := p.db.Query(ctx, GetPartiesForProfileIDQuery, profileID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var parties []PartiesForProfileResult
-	for rows.Next() {
-		var party PartiesForProfileResult
-		err := rows.Scan(&party.ID, &party.Name, &party.MemberCount, &party.MovieCount)
-		if err != nil {
-			return nil, err
-		}
-		parties = append(parties, party)
-	}
-	return parties, nil
-}
-
 type CreateProfileResult struct {
 	AccountID int
 	ProfileID int

@@ -50,42 +50,13 @@ func NewProfileService(db *store.ProfileRepository) *ProfileService {
 	return &ProfileService{db: db}
 }
 
-func (p *ProfileService) GetProfileByIDWithStats(ctx context.Context, logger *slog.Logger, id int) (*Profile, error) {
-	profile, err := p.db.GetProfileByID(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-
-	stats, err := p.db.GetProfileStats(ctx, logger, id)
-	if err != nil {
-		return nil, err
-	}
-
-	return &Profile{
-		ID:        profile.ID,
-		FirstName: profile.FirstName,
-		LastName:  profile.LastName,
-		CreatedAt: profile.CreatedAt,
-		db:        p.db,
-		Account: Account{
-			ID:    profile.AccountID,
-			Email: profile.AccountEmail,
-		},
-		Stats: ProfileStats{
-			NumberOfParties: stats.NumParties,
-			WatchTime:       stats.WatchTime,
-			MoviesWatched:   stats.MoviesWatched,
-		},
-	}, nil
-}
-
-func (p *ProfileService) GetProfileByID(ctx context.Context, profileID int) (Profile, error) {
+func (p *ProfileService) GetProfileByID(ctx context.Context, profileID int) (*Profile, error) {
 	profile, err := p.db.GetProfileByID(ctx, profileID)
 	if err != nil {
 		if errors.Is(err, store.ErrNoRecord) {
-			return Profile{}, err
+			return &Profile{}, err
 		}
-		return Profile{}, err
+		return &Profile{}, err
 	}
 	prof := convertGetProfileResultToProfile(profile)
 	prof.db = p.db
@@ -178,25 +149,6 @@ type ProfileParty struct {
 	MovieCount  int
 }
 
-func (p *Profile) GetParties(ctx context.Context) ([]ProfileParty, error) {
-	parties, err := p.db.GetParties(ctx, p.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	var res []ProfileParty
-	for _, party := range parties {
-		res = append(res, ProfileParty{
-			ID:          party.ID,
-			Name:        party.Name,
-			MemberCount: party.MemberCount,
-			MovieCount:  party.MovieCount,
-		})
-	}
-
-	return res, nil
-}
-
 var (
 	ErrFirstNameIsRequired            = errors.New("first name is required")
 	ErrLastNameIsRequired             = errors.New("last name is required")
@@ -241,8 +193,8 @@ func validateUpdateRequest(req ProfileUpdateReq) error {
 	return nil
 }
 
-func convertGetProfileResultToProfile(res store.GetProfileResult) Profile {
-	return Profile{
+func convertGetProfileResultToProfile(res store.GetProfileResult) *Profile {
+	return &Profile{
 		ID:        res.ID,
 		FirstName: res.FirstName,
 		LastName:  res.LastName,

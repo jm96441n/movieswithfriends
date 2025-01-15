@@ -15,6 +15,7 @@ import (
 	"github.com/jm96441n/movieswithfriends/partymgmt"
 	partymgmtstore "github.com/jm96441n/movieswithfriends/partymgmt/store"
 	"github.com/jm96441n/movieswithfriends/store"
+	"github.com/jm96441n/movieswithfriends/web/services"
 )
 
 var (
@@ -33,16 +34,17 @@ type MoviesService interface {
 }
 
 type Application struct {
-	Logger            *slog.Logger
-	TemplateCache     map[string]*template.Template
-	SessionStore      *sessions.CookieStore
-	MoviesService     MoviesService
-	MoviesRepository  MovieRepository
-	PartyService      *partymgmt.PartyService
-	PartiesRepository *partymgmtstore.PartyRepository
-	MemberService     *partymgmt.MemberService
-	ProfilesService   *identityaccess.ProfileService
-	Auth              *identityaccess.Authenticator
+	Logger                   *slog.Logger
+	TemplateCache            map[string]*template.Template
+	SessionStore             *sessions.CookieStore
+	MoviesService            MoviesService
+	MoviesRepository         MovieRepository
+	PartyService             *partymgmt.PartyService
+	PartiesRepository        *partymgmtstore.PartyRepository
+	WatcherService           *partymgmt.WatcherService
+	ProfilesService          *identityaccess.ProfileService
+	ProfileAggregatorService *services.ProfileAggregatorService
+	Auth                     *identityaccess.Authenticator
 }
 
 func (a *Application) serverError(w http.ResponseWriter, r *http.Request, err error) {
@@ -130,18 +132,32 @@ func (a *Application) getAccountIDFromSession(r *http.Request) (int, error) {
 	return accountID, nil
 }
 
-func (a *Application) getProfileFromSession(r *http.Request) (identityaccess.Profile, error) {
+func (a *Application) getProfileFromSession(r *http.Request) (*identityaccess.Profile, error) {
 	profileID, err := a.getProfileIDFromSession(r)
 	if err != nil {
-		return identityaccess.Profile{}, err
+		return nil, err
 	}
 
 	profile, err := a.ProfilesService.GetProfileByID(r.Context(), profileID)
 	if err != nil {
-		return identityaccess.Profile{}, err
+		return nil, err
 	}
 
 	return profile, nil
+}
+
+func (a *Application) getWatcherFromSession(r *http.Request) (partymgmt.Watcher, error) {
+	watcherID, err := a.getProfileIDFromSession(r)
+	if err != nil {
+		return partymgmt.Watcher{}, err
+	}
+
+	watcher, err := a.WatcherService.GetWatcher(r.Context(), watcherID)
+	if err != nil {
+		return partymgmt.Watcher{}, err
+	}
+
+	return watcher, nil
 }
 
 func (a *Application) getProfileIDFromSession(r *http.Request) (int, error) {

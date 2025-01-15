@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/jm96441n/movieswithfriends/identityaccess"
+	"github.com/jm96441n/movieswithfriends/partymgmt"
 	"github.com/jm96441n/movieswithfriends/store"
 )
 
@@ -23,7 +24,7 @@ func (a *Application) ProfileShowHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	profile, err := a.ProfilesService.GetProfileByIDWithStats(ctx, logger, profileID)
+	pageData, err := a.ProfileAggregatorService.GetProfilePageData(ctx, logger, profileID)
 	if err != nil {
 		status := http.StatusInternalServerError
 		if errors.Is(err, store.ErrNoRecord) {
@@ -38,53 +39,33 @@ func (a *Application) ProfileShowHandler(w http.ResponseWriter, r *http.Request)
 		http.Redirect(w, r, "/login", status)
 		return
 	}
-
-	parties, err := profile.GetParties(ctx)
-	if err != nil {
-		logger.Error("failed to retrieve parties from db", "error", err)
-		a.serverError(w, r, err)
-	}
-
-	watchedMovies, numMovies, err := a.MemberService.GetWatchHistory(ctx, profileID, 0)
-	if err != nil {
-		logger.Error("failed to retrieve watched movies from db", "error", err)
-		a.serverError(w, r, err)
-		return
-	}
-
-	numPages := numMovies / 5
-	if numMovies > numPages*5 {
-		numPages++
-	}
-
 	templateData := a.NewProfilesTemplateData(r, w, "/profile")
-	templateData.Profile = profile
-	templateData.Parties = parties
-	templateData.WatchedMovies = watchedMovies
-	templateData.CurPage = 1
-	templateData.NumPages = numPages
+	templateData.Profile = pageData.Profile
+	templateData.Parties = pageData.Parties
+	templateData.WatchedMovies = pageData.WatchedMovies
+	templateData.CurPage = pageData.CurPage
+	templateData.NumPages = pageData.NumPages
 	logger.Info("successfully loaded profile info")
 	a.render(w, r, http.StatusOK, "profiles/show.gohtml", templateData)
 }
 
-func (a *Application) ProfileEditPageHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	logger := a.Logger.With("handler", "ProfileEditPageHandler")
-
-	profileID, err := a.getProfileIDFromSession(r)
-	if err != nil {
-		a.setErrorFlashMessage(w, r, "There was an error loading your profile, please try logging in again")
-		a.logout(w, r)
-		http.Redirect(w, r, "/login", http.StatusInternalServerError)
-		return
+func ProfileToPartyMember(profile *identityaccess.Profile) *partymgmt.Watcher {
+	return &partymgmt.Watcher{
+		ID: profile.ID,
+		// FirstName: profile.FirstName,
+		// LastName:  profile.LastName,
+		// Email:     profile.Account.Email,
 	}
+}
 
-	profile, err := a.ProfilesService.GetProfileByIDWithStats(ctx, logger, profileID)
+func (a *Application) ProfileEditPageHandler(w http.ResponseWriter, r *http.Request) {
+	// logger := a.Logger.With("handler", "ProfileEditPageHandler")
+
+	profile, err := a.getProfileFromSession(r)
 	if err != nil {
 		status := http.StatusInternalServerError
 		if errors.Is(err, store.ErrNoRecord) {
-			a.Logger.Error("did not find profile in db", "profileID", profileID)
+			a.Logger.Error("did not find profile in db", "profileID", profile.ID)
 			status = http.StatusNotFound
 		}
 
@@ -212,16 +193,11 @@ func (a *Application) GetPaginatedWatchHistoryHandler(w http.ResponseWriter, r *
 
 	offset := 5 * (pageNum - 1)
 
-	watchedMovies, numMovies, err := a.MemberService.GetWatchHistory(ctx, profileID, offset)
+	watchedMovies, numMovies, err := a.WatcherService.GetWatchHistory(ctx, logger, profileID, offset)
 	if err != nil {
 		a.Logger.Error("failed to retrieve watched movies from db", "error", err)
 		a.serverError(w, r, err)
 		return
-	}
-
-	numPages := numMovies / 5
-	if numMovies > numPages*5 {
-		numPages++
 	}
 
 	templateData := a.NewProfilesTemplateData(r, w, "/profile")

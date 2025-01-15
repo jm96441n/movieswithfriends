@@ -5,9 +5,19 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/jm96441n/movieswithfriends/store"
 )
+
+type Movie struct{}
+
+type PartyMovie struct {
+	IDMovie   int
+	Title     string
+	WatchDate time.Time
+	PartyName string
+}
 
 type moviesRepository interface {
 	GetMovieByTMDBID(context.Context, int) (*store.Movie, error)

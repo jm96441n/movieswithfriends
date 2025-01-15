@@ -22,6 +22,7 @@ import (
 	"github.com/jm96441n/movieswithfriends/store"
 	"github.com/jm96441n/movieswithfriends/ui"
 	"github.com/jm96441n/movieswithfriends/web"
+	"github.com/jm96441n/movieswithfriends/web/services"
 
 	"github.com/gorilla/sessions"
 	"github.com/honeycombio/otel-config-go/otelconfig"
@@ -155,11 +156,17 @@ func main() {
 		ProfilesService: identityaccess.NewProfileService(
 			iamstore.NewProfileRepository(connPool),
 		),
-		MemberService: partymgmt.NewMemberService(db),
+		WatcherService: partymgmt.NewWatcherService(
+			partymgmtstore.NewWatcherRepository(connPool),
+		),
 		Auth: &identityaccess.Authenticator{
 			Logger:            logger,
 			ProfileRepository: iamstore.NewProfileRepository(connPool),
 		},
+		ProfileAggregatorService: services.NewProfileAggregatorService(
+			iamstore.NewProfileRepository(connPool),
+			partymgmtstore.NewWatcherRepository(connPool),
+		),
 	}
 
 	addr := os.Getenv("ADDR")

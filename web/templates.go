@@ -49,8 +49,8 @@ type MoviesTemplateData struct {
 
 type ProfilesTemplateData struct {
 	Profile           *identityaccess.Profile
-	Parties           []identityaccess.ProfileParty
-	WatchedMovies     []store.WatchedMoviesForMemberResult
+	Parties           []partymgmt.Party
+	WatchedMovies     []partymgmt.PartyMovie
 	NumPages          int
 	CurPage           int
 	HasEmailError     *bool
@@ -69,7 +69,7 @@ func (s *ProfilesTemplateData) InitHasErrorFields() {
 
 type PartiesTemplateData struct {
 	Party   partymgmt.Party
-	Parties []identityaccess.ProfileParty
+	Parties []partymgmt.Party
 	BaseTemplateData
 }
 

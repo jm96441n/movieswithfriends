@@ -49,7 +49,8 @@ func (a *Application) authenticateMiddleware() func(http.HandlerFunc) http.Handl
 					a.serverError(w, req, err)
 					return
 				}
-				partiesForProfile, err := profile.GetParties(req.Context())
+				// make this use a nav application service
+				partiesForProfile, err := watcher.GetParties(req.Context())
 				if err != nil {
 					logger.Error("error fetching parties for profile", slog.Any("error", err))
 					a.serverError(w, req, err)

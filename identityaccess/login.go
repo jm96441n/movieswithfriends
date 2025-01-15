@@ -101,15 +101,15 @@ type Authenticator struct {
 	ProfileRepository *store.ProfileRepository
 }
 
-func (a *Authenticator) Authenticate(ctx context.Context, email, password string) (Profile, error) {
+func (a *Authenticator) Authenticate(ctx context.Context, email, password string) (*Profile, error) {
 	res, err := a.ProfileRepository.GetProfileByEmail(ctx, email)
 	if err != nil {
 		if errors.Is(err, store.ErrNoRecord) {
 			a.Logger.Error("account not found", slog.String("email", email))
-			return Profile{}, ErrInvalidCredentials
+			return nil, ErrInvalidCredentials
 		}
 		a.Logger.Error("error finding profile by email", slog.Any("error", err), slog.String("email", email))
-		return Profile{}, err
+		return nil, err
 	}
 
 	profile := convertGetProfileResultToProfile(res)
@@ -119,10 +119,10 @@ func (a *Authenticator) Authenticate(ctx context.Context, email, password string
 	if err != nil {
 		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
 			a.Logger.Error("incorrect password", slog.Any("error", err))
-			return Profile{}, fmt.Errorf("%w: %s", ErrInvalidCredentials, err)
+			return nil, fmt.Errorf("%w: %s", ErrInvalidCredentials, err)
 		}
 		a.Logger.Error("error comparing password", slog.Any("error", err))
-		return Profile{}, err
+		return nil, err
 	}
 
 	return profile, nil
