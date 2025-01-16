@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
-type route struct {
+type Route struct {
 	path               string
 	handler            http.HandlerFunc
 	authenticatedRoute bool
@@ -27,7 +27,7 @@ func (a *Application) Routes() http.Handler {
 	partyMemberRoutes := a.partyMemberRoutes()
 
 	// allocate capacity for all routes
-	routes := make([]route, 0, len(staticRoutes)+len(movieRoutes)+len(partyRoutes)+len(sessionRoutes)+len(profileRoutes)+len(partyMemberRoutes))
+	routes := make([]Route, 0, len(staticRoutes)+len(movieRoutes)+len(partyRoutes)+len(sessionRoutes)+len(profileRoutes)+len(partyMemberRoutes))
 
 	routes = slices.Concat(
 		routes,
@@ -63,8 +63,8 @@ func (a *Application) Routes() http.Handler {
 	return router
 }
 
-func (a *Application) staticRoutes() []route {
-	return []route{
+func (a *Application) staticRoutes() []Route {
+	return []Route{
 		{
 			path:               "/",
 			handler:            a.HomeHandler,
@@ -80,8 +80,8 @@ func (a *Application) staticRoutes() []route {
 	}
 }
 
-func (a *Application) movieRoutes() []route {
-	return []route{
+func (a *Application) movieRoutes() []Route {
+	return []Route{
 		{
 			path:               "GET /movies",
 			handler:            a.MoviesIndexHandler,
@@ -100,8 +100,8 @@ func (a *Application) movieRoutes() []route {
 	}
 }
 
-func (a *Application) partyRoutes() []route {
-	return []route{
+func (a *Application) partyRoutes() []Route {
+	return []Route{
 		{
 			path:               "GET /parties/",
 			handler:            a.PartiesIndexHandler,
@@ -140,8 +140,8 @@ func (a *Application) partyRoutes() []route {
 	}
 }
 
-func (a *Application) partyMemberRoutes() []route {
-	return []route{
+func (a *Application) partyMemberRoutes() []Route {
+	return []Route{
 		{
 			path:               "POST /party_members",
 			handler:            a.AddMemberToPartyHandler,
@@ -150,8 +150,8 @@ func (a *Application) partyMemberRoutes() []route {
 	}
 }
 
-func (a *Application) sessionRoutes() []route {
-	return []route{
+func (a *Application) sessionRoutes() []Route {
+	return []Route{
 		{
 			path:               "GET /signup",
 			handler:            a.SignUpShowHandler,
@@ -180,8 +180,8 @@ func (a *Application) sessionRoutes() []route {
 	}
 }
 
-func (a *Application) profileRoutes() []route {
-	return []route{
+func (a *Application) profileRoutes() []Route {
+	return []Route{
 		{
 			path:               "GET /profile",
 			handler:            a.ProfileShowHandler,

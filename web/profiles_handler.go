@@ -2,11 +2,11 @@ package web
 
 import (
 	"errors"
+	"log/slog"
 	"net/http"
 	"strconv"
 
 	"github.com/jm96441n/movieswithfriends/identityaccess"
-	"github.com/jm96441n/movieswithfriends/partymgmt"
 	"github.com/jm96441n/movieswithfriends/store"
 )
 
@@ -49,15 +49,6 @@ func (a *Application) ProfileShowHandler(w http.ResponseWriter, r *http.Request)
 	a.render(w, r, http.StatusOK, "profiles/show.gohtml", templateData)
 }
 
-func ProfileToPartyMember(profile *identityaccess.Profile) *partymgmt.Watcher {
-	return &partymgmt.Watcher{
-		ID: profile.ID,
-		// FirstName: profile.FirstName,
-		// LastName:  profile.LastName,
-		// Email:     profile.Account.Email,
-	}
-}
-
 func (a *Application) ProfileEditPageHandler(w http.ResponseWriter, r *http.Request) {
 	// logger := a.Logger.With("handler", "ProfileEditPageHandler")
 
@@ -84,19 +75,11 @@ func (a *Application) ProfileEditHandler(w http.ResponseWriter, r *http.Request)
 	logger := a.Logger.With("handler", "ProfileEditHandler")
 	ctx := r.Context()
 
-	profileID, err := a.getProfileIDFromSession(r)
-	if err != nil {
-		a.setErrorFlashMessage(w, r, "There was an error loading your profile, please try logging in again")
-		a.logout(w, r)
-		http.Redirect(w, r, "/login", http.StatusInternalServerError)
-		return
-	}
-
-	profile, err := a.ProfilesService.GetProfileByIDWithStats(ctx, logger, profileID)
+	profile, err := a.getProfileFromSession(r)
 	if err != nil {
 		status := http.StatusInternalServerError
 		if errors.Is(err, store.ErrNoRecord) {
-			logger.Error("did not find profile in db", "profileID", profileID)
+			logger.Error("did not find profile in db", slog.Any("error", err))
 			status = http.StatusNotFound
 		}
 
@@ -191,18 +174,15 @@ func (a *Application) GetPaginatedWatchHistoryHandler(w http.ResponseWriter, r *
 		return
 	}
 
-	offset := 5 * (pageNum - 1)
-
-	watchedMovies, numMovies, err := a.WatcherService.GetWatchHistory(ctx, logger, profileID, offset)
+	movieData, err := a.ProfileAggregatorService.GetWatchPaginatedHistory(ctx, logger, profileID, pageNum)
 	if err != nil {
-		a.Logger.Error("failed to retrieve watched movies from db", "error", err)
 		a.serverError(w, r, err)
 		return
 	}
 
 	templateData := a.NewProfilesTemplateData(r, w, "/profile")
-	templateData.WatchedMovies = watchedMovies
+	templateData.WatchedMovies = movieData.WatchedMovies
 	templateData.CurPage = pageNum
-	templateData.NumPages = numPages
+	templateData.NumPages = movieData.NumPages
 	a.renderPartial(w, r, http.StatusOK, "profiles/partials/watch_list.gohtml", templateData)
 }

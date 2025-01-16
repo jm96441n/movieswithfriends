@@ -16,13 +16,13 @@ import (
 	"github.com/exaring/otelpgx"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jm96441n/movieswithfriends/identityaccess"
+	"github.com/jm96441n/movieswithfriends/identityaccess/services"
 	iamstore "github.com/jm96441n/movieswithfriends/identityaccess/store"
 	"github.com/jm96441n/movieswithfriends/partymgmt"
 	partymgmtstore "github.com/jm96441n/movieswithfriends/partymgmt/store"
 	"github.com/jm96441n/movieswithfriends/store"
 	"github.com/jm96441n/movieswithfriends/ui"
 	"github.com/jm96441n/movieswithfriends/web"
-	"github.com/jm96441n/movieswithfriends/web/services"
 
 	"github.com/gorilla/sessions"
 	"github.com/honeycombio/otel-config-go/otelconfig"
@@ -141,12 +141,14 @@ func main() {
 		os.Exit(1)
 	}
 
+	moviesRepo := partymgmtstore.NewMoviesRepository(connPool)
+
 	app := web.Application{
 		TemplateCache:    tmplCache,
 		Logger:           logger,
 		SessionStore:     sessionStore,
-		MoviesService:    partymgmt.NewMovieService(tmdbClient, db),
-		MoviesRepository: db,
+		MoviesService:    partymgmt.NewMovieService(tmdbClient, moviesRepo),
+		MoviesRepository: moviesRepo,
 		PartyService: &partymgmt.PartyService{
 			DB:               partymgmtstore.NewPartyRepository(connPool),
 			MoviesRepository: db,

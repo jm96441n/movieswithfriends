@@ -72,3 +72,6 @@ func (p *Watcher) GetParties(ctx context.Context) ([]Party, error) {
 
 	return res, nil
 }
+
+func (p *Watcher) GetPartiesWithStatusForMovie(ctx context.Context, idMovie int) []Party {
+}

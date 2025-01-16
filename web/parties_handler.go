@@ -89,7 +89,7 @@ func (a *Application) PartiesIndexHandler(w http.ResponseWriter, r *http.Request
 	logger := a.Logger.With("handler", "PartyIndexHandler")
 	ctx := r.Context()
 
-	profile, err := a.getProfileFromSession(r)
+	watcher, err := a.getWatcherFromSession(r)
 	if err != nil {
 		a.Logger.Error("failed to get profile from session", slog.Any("error", err))
 		a.setErrorFlashMessage(w, r, "There was an error creating this party, try again.")
@@ -98,7 +98,7 @@ func (a *Application) PartiesIndexHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	parties, err := profile.GetParties(ctx)
+	parties, err := watcher.GetParties(ctx)
 	if err != nil {
 		logger.Error("failed to get parties for member", slog.Any("error", err))
 		a.serverError(w, r, err)

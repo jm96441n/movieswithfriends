@@ -17,7 +17,7 @@ func (a *Application) AddMemberToPartyHandler(w http.ResponseWriter, r *http.Req
 
 	partyShortID := r.FormValue("party_short_id")
 
-	profile, err := a.getProfileFromSession(r)
+	watcher, err := a.getWatcherFromSession(r)
 	if err != nil {
 		a.Logger.Error("failed to get profile id from session", slog.Any("error", err))
 		a.serverError(w, r, err)
@@ -32,7 +32,7 @@ func (a *Application) AddMemberToPartyHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	// Add the friend to the party
-	err = party.AddMember(ctx, profile.ID)
+	err = party.AddMember(ctx, watcher.ID)
 	if err != nil {
 		a.Logger.Error("failed to add friend to party", slog.Any("error", err))
 		a.serverError(w, r, err)
@@ -40,7 +40,7 @@ func (a *Application) AddMemberToPartyHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	if r.Header.Get("HX-Request") != "" {
-		parties, err := profile.GetParties(ctx)
+		parties, err := watcher.GetParties(ctx)
 		if err != nil {
 			a.Logger.Error("failed to get parties for profile", slog.Any("error", err))
 			a.serverError(w, r, err)

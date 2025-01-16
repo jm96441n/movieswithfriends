@@ -142,13 +142,6 @@ func (p *Profile) Update(ctx context.Context, logger *slog.Logger, req ProfileUp
 	return nil
 }
 
-type ProfileParty struct {
-	ID          int
-	Name        string
-	MemberCount int
-	MovieCount  int
-}
-
 var (
 	ErrFirstNameIsRequired            = errors.New("first name is required")
 	ErrLastNameIsRequired             = errors.New("last name is required")

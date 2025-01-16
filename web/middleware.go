@@ -11,7 +11,6 @@ type contextKey string
 
 const (
 	isAuthenticatedContextKey = contextKey("isAuthenticated")
-	partiesForNavContextKey   = contextKey("partiesForNav")
 	fullNameContextKey        = contextKey("fulName")
 	emailContextKey           = contextKey("email")
 	sessionName               = "moviesWithFriendsCookie"
@@ -49,23 +48,8 @@ func (a *Application) authenticateMiddleware() func(http.HandlerFunc) http.Handl
 					a.serverError(w, req, err)
 					return
 				}
-				// make this use a nav application service
-				partiesForProfile, err := watcher.GetParties(req.Context())
-				if err != nil {
-					logger.Error("error fetching parties for profile", slog.Any("error", err))
-					a.serverError(w, req, err)
-					return
-				}
-				partiesForNav := make([]partyNav, 0, len(partiesForProfile))
-				for _, p := range partiesForProfile {
-					partiesForNav = append(partiesForNav, partyNav{
-						ID:   p.ID,
-						Name: p.Name,
-					})
-				}
 
 				ctx := context.WithValue(req.Context(), isAuthenticatedContextKey, true)
-				ctx = context.WithValue(ctx, partiesForNavContextKey, partiesForNav)
 				ctx = context.WithValue(ctx, emailContextKey, profile.Account.Email)
 				ctx = context.WithValue(ctx, fullNameContextKey, profile.FirstName+" "+profile.LastName)
 				req = req.WithContext(ctx)
@@ -102,6 +86,7 @@ func isAuthenticated(ctx context.Context) bool {
 	return isAuthenticated.(bool)
 }
 
+// TODO get rid of this
 func corsMiddleware() func(http.HandlerFunc) http.HandlerFunc {
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {

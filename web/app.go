@@ -12,10 +12,10 @@ import (
 
 	"github.com/gorilla/sessions"
 	"github.com/jm96441n/movieswithfriends/identityaccess"
+	"github.com/jm96441n/movieswithfriends/identityaccess/services"
 	"github.com/jm96441n/movieswithfriends/partymgmt"
 	partymgmtstore "github.com/jm96441n/movieswithfriends/partymgmt/store"
 	"github.com/jm96441n/movieswithfriends/store"
-	"github.com/jm96441n/movieswithfriends/web/services"
 )
 
 var (
@@ -37,8 +37,8 @@ type Application struct {
 	Logger                   *slog.Logger
 	TemplateCache            map[string]*template.Template
 	SessionStore             *sessions.CookieStore
-	MoviesService            MoviesService
-	MoviesRepository         MovieRepository
+	MoviesService            *partymgmt.MovieService
+	MoviesRepository         *partymgmtstore.MoviesRepository
 	PartyService             *partymgmt.PartyService
 	PartiesRepository        *partymgmtstore.PartyRepository
 	WatcherService           *partymgmt.WatcherService
@@ -140,7 +140,7 @@ func (a *Application) getProfileFromSession(r *http.Request) (*identityaccess.Pr
 
 	profile, err := a.ProfilesService.GetProfileByID(r.Context(), profileID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("coudl not get profile with id: %d: %w", profileID, err)
 	}
 
 	return profile, nil

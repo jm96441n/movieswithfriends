@@ -163,8 +163,10 @@ func (p *ProfileAggregatorService) getParties(ctx context.Context, profileID int
 	return parties, nil
 }
 
-func (p *ProfileAggregatorService) GetWatchPaginatedHistory(ctx context.Context, logger *slog.Logger, profileID, offset int) (MovieData, error) {
-	watchedMovies, err := p.watcherRepository.GetWatchedMoviesForWatcher(ctx, profileID, 0)
+func (p *ProfileAggregatorService) GetWatchPaginatedHistory(ctx context.Context, logger *slog.Logger, profileID, pageNum int) (MovieData, error) {
+	offset := 5 * (pageNum - 1)
+
+	watchedMovies, err := p.watcherRepository.GetWatchedMoviesForWatcher(ctx, profileID, offset)
 	if err != nil {
 		return MovieData{}, err
 	}

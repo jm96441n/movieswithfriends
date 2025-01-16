@@ -129,3 +129,33 @@ func (p *WatcherRepository) GetPartiesForWatcher(ctx context.Context, watcherID 
 	}
 	return parties, nil
 }
+
+const getPartiesQueryForMovie = `
+with filtered_party_movies as(select * from party_movies where id_movie = $1)select parties.id_party, parties.name, movies.id_movie is not null as is_movie
+  from parties
+  join party_members on party_members.id_party = parties.id_party
+  left outer join filtered_party_movies on filtered_party_movies.id_party = parties.id_party 
+  left outer join movies on filtered_party_movies.id_movie = movies.id_movie
+  where party_members.id_member = $2;
+`
+
+func (p *WatcherRepository) GetPartiesByMemberIDForCurrentMovie(ctx context.Context, idMovie int, idMember int) ([]Party, error) {
+	rows, err := p.db.Query(ctx, getPartiesQueryForMovie, idMovie, idMember)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var parties []Party
+
+	for rows.Next() {
+		var party Party
+		err := rows.Scan(&party.ID, &party.Name, &party.MovieAdded)
+		if err != nil {
+			return nil, err
+		}
+		parties = append(parties, party)
+	}
+	return parties, nil
+}

@@ -4,17 +4,27 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+type MoviesRepository struct {
+	db *pgxpool.Pool
+}
+
+func NewMoviesRepository(db *pgxpool.Pool) *MoviesRepository {
+	return &MoviesRepository{db: db}
+}
 
 type FullName struct {
 	FirstName string `json:"first_name"`
 	LastName  string `json:"last_name"`
 }
 
-type Movie struct {
+type GetMovieResult struct {
 	ID          int
 	Title       string
 	ReleaseDate string
@@ -33,44 +43,48 @@ const (
 	findMovieByIDQuery     = `SELECT id_movie, title, release_date, overview, tagline, poster_url, tmdb_id, trailer_url FROM movies WHERE id_movie = $1`
 )
 
+type GetAssignFn func(*GetMovieResult)
+
 // GetMovieByTMDBID returns a movie from the database by its TMDB ID
-func (p *PGStore) GetMovieByTMDBID(ctx context.Context, id int) (*Movie, error) {
+func (p *MoviesRepository) GetMovieByTMDBID(ctx context.Context, id int, assignFn GetAssignFn) error {
 	row := p.db.QueryRow(ctx, findMovieByTMDBIDQuery, id)
 
-	movie := &Movie{}
+	res := &GetMovieResult{}
 	var releaseDate time.Time
-	err := row.Scan(&movie.ID, &movie.Title, &releaseDate, &movie.Overview, &movie.Tagline, &movie.PosterURL, &movie.TMDBID, &movie.TrailerURL)
+	err := row.Scan(&res.ID, &res.Title, &releaseDate, &res.Overview, &res.Tagline, &res.PosterURL, &res.TMDBID, &res.TrailerURL)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, ErrNoRecord
+			return ErrNoRecord
 		}
 
-		return nil, err
+		return err
 	}
 
-	movie.ReleaseDate = releaseDate.Format("2006-01-02")
+	res.ReleaseDate = releaseDate.Format("2006-01-02")
+	assignFn(res)
 
-	return movie, nil
+	return nil
 }
 
 // GetMovieByID returns a movie from the database by its ID
-func (p *PGStore) GetMovieByID(ctx context.Context, id int) (Movie, error) {
+func (p *MoviesRepository) GetMovieByID(ctx context.Context, id int, assignFn GetAssignFn) error {
 	row := p.db.QueryRow(ctx, findMovieByIDQuery, id)
 
-	movie := Movie{}
+	res := &GetMovieResult{}
 	var releaseDate time.Time
-	err := row.Scan(&movie.ID, &movie.Title, &releaseDate, &movie.Overview, &movie.Tagline, &movie.PosterURL, &movie.TMDBID, &movie.TrailerURL)
+	err := row.Scan(&res.ID, &res.Title, &releaseDate, &res.Overview, &res.Tagline, &res.PosterURL, &res.TMDBID, &res.TrailerURL)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return Movie{}, ErrNoRecord
+			return ErrNoRecord
 		}
 
-		return Movie{}, err
+		return err
 	}
 
-	movie.ReleaseDate = releaseDate.Format("2006-01-02")
+	res.ReleaseDate = releaseDate.Format("2006-01-02")
+	assignFn(res)
 
-	return movie, nil
+	return nil
 }
 
 const insertMovieQuery = `INSERT INTO movies(
@@ -87,10 +101,10 @@ const insertMovieQuery = `INSERT INTO movies(
   ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id_movie`
 
 // CreateMovie creates a movie in the database
-func (p *PGStore) CreateMovie(ctx context.Context, movie *Movie) (*Movie, error) {
+func (p *MoviesRepository) CreateMovie(ctx context.Context, movie *GetMovieResult) (int, error) {
 	releaseDate, err := time.Parse("2006-01-02", movie.ReleaseDate)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
 	err = p.db.QueryRow(ctx, insertMovieQuery,
@@ -106,10 +120,10 @@ func (p *PGStore) CreateMovie(ctx context.Context, movie *Movie) (*Movie, error)
 		movie.Genres,
 	).Scan(&movie.ID)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
-	return movie, nil
+	return movie.ID, nil
 }
 
 type UnwatchedMovie struct {
@@ -185,7 +199,7 @@ GROUP BY watch_status;
 `
 
 // GetMoviesForParty returns a paginated list of movies for a party grouped by watchStatus
-func (p *PGStore) GetMoviesForParty(ctx context.Context, idParty, offset int) (MoviesByStatus, error) {
+func (p *MoviesRepository) GetMoviesForParty(ctx context.Context, logger *slog.Logger, idParty, offset int) (MoviesByStatus, error) {
 	movies := MoviesByStatus{
 		UnwatchedMovies: []*UnwatchedMovie{},
 		WatchedMovies:   []*WatchedMovie{},
@@ -203,7 +217,7 @@ func (p *PGStore) GetMoviesForParty(ctx context.Context, idParty, offset int) (M
 		)
 		err := rows.Scan(&status, &movieJSON)
 		if err != nil {
-			p.logger.Error(err.Error(), "query", getMoviesForPartyQuery)
+			logger.Error(err.Error(), "query", getMoviesForPartyQuery)
 			return MoviesByStatus{}, err
 		}
 
@@ -212,7 +226,7 @@ func (p *PGStore) GetMoviesForParty(ctx context.Context, idParty, offset int) (M
 			unwatchedMovies := []*UnwatchedMovie{}
 			err = json.Unmarshal(movieJSON, &unwatchedMovies)
 			if err != nil {
-				p.logger.Error(err.Error(), "marshalType", "unwatchedMovies", "query", getMoviesForPartyQuery)
+				logger.Error(err.Error(), "marshalType", "unwatchedMovies", "query", getMoviesForPartyQuery)
 				return MoviesByStatus{}, err
 			}
 			movies.UnwatchedMovies = unwatchedMovies
@@ -221,7 +235,7 @@ func (p *PGStore) GetMoviesForParty(ctx context.Context, idParty, offset int) (M
 			selectedMovies := []*SelectedMovie{}
 			err = json.Unmarshal(movieJSON, &selectedMovies)
 			if err != nil {
-				p.logger.Error(err.Error(), "marshalType", "selectedMovie", "query", getMoviesForPartyQuery)
+				logger.Error(err.Error(), "marshalType", "selectedMovie", "query", getMoviesForPartyQuery)
 				return MoviesByStatus{}, err
 			}
 			if len(selectedMovies) > 0 {
@@ -231,7 +245,7 @@ func (p *PGStore) GetMoviesForParty(ctx context.Context, idParty, offset int) (M
 			watchedMovies := []*WatchedMovie{}
 			err = json.Unmarshal(movieJSON, &watchedMovies)
 			if err != nil {
-				p.logger.Error(err.Error(), "marshalType", "watchedMovies", "query", getMoviesForPartyQuery)
+				logger.Error(err.Error(), "marshalType", "watchedMovies", "query", getMoviesForPartyQuery)
 				return MoviesByStatus{}, err
 			}
 			movies.WatchedMovies = watchedMovies
@@ -239,7 +253,7 @@ func (p *PGStore) GetMoviesForParty(ctx context.Context, idParty, offset int) (M
 	}
 
 	if err := rows.Err(); err != nil {
-		p.logger.Error(err.Error(), "query", getMoviesForPartyQuery)
+		logger.Error(err.Error(), "query", getMoviesForPartyQuery)
 		return MoviesByStatus{}, err
 	}
 

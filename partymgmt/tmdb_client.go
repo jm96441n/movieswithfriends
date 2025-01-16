@@ -11,7 +11,7 @@ import (
 	"net/url"
 
 	"github.com/hashicorp/go-retryablehttp"
-	"github.com/jm96441n/movieswithfriends/store"
+	"github.com/jm96441n/movieswithfriends/partymgmt/store"
 )
 
 type TMDBClient struct {

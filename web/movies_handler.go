@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/jm96441n/movieswithfriends/store"
+	"github.com/jm96441n/movieswithfriends/partymgmt"
 )
 
 func (a *Application) MoviesIndexHandler(w http.ResponseWriter, r *http.Request) {
@@ -46,7 +46,8 @@ func (a *Application) MoviesCreateHandler(w http.ResponseWriter, r *http.Request
 	err := r.ParseForm()
 	if err != nil {
 		logger.ErrorContext(ctx, "failed to parse form", slog.Any("error", err))
-		a.serverError(w, r, err)
+		a.setErrorFlashMessage(w, r, "There was an error navigating to this movie, try again.")
+		http.Redirect(w, r, "/movies", http.StatusSeeOther)
 		return
 	}
 
@@ -55,24 +56,19 @@ func (a *Application) MoviesCreateHandler(w http.ResponseWriter, r *http.Request
 	id, err := strconv.Atoi(idParams)
 	if err != nil {
 		logger.ErrorContext(ctx, "failed to convert tmdb_id to int", slog.Any("error", err))
-		session, err := a.SessionStore.Get(r, sessionName)
-		if err != nil {
-			a.serverError(w, r, err)
-		}
-		session.AddFlash("Please log in first.")
-		session.Save(r, w)
+		a.setErrorFlashMessage(w, r, "There was an error navigating to this movie, try again.")
 		http.Redirect(w, r, "/movies", http.StatusSeeOther)
-
 		return
 	}
 
-	movie, err := a.MoviesService.CreateMovie(ctx, logger, id)
+	movieID, err := a.MoviesService.CreateMovie(ctx, logger, id)
 	if err != nil {
 		logger.ErrorContext(ctx, "failed to create movie", slog.Any("error", err))
-		a.serverError(w, r, err)
+		a.setErrorFlashMessage(w, r, "There was an error navigating to this movie, try again.")
+		http.Redirect(w, r, "/movies", http.StatusSeeOther)
 	}
 
-	http.Redirect(w, r, fmt.Sprintf("/movies/%d", movie.ID), http.StatusSeeOther)
+	http.Redirect(w, r, fmt.Sprintf("/movies/%d", movieID), http.StatusSeeOther)
 }
 
 func (a *Application) MoviesShowHandler(w http.ResponseWriter, r *http.Request) {
@@ -86,7 +82,7 @@ func (a *Application) MoviesShowHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	memberID, err := a.getProfileIDFromSession(r)
+	watcher, err := a.getWatcherFromSession(r)
 	if errors.Is(err, ErrFailedToGetProfileIDFromSession) {
 		logger.DebugContext(ctx, "profileID is not in session")
 	} else if err != nil {
@@ -95,28 +91,31 @@ func (a *Application) MoviesShowHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	result, err := a.MoviesRepository.GetMovieByID(ctx, id)
+	movie, err := a.MoviesService.GetMovie(ctx, logger, partymgmt.MovieID{MovieID: &id})
 	if err != nil {
-		if errors.Is(err, store.ErrNoRecord) {
+		if errors.Is(err, partymgmt.ErrMovieDoesNotExist) {
 			logger.ErrorContext(ctx, "did not find movie in db", "id", id)
-			a.clientError(w, r, http.StatusNotFound, "Could not find the requested movie in the database, try again")
+			a.setErrorFlashMessage(w, r, "Could not find the requested movie in the database, try again")
+			http.Redirect(w, r, "/movies", http.StatusNotFound)
 			return
 		}
 
 		logger.ErrorContext(ctx, "failed to retrieve movie from db", "error", err)
-		a.serverError(w, r, err)
+		a.setErrorFlashMessage(w, r, "Could not find the requested movie in the database, try again")
+		http.Redirect(w, r, "/movies", http.StatusInternalServerError)
 		return
 	}
 
-	parties, err := a.PartiesRepository.GetPartiesByMemberIDForCurrentMovie(ctx, id, memberID)
+	parties, err := a.PartiesRepository.GetPartiesByMemberIDForCurrentMovie(ctx, id, watcher)
 	if err != nil {
+		// TODO: maybe set something in the UI to show parties couldn't be loaded by still show the page?
 		logger.ErrorContext(ctx, "failed to get parties", "error", err)
 		a.serverError(w, r, err)
 		return
 	}
 
 	templateData := a.NewMoviesTemplateData(r, w, "/movie")
-	templateData.Movie = result
+	templateData.Movie = movie
 	templateData.Parties = parties
 	a.render(w, r, http.StatusOK, "movies/show.gohtml", templateData)
 }

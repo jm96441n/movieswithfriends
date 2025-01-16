@@ -7,21 +7,34 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/jm96441n/movieswithfriends/store"
+	"github.com/jm96441n/movieswithfriends/partymgmt/store"
 )
 
-type Movie struct{}
+type FullName struct {
+	FirstName string
+	LastName  string
+}
+
+type Movie struct {
+	ID          int
+	Title       string
+	ReleaseDate string
+	Overview    string
+	Tagline     string
+	PosterURL   string
+	TrailerURL  string
+	Runtime     int
+	Rating      float64
+	Genres      []string
+	TMDBID      int
+	AddedBy     FullName
+}
 
 type PartyMovie struct {
 	IDMovie   int
 	Title     string
 	WatchDate time.Time
 	PartyName string
-}
-
-type moviesRepository interface {
-	GetMovieByTMDBID(context.Context, int) (*store.Movie, error)
-	CreateMovie(context.Context, *store.Movie) (*store.Movie, error)
 }
 
 type movieFetcher interface {
@@ -31,14 +44,14 @@ type movieFetcher interface {
 }
 
 type MovieService struct {
-	moviesRepository moviesRepository
-	tmdbClient       movieFetcher
+	db         *store.MoviesRepository
+	tmdbClient movieFetcher
 }
 
-func NewMovieService(client *TMDBClient, moviesRepository moviesRepository) *MovieService {
+func NewMovieService(client *TMDBClient, moviesRepository *store.MoviesRepository) *MovieService {
 	return &MovieService{
-		tmdbClient:       client,
-		moviesRepository: moviesRepository,
+		tmdbClient: client,
+		db:         moviesRepository,
 	}
 }
 
@@ -69,16 +82,78 @@ func (m *MovieService) SearchMovies(ctx context.Context, logger *slog.Logger, se
 	return result.Movies, nil
 }
 
-func (m *MovieService) CreateMovie(ctx context.Context, logger *slog.Logger, tmdbID int) (*store.Movie, error) {
-	movie, err := m.moviesRepository.GetMovieByTMDBID(ctx, tmdbID)
-	if movie != nil {
+type MovieID struct {
+	TMDBID  *int
+	MovieID *int
+}
+
+func (m MovieID) validate() error {
+	if m.TMDBID == nil && m.MovieID == nil {
+		return errors.New("TMDBID or MovieID must be set")
+	}
+
+	if m.TMDBID != nil && m.MovieID != nil {
+		return errors.New("Only one of TMDBID or MovieID must be set")
+	}
+
+	return nil
+}
+
+var ErrMovieDoesNotExist = errors.New("Movie cannot be found")
+
+func (m *MovieService) GetMovie(ctx context.Context, logger *slog.Logger, movieID MovieID) (Movie, error) {
+	movie := Movie{}
+	err := movieID.validate()
+	if err != nil {
+		return Movie{}, err
+	}
+
+	switch {
+	case movieID.TMDBID != nil:
+		err = m.db.GetMovieByTMDBID(ctx, *movieID.TMDBID, convertGetResultToMovie(&movie))
+	case movieID.MovieID != nil:
+		err = m.db.GetMovieByID(ctx, *movieID.MovieID, convertGetResultToMovie(&movie))
+	}
+
+	if errors.Is(err, store.ErrNoRecord) {
+		return Movie{}, fmt.Errorf("%w: %s", ErrMovieDoesNotExist, err)
+	}
+
+	if err != nil {
+		return Movie{}, err
+	}
+
+	return movie, nil
+}
+
+func convertGetResultToMovie(movie *Movie) store.GetAssignFn {
+	return func(res *store.GetMovieResult) {
+		movie.ID = res.ID
+		movie.Title = res.Title
+		movie.ReleaseDate = res.ReleaseDate
+		movie.Overview = res.Overview
+		movie.Tagline = res.Tagline
+		movie.PosterURL = res.PosterURL
+		movie.TrailerURL = res.TrailerURL
+		movie.Runtime = res.Runtime
+		movie.Rating = res.Rating
+		movie.Genres = res.Genres
+		movie.TMDBID = res.TMDBID
+	}
+}
+
+func (m *MovieService) CreateMovie(ctx context.Context, logger *slog.Logger, tmdbID int) (int, error) {
+	movie := Movie{}
+	err := m.db.GetMovieByTMDBID(ctx, tmdbID, convertGetResultToMovie(&movie))
+	// zero value means it's been set so movie exists
+	if movie.ID > 0 {
 		logger.InfoContext(ctx, "movie found in db", slog.Any("movie", movie.Title))
-		return movie, nil
+		return movie.ID, nil
 	}
 
 	if !errors.Is(err, store.ErrNoRecord) {
 		logger.ErrorContext(ctx, "Failed to get movie by tmdbid", slog.Any("err", err), slog.Any("tmdbID", tmdbID))
-		return nil, err
+		return 0, err
 	}
 
 	err = nil
@@ -86,15 +161,15 @@ func (m *MovieService) CreateMovie(ctx context.Context, logger *slog.Logger, tmd
 	tmdbMovie, err := m.tmdbClient.GetMovie(ctx, tmdbID)
 	if err != nil || tmdbMovie == nil {
 		logger.ErrorContext(ctx, "Failed to get movie from tmdb", slog.Any("err", err), slog.Any("tmdbID", tmdbID))
-		return nil, err
+		return 0, err
 	}
 
-	movie, err = m.moviesRepository.CreateMovie(ctx, tmdbMovie.ToStoreMovie())
+	movieID, err := m.db.CreateMovie(ctx, tmdbMovie.ToStoreMovie())
 	if err != nil {
 		logger.ErrorContext(ctx, "Failed to create movie", slog.Any("err", err), slog.Any("movie", tmdbMovie.Title))
-		return nil, err
+		return 0, err
 	}
 	logger.InfoContext(ctx, "movie created in db", slog.Any("movie", movie))
 
-	return movie, nil
+	return movieID, nil
 }

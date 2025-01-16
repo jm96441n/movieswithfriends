@@ -14,12 +14,13 @@ var ErrMemberExistsInParty = errors.New("member already exists in party")
 
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
-// TOOD: should this exist? maybe just pass db to functions that need it
 type PartyService struct {
 	Logger           *slog.Logger
 	DB               *store.PartyRepository
 	MoviesRepository *legacystore.PGStore
 }
+
+type MovieSet map[*Movie]struct{}
 
 type Party struct {
 	ID              int
@@ -28,9 +29,9 @@ type Party struct {
 	MemberCount     int
 	MovieCount      int
 	WatchedCount    int
-	WatchedMovies   []*legacystore.WatchedMovie
-	UnwatchedMovies []*legacystore.UnwatchedMovie
-	SelectedMovie   *legacystore.SelectedMovie
+	WatchedMovies   MovieSet
+	UnwatchedMovies MovieSet
+	SelectedMovie   MovieSet
 	db              *store.PartyRepository
 }
 
@@ -113,11 +114,21 @@ func (s *PartyService) GetPartyWithMovies(ctx context.Context, id int) (Party, e
 		return Party{}, err
 	}
 
+	// TODO: FINISH THIS REFACTOR
 	party.WatchedMovies = moviesByStatus.WatchedMovies
 	party.UnwatchedMovies = moviesByStatus.UnwatchedMovies
 	party.SelectedMovie = moviesByStatus.SelectedMovie
 
 	return party, nil
+}
+
+func (p Party) GetMoviesByStatus(ctx context.Context) (MovieSet, MovieSet, MovieSet, error) {
+	moviesByStatus, err := p.db.GetMoviesByStatus(ctx, p.ID)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	return moviesByStatus.WatchedMovies, moviesByStatus.UnwatchedMovies, moviesByStatus.SelectedMovie, nil
 }
 
 func (s *PartyService) GetPartyByShortID(ctx context.Context, shortID string) (Party, error) {

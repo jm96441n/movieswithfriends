@@ -12,7 +12,6 @@ import (
 	"github.com/jm96441n/movieswithfriends/identityaccess"
 	"github.com/jm96441n/movieswithfriends/partymgmt"
 	partymgmtstore "github.com/jm96441n/movieswithfriends/partymgmt/store"
-	"github.com/jm96441n/movieswithfriends/store"
 )
 
 type partyNav struct {
@@ -27,21 +26,20 @@ const (
 )
 
 type BaseTemplateData struct {
-	CurrentPagePath    string
-	ErrorFlashes       []interface{}
-	InfoFlashes        []interface{}
-	WarningFlashes     []interface{}
-	IsAuthenticated    bool
-	CurrentYear        int
-	CurrentUserParties []partyNav
-	FullName           string
-	UserEmail          string
+	CurrentPagePath string
+	ErrorFlashes    []interface{}
+	InfoFlashes     []interface{}
+	WarningFlashes  []interface{}
+	IsAuthenticated bool
+	CurrentYear     int
+	FullName        string
+	UserEmail       string
 }
 
 // TODO: refactor out references to store from here
 type MoviesTemplateData struct {
 	Movies      []partymgmt.TMDBMovie
-	Movie       store.Movie
+	Movie       partymgmt.Movie
 	Parties     []partymgmtstore.Party
 	SearchValue string
 	BaseTemplateData
@@ -120,12 +118,10 @@ func (a *Application) newBaseTemplateData(r *http.Request, w http.ResponseWriter
 	authed := isAuthenticated(r.Context())
 
 	var (
-		partiesForNav []partyNav
-		fullName      string
-		email         string
+		fullName string
+		email    string
 	)
 	if authed {
-		partiesForNav = r.Context().Value(partiesForNavContextKey).([]partyNav)
 		fullName = r.Context().Value(fullNameContextKey).(string)
 		email = r.Context().Value(emailContextKey).(string)
 	}
@@ -144,15 +140,14 @@ func (a *Application) newBaseTemplateData(r *http.Request, w http.ResponseWriter
 	}
 
 	return BaseTemplateData{
-		ErrorFlashes:       errorFlashes,
-		InfoFlashes:        infoFlashes,
-		WarningFlashes:     warningFlashes,
-		CurrentPagePath:    path,
-		CurrentYear:        2024,
-		IsAuthenticated:    authed,
-		CurrentUserParties: partiesForNav,
-		FullName:           fullName,
-		UserEmail:          email,
+		ErrorFlashes:    errorFlashes,
+		InfoFlashes:     infoFlashes,
+		WarningFlashes:  warningFlashes,
+		CurrentPagePath: path,
+		CurrentYear:     2024,
+		IsAuthenticated: authed,
+		FullName:        fullName,
+		UserEmail:       email,
 	}
 }
 
