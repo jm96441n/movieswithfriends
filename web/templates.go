@@ -11,7 +11,6 @@ import (
 
 	"github.com/jm96441n/movieswithfriends/identityaccess"
 	"github.com/jm96441n/movieswithfriends/partymgmt"
-	partymgmtstore "github.com/jm96441n/movieswithfriends/partymgmt/store"
 )
 
 type partyNav struct {
@@ -40,7 +39,7 @@ type BaseTemplateData struct {
 type MoviesTemplateData struct {
 	Movies      []partymgmt.TMDBMovie
 	Movie       partymgmt.Movie
-	Parties     []partymgmtstore.Party
+	Parties     partymgmt.PartiesForMovie
 	SearchValue string
 	BaseTemplateData
 }

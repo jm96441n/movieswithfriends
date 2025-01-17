@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"time"
 
 	"github.com/jm96441n/movieswithfriends/partymgmt/store"
 )
@@ -28,13 +27,6 @@ type Movie struct {
 	Genres      []string
 	TMDBID      int
 	AddedBy     FullName
-}
-
-type PartyMovie struct {
-	IDMovie   int
-	Title     string
-	WatchDate time.Time
-	PartyName string
 }
 
 type movieFetcher interface {

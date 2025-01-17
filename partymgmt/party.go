@@ -2,9 +2,11 @@ package partymgmt
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"log/slog"
 	"math/rand"
+	"time"
 
 	"github.com/jm96441n/movieswithfriends/partymgmt/store"
 	legacystore "github.com/jm96441n/movieswithfriends/store"
@@ -20,19 +22,37 @@ type PartyService struct {
 	MoviesRepository *legacystore.PGStore
 }
 
-type MovieSet map[*Movie]struct{}
+type PartyMovie struct {
+	ID          int       `json:"id_movie"`
+	Title       string    `json:"title"`
+	ReleaseDate string    `json:"release_date"`
+	TrailerURL  string    `json:"trailer_url"`
+	PosterURL   string    `json:"poster_url"`
+	Runtime     int       `json:"runtime"`
+	Rating      float64   `json:"vote_average"`
+	Tagline     string    `json:"tagline"`
+	Genres      []string  `json:"genres"`
+	WatchDate   time.Time `json:"watch_date"`
+	AddedBy     FullName  `json:"added_by"`
+	PartyName   string
+}
+
+type MoviesByStatus struct {
+	WatchedMovies   []PartyMovie
+	UnwatchedMovies []PartyMovie
+	SelectedMovie   PartyMovie
+}
 
 type Party struct {
-	ID              int
-	Name            string
-	ShortID         string
-	MemberCount     int
-	MovieCount      int
-	WatchedCount    int
-	WatchedMovies   MovieSet
-	UnwatchedMovies MovieSet
-	SelectedMovie   MovieSet
-	db              *store.PartyRepository
+	ID           int
+	Name         string
+	ShortID      string
+	MemberCount  int
+	MovieCount   int
+	WatchedCount int
+
+	MoviesByStatus MoviesByStatus
+	db             *store.PartyRepository
 }
 
 func (p *Party) AddMember(ctx context.Context, idMember int) error {
@@ -92,7 +112,7 @@ func (s *PartyService) CreateParty(ctx context.Context, idMember int, name strin
 	return id, nil
 }
 
-func (s *PartyService) GetPartyWithMovies(ctx context.Context, id int) (Party, error) {
+func (s *PartyService) GetPartyWithMovies(ctx context.Context, logger *slog.Logger, id int) (Party, error) {
 	results, err := s.DB.GetPartyByIDWithStats(ctx, id)
 	if err != nil {
 		s.Logger.Error("failed to get party by id", slog.Any("error", err))
@@ -108,27 +128,56 @@ func (s *PartyService) GetPartyWithMovies(ctx context.Context, id int) (Party, e
 		WatchedCount: results.WatchedCount,
 	}
 
-	moviesByStatus, err := s.MoviesRepository.GetMoviesForParty(ctx, party.ID, 0)
+	moviesByStatus, err := party.GetMoviesByStatus(ctx, logger)
 	if err != nil {
 		s.Logger.Error("failed to get movies for party", slog.Any("error", err))
 		return Party{}, err
 	}
 
-	// TODO: FINISH THIS REFACTOR
-	party.WatchedMovies = moviesByStatus.WatchedMovies
-	party.UnwatchedMovies = moviesByStatus.UnwatchedMovies
-	party.SelectedMovie = moviesByStatus.SelectedMovie
+	party.MoviesByStatus = moviesByStatus
 
 	return party, nil
 }
 
-func (p Party) GetMoviesByStatus(ctx context.Context) (MovieSet, MovieSet, MovieSet, error) {
-	moviesByStatus, err := p.db.GetMoviesByStatus(ctx, p.ID)
+func (p Party) GetMoviesByStatus(ctx context.Context, logger *slog.Logger) (MoviesByStatus, error) {
+	moviesByStatus := MoviesByStatus{
+		WatchedMovies:   make([]PartyMovie, 0, 10),
+		UnwatchedMovies: make([]PartyMovie, 0, 10),
+		SelectedMovie:   PartyMovie{},
+	}
+	err := p.db.GetMoviesForParty(ctx, logger, p.ID, 0, func(status store.WatchStatusEnum, movieJSON []byte) error {
+		switch status {
+		case store.WatchStatusUnwatched:
+			err := json.Unmarshal(movieJSON, &moviesByStatus.UnwatchedMovies)
+			if err != nil {
+				logger.Error(err.Error(), slog.String("marshalType", "unwatchedMovies"))
+				return err
+			}
+		case store.WatchStatusSelected:
+			// this will always be 1 movie, but we have an array from the agg so we'll just always take the first one
+			selectedMovies := []PartyMovie{}
+			err := json.Unmarshal(movieJSON, &selectedMovies)
+			if err != nil {
+				logger.Error(err.Error(), slog.String("marshalType", "selectedMovie"))
+				return err
+			}
+			if len(selectedMovies) > 0 {
+				moviesByStatus.SelectedMovie = selectedMovies[0]
+			}
+		case store.WatchStatusWatched:
+			err := json.Unmarshal(movieJSON, &moviesByStatus.WatchedMovies)
+			if err != nil {
+				logger.Error(err.Error(), slog.String("marshalType", "watchedMovies"))
+				return err
+			}
+		}
+		return nil
+	})
 	if err != nil {
-		return nil, nil, nil, err
+		return MoviesByStatus{}, err
 	}
 
-	return moviesByStatus.WatchedMovies, moviesByStatus.UnwatchedMovies, moviesByStatus.SelectedMovie, nil
+	return moviesByStatus, nil
 }
 
 func (s *PartyService) GetPartyByShortID(ctx context.Context, shortID string) (Party, error) {

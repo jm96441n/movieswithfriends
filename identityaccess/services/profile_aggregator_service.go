@@ -185,7 +185,7 @@ func (p *ProfileAggregatorService) GetWatchPaginatedHistory(ctx context.Context,
 
 	for _, movie := range watchedMovies {
 		movies = append(movies, partymgmt.PartyMovie{
-			IDMovie:   movie.IDMovie,
+			ID:        movie.IDMovie,
 			Title:     movie.Title,
 			WatchDate: movie.WatchDate,
 			PartyName: movie.PartyName,

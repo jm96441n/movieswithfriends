@@ -5,8 +5,6 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
-
-	"github.com/jm96441n/movieswithfriends/partymgmt"
 )
 
 func (a *Application) NewPartyHandler(w http.ResponseWriter, r *http.Request) {
@@ -71,7 +69,7 @@ func (a *Application) PartyShowHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	party, err := a.PartyService.GetPartyWithMovies(ctx, id)
+	party, err := a.PartyService.GetPartyWithMovies(ctx, logger, id)
 	if err != nil {
 		logger.Error("failed to get party by ID", slog.Any("error", err))
 		data := a.NewTemplateData(r, w, "/parties")
@@ -113,6 +111,7 @@ func (a *Application) PartiesIndexHandler(w http.ResponseWriter, r *http.Request
 
 func (a *Application) AddMovietoPartyHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	logger := a.Logger.With("handler", "AddMovieToPartyHandler")
 	idPartyParam := r.PathValue("id")
 	err := r.ParseForm()
 	if err != nil {
@@ -120,7 +119,7 @@ func (a *Application) AddMovietoPartyHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	idAddedBy, err := a.getProfileIDFromSession(r)
+	watcher, err := a.getWatcherFromSession(r)
 	if err != nil {
 		a.Logger.Error("failed to get profile ID from session", slog.Any("error", err))
 		a.serverError(w, r, err)
@@ -139,26 +138,20 @@ func (a *Application) AddMovietoPartyHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	err = a.PartiesRepository.AddMovieToParty(ctx, idParty, idMovie, idAddedBy)
+	err = a.PartiesRepository.AddMovieToParty(ctx, idParty, idMovie, watcher.ID)
 	if err != nil {
 		a.serverError(w, r, err)
 		return
 	}
 
-	result, err := a.PartiesRepository.GetPartyByID(ctx, idParty)
+	parties, err := watcher.GetPartiesToAddMovie(ctx, logger, idMovie)
 	if err != nil {
 		a.serverError(w, r, err)
 		return
 	}
 
-	party := partymgmt.Party{
-		ID:      result.ID,
-		Name:    result.Name,
-		ShortID: result.ShortID,
-	}
-
-	templateData := a.NewPartiesTemplateData(r, w, "/parties")
-	templateData.Party = party
+	templateData := a.NewMoviesTemplateData(r, w, "/parties")
+	templateData.Parties = parties
 
 	a.renderPartial(w, r, http.StatusOK, "movies/partials/party_list_item.gohtml", templateData)
 }

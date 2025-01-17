@@ -40,13 +40,13 @@ func (s *WatcherService) GetWatchHistory(ctx context.Context, logger *slog.Logge
 	return watchedMovies, numRecords, nil
 }
 
-func (p *Watcher) GetWatchHistory(ctx context.Context, logger *slog.Logger, memberID, offset int) ([]store.WatchedMoviesForWatcherResult, int, error) {
-	watchedMovies, err := p.db.GetWatchedMoviesForWatcher(ctx, memberID, offset)
+func (w *Watcher) GetWatchHistory(ctx context.Context, logger *slog.Logger, memberID, offset int) ([]store.WatchedMoviesForWatcherResult, int, error) {
+	watchedMovies, err := w.db.GetWatchedMoviesForWatcher(ctx, memberID, offset)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	numRecords, err := p.db.GetWatchedMoviesCountForMember(ctx, logger, p.ID)
+	numRecords, err := w.db.GetWatchedMoviesCountForMember(ctx, logger, w.ID)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -54,8 +54,8 @@ func (p *Watcher) GetWatchHistory(ctx context.Context, logger *slog.Logger, memb
 	return watchedMovies, numRecords, nil
 }
 
-func (p *Watcher) GetParties(ctx context.Context) ([]Party, error) {
-	parties, err := p.db.GetPartiesForWatcher(ctx, p.ID)
+func (w *Watcher) GetParties(ctx context.Context) ([]Party, error) {
+	parties, err := w.db.GetPartiesForWatcher(ctx, w.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -73,5 +73,36 @@ func (p *Watcher) GetParties(ctx context.Context) ([]Party, error) {
 	return res, nil
 }
 
-func (p *Watcher) GetPartiesWithStatusForMovie(ctx context.Context, idMovie int) []Party {
+type PartiesForMovie struct {
+	WithMovie    []Party
+	WithoutMovie []Party
+}
+
+func (w *Watcher) GetPartiesToAddMovie(ctx context.Context, logger *slog.Logger, idMovie int) (PartiesForMovie, error) {
+	parties := PartiesForMovie{
+		WithMovie:    make([]Party, 0, 10),
+		WithoutMovie: make([]Party, 0, 10),
+	}
+	err := w.db.GetWatcherPartiesWithMovie(ctx, logger, w.ID, idMovie, func(partyID int, partyName string) {
+		p := Party{
+			Name: partyName,
+			ID:   partyID,
+		}
+		parties.WithMovie = append(parties.WithMovie, p)
+	})
+	if err != nil {
+		return PartiesForMovie{}, err
+	}
+
+	err = w.db.GetWatcherPartiesWithoutMovie(ctx, logger, w.ID, idMovie, func(partyID int, partyName string) {
+		p := Party{
+			Name: partyName,
+			ID:   partyID,
+		}
+		parties.WithoutMovie = append(parties.WithoutMovie, p)
+	})
+	if err != nil {
+		return PartiesForMovie{}, err
+	}
+	return parties, nil
 }

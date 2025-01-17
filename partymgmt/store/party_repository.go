@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -142,36 +143,6 @@ func (p *PartyRepository) CreateParty(ctx context.Context, idMember int, name, s
 	return id, nil
 }
 
-const getPartiesQueryForMovie = `
-with filtered_party_movies as(select * from party_movies where id_movie = $1)select parties.id_party, parties.name, movies.id_movie is not null as is_movie
-  from parties
-  join party_members on party_members.id_party = parties.id_party
-  left outer join filtered_party_movies on filtered_party_movies.id_party = parties.id_party 
-  left outer join movies on filtered_party_movies.id_movie = movies.id_movie
-  where party_members.id_member = $2;
-`
-
-func (p *PartyRepository) GetPartiesByMemberIDForCurrentMovie(ctx context.Context, idMovie int, idMember int) ([]Party, error) {
-	rows, err := p.db.Query(ctx, getPartiesQueryForMovie, idMovie, idMember)
-	if err != nil {
-		return nil, err
-	}
-
-	defer rows.Close()
-
-	var parties []Party
-
-	for rows.Next() {
-		var party Party
-		err := rows.Scan(&party.ID, &party.Name, &party.MovieAdded)
-		if err != nil {
-			return nil, err
-		}
-		parties = append(parties, party)
-	}
-	return parties, nil
-}
-
 const AddMovietoPartyQuery = `insert into party_movies (id_party, id_movie, id_added_by) values ($1, $2, $3)`
 
 func (p *PartyRepository) AddMovieToParty(ctx context.Context, idParty, idMovie, id_added_by int) error {
@@ -264,5 +235,76 @@ func (p *PartyRepository) CreatePartyMember(ctx context.Context, idMember, idPar
 		}
 		return err
 	}
+	return nil
+}
+
+const getMoviesForPartyQuery = `
+SELECT watch_status, jsonb_agg(
+  jsonb_build_object(
+        'id_movie', id_movie,
+        'title', title,
+        'poster_url', poster_url,
+        'added_by', jsonb_build_object(
+            'first_name', first_name,
+            'last_name', last_name
+        ),
+        'watch_date', watch_date,
+        'genres', genres
+    )
+) as movies
+FROM (
+    SELECT *
+    FROM (
+        SELECT 
+          movies.id_movie,
+          movies.title,
+          movies.poster_url,
+          movies.genres,
+          profiles.first_name,
+          profiles.last_name,
+          party_movies.watch_status,
+          party_movies.watch_date,
+          ROW_NUMBER() OVER (PARTITION BY party_movies.watch_status ORDER BY party_movies.created_at DESC) as rn
+        FROM movies
+        INNER JOIN party_movies ON movies.id_movie = party_movies.id_movie
+        JOIN profiles ON party_movies.id_added_by = profiles.id_profile
+        WHERE party_movies.id_party = $1
+    ) t
+    WHERE rn <= 10
+) movie_data
+GROUP BY watch_status;
+`
+
+// GetMoviesForParty returns a paginated list of movies for a party grouped by watchStatus
+func (p *PartyRepository) GetMoviesForParty(ctx context.Context, logger *slog.Logger, idParty, offset int, assignFn func(WatchStatusEnum, []byte) error) error {
+	rows, err := p.db.Query(ctx, getMoviesForPartyQuery, idParty)
+	if err != nil {
+		return err
+	}
+
+	defer rows.Close()
+	for rows.Next() {
+		var (
+			status    WatchStatusEnum
+			movieJSON []byte
+		)
+		err := rows.Scan(&status, &movieJSON)
+		if err != nil {
+			logger.Error(err.Error(), "query", getMoviesForPartyQuery)
+			return err
+		}
+
+		err = assignFn(status, movieJSON)
+		if err != nil {
+			return err
+		}
+
+	}
+
+	if err := rows.Err(); err != nil {
+		logger.Error(err.Error(), "query", getMoviesForPartyQuery)
+		return err
+	}
+
 	return nil
 }

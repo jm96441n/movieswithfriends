@@ -46,7 +46,7 @@
 
             {{ if .IsAuthenticated }}
               <!-- Add to Party Dropdown -->
-              <div class="dropdown">
+              <div class="dropdown" id="party-dropdwon">
                 <button
                   class="btn btn-outline-light btn-lg dropdown-toggle"
                   type="button"
@@ -56,34 +56,33 @@
                 </button>
                 <ul class="dropdown-menu">
                   <li><h6 class="dropdown-header">Select a Party</h6></li>
-                  {{- range .Parties }}
-                    {{ if .MovieAdded }}
-                      <div class="dropdown-item list-group-item-action">
-                        <li>
-                          <i class="fa-solid fa-check text-primary"></i>
-                          {{ .Name }}
-                        </li>
-                      </div>
-                    {{- else }}
-                      <a
-                        class="dropdown-item"
-                        hx-put="/parties/{{ .ID }}"
-                        hx-target="#{{ hyphenate .Name }}"
-                        hx-indicator="#{{ hyphenate .Name }}-indicator"
-                        hx-vals='{"id_movie": {{ $.Movie.ID }}}'
-                        id="{{ hyphenate .Name }}"
-                      >
-                        <li id="{{ hyphenate .Name }}-indicator">
-                          <div
-                            class="spinner-border spinner-border-sm text-success htmx-indicator"
-                            role="status"
-                          >
-                            <span class="visually-hidden">Loading...</span>
-                          </div>
-                          {{ .Name }}
-                        </li>
-                      </a>
-                    {{ end }}
+                  {{- range .Parties.WithoutMovie }}
+                    <a
+                      class="dropdown-item"
+                      hx-put="/parties/{{ .ID }}"
+                      hx-target="#party-dropdown"
+                      hx-indicator="#{{ hyphenate .Name }}-indicator"
+                      hx-vals='{"id_movie": {{ $.Movie.ID }}}'
+                      id="{{ hyphenate .Name }}"
+                    >
+                      <li id="{{ hyphenate .Name }}-indicator">
+                        <div
+                          class="spinner-border spinner-border-sm text-success htmx-indicator"
+                          role="status"
+                        >
+                          <span class="visually-hidden">Loading...</span>
+                        </div>
+                        {{ .Name }}
+                      </li>
+                    </a>
+                  {{ end }}
+                  {{- range .Parties.WithMovie }}
+                    <div class="dropdown-item list-group-item-action">
+                      <li>
+                        <i class="fa-solid fa-check text-primary"></i>
+                        {{ .Name }}
+                      </li>
+                    </div>
                   {{ end }}
                   <li><hr class="dropdown-divider" /></li>
                   <li>

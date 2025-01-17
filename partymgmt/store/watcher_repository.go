@@ -130,32 +130,64 @@ func (p *WatcherRepository) GetPartiesForWatcher(ctx context.Context, watcherID 
 	return parties, nil
 }
 
-const getPartiesQueryForMovie = `
-with filtered_party_movies as(select * from party_movies where id_movie = $1)select parties.id_party, parties.name, movies.id_movie is not null as is_movie
+const getPartiesWithMovieQuery = `
+  select parties.id_party, parties.name
   from parties
   join party_members on party_members.id_party = parties.id_party
-  left outer join filtered_party_movies on filtered_party_movies.id_party = parties.id_party 
-  left outer join movies on filtered_party_movies.id_movie = movies.id_movie
-  where party_members.id_member = $2;
+  join party_movies on party_movies.id_party = parties.id_party 
+  where party_movies.id_movie = $1 AND party_members.id_member = $2;
 `
 
-func (p *WatcherRepository) GetPartiesByMemberIDForCurrentMovie(ctx context.Context, idMovie int, idMember int) ([]Party, error) {
-	rows, err := p.db.Query(ctx, getPartiesQueryForMovie, idMovie, idMember)
+func (p *WatcherRepository) GetWatcherPartiesWithMovie(ctx context.Context, logger *slog.Logger, idMovie int, idMember int, assignFn func(int, string)) error {
+	rows, err := p.db.Query(ctx, getPartiesWithMovieQuery, idMovie, idMember)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	defer rows.Close()
 
-	var parties []Party
+	for rows.Next() {
+		var (
+			partyID   int
+			partyName string
+		)
+		err := rows.Scan(&partyID, &partyName)
+		if err != nil {
+			return err
+		}
+
+		assignFn(partyID, partyName)
+	}
+	return nil
+}
+
+const getPartiesWithoutMovieQuery = `
+  select parties.id_party, parties.name
+  from parties
+  left join party_movies ON parties.id_party = party_movies.id_party AND party_movies.id_movie = $1
+  join party_members on party_members.id_party = parties.id_party
+  where pm.id_movie IS NULL AND party_members.id_member = $2;
+`
+
+func (p *WatcherRepository) GetWatcherPartiesWithoutMovie(ctx context.Context, logger *slog.Logger, idMovie int, idMember int, assignFn func(int, string)) error {
+	rows, err := p.db.Query(ctx, getPartiesWithMovieQuery, idMovie, idMember)
+	if err != nil {
+		return err
+	}
+
+	defer rows.Close()
 
 	for rows.Next() {
-		var party Party
-		err := rows.Scan(&party.ID, &party.Name, &party.MovieAdded)
+		var (
+			partyID   int
+			partyName string
+		)
+		err := rows.Scan(&partyID, &partyName)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		parties = append(parties, party)
+
+		assignFn(partyID, partyName)
 	}
-	return parties, nil
+	return nil
 }

@@ -208,12 +208,12 @@ func (t *TMDBClient) newRequest(ctx context.Context, method, url string) (*retry
 	return req, nil
 }
 
-func (t *TMDBMovie) ToStoreMovie() *store.Movie {
+func (t *TMDBMovie) ToStoreMovie() store.CreateMovieParams {
 	genres := make([]string, len(t.Genres))
 	for i, genre := range t.Genres {
 		genres[i] = genre.Name
 	}
-	return &store.Movie{
+	return store.CreateMovieParams{
 		Title:       t.Title,
 		ReleaseDate: t.ReleaseDate,
 		Overview:    t.Overview,
