@@ -22,6 +22,7 @@ func NewWatcherService(db *store.WatcherRepository) *WatcherService {
 
 func (s *WatcherService) GetWatcher(ctx context.Context, memberID int) (Watcher, error) {
 	return Watcher{
+		ID: memberID,
 		db: s.db,
 	}, nil
 }
@@ -55,7 +56,7 @@ func (w *Watcher) GetWatchHistory(ctx context.Context, logger *slog.Logger, memb
 }
 
 func (w *Watcher) GetParties(ctx context.Context) ([]Party, error) {
-	parties, err := w.db.GetPartiesForWatcher(ctx, w.ID)
+	parties, err := w.db.GetPartiesForWatcher(ctx, w.ID, 50)
 	if err != nil {
 		return nil, err
 	}
@@ -71,6 +72,19 @@ func (w *Watcher) GetParties(ctx context.Context) ([]Party, error) {
 	}
 
 	return res, nil
+}
+
+func (w *Watcher) GetCurrentPartyID(ctx context.Context) (int, error) {
+	parties, err := w.db.GetPartiesForWatcher(ctx, w.ID, 1)
+	if err != nil {
+		return 0, err
+	}
+
+	if len(parties) == 0 {
+		return 0, nil
+	}
+
+	return parties[0].ID, nil
 }
 
 type PartiesForMovie struct {

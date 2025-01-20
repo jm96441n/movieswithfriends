@@ -20,7 +20,6 @@ import (
 	iamstore "github.com/jm96441n/movieswithfriends/identityaccess/store"
 	"github.com/jm96441n/movieswithfriends/partymgmt"
 	partymgmtstore "github.com/jm96441n/movieswithfriends/partymgmt/store"
-	"github.com/jm96441n/movieswithfriends/store"
 	"github.com/jm96441n/movieswithfriends/ui"
 	"github.com/jm96441n/movieswithfriends/web"
 
@@ -135,12 +134,6 @@ func main() {
 
 	sessionStore := sessions.NewCookieStore(sessionKey)
 
-	db, err := store.NewPostgesStore(store.Creds(creds), os.Getenv("DB_HOST"), os.Getenv("DB_DATABASE_NAME"), logger)
-	if err != nil {
-		logger.Error("could not generate secure key", slog.Any("err", err))
-		os.Exit(1)
-	}
-
 	moviesRepo := partymgmtstore.NewMoviesRepository(connPool)
 
 	app := web.Application{
@@ -150,9 +143,8 @@ func main() {
 		MoviesService:    partymgmt.NewMovieService(tmdbClient, moviesRepo),
 		MoviesRepository: moviesRepo,
 		PartyService: &partymgmt.PartyService{
-			DB:               partymgmtstore.NewPartyRepository(connPool),
-			MoviesRepository: db,
-			Logger:           logger,
+			DB:     partymgmtstore.NewPartyRepository(connPool),
+			Logger: logger,
 		},
 		PartiesRepository: partymgmtstore.NewPartyRepository(connPool),
 		ProfilesService: identityaccess.NewProfileService(

@@ -175,8 +175,7 @@ const GetPartiesByMemberIDQuery = `
 `
 
 func (p *PartyRepository) MarkPartyMovieAsWatched(ctx context.Context, idParty, idMovie int) error {
-	// pg.logger.Info("MarkMovieAsWatched", "idParty", idParty, "idMovie", idMovie)
-	curTime := time.Now()
+	curTime := time.Now().UTC()
 	return p.updatePartyMovieStatus(ctx, idParty, idMovie, WatchStatusWatched, &curTime)
 }
 

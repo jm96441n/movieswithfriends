@@ -10,8 +10,8 @@ import (
 )
 
 type FullName struct {
-	FirstName string
-	LastName  string
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
 }
 
 type Movie struct {
@@ -85,7 +85,7 @@ func (m MovieID) validate() error {
 	}
 
 	if m.TMDBID != nil && m.MovieID != nil {
-		return errors.New("Only one of TMDBID or MovieID must be set")
+		return errors.New("only one of TMDBID or MovieID must be set")
 	}
 
 	return nil

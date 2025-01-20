@@ -2,7 +2,6 @@ package web
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"fmt"
 	"html/template"
@@ -15,23 +14,13 @@ import (
 	"github.com/jm96441n/movieswithfriends/identityaccess/services"
 	"github.com/jm96441n/movieswithfriends/partymgmt"
 	partymgmtstore "github.com/jm96441n/movieswithfriends/partymgmt/store"
-	"github.com/jm96441n/movieswithfriends/store"
 )
 
 var (
 	ErrFailedToGetProfileIDFromSession = errors.New("failed to get profile id from session")
+	ErrFailedToGetPartyIDFromSession   = errors.New("failed to get current party id from session")
 	ErrFailedToGetAccountIDFromSession = errors.New("failed to get accountl id from session")
 )
-
-type MovieRepository interface {
-	GetMovieByID(context.Context, int) (store.Movie, error)
-	GetMoviesForParty(context.Context, int, int) (store.MoviesByStatus, error)
-}
-
-type MoviesService interface {
-	SearchMovies(context.Context, *slog.Logger, string) ([]partymgmt.TMDBMovie, error)
-	CreateMovie(context.Context, *slog.Logger, int) (*store.Movie, error)
-}
 
 type Application struct {
 	Logger                   *slog.Logger
@@ -177,6 +166,25 @@ func (a *Application) getProfileIDFromSession(r *http.Request) (int, error) {
 	}
 
 	return profileID, nil
+}
+
+func (a *Application) getCurrentPartyIDFromSession(r *http.Request) (int, error) {
+	session, err := a.SessionStore.Get(r, sessionName)
+	if err != nil {
+		session, err = a.SessionStore.New(r, sessionName)
+		if err != nil {
+			a.Logger.Debug("failed to create new session")
+			return 0, nil
+		}
+	}
+
+	sessionPartyID := session.Values["currentPartyID"]
+	partyID, ok := sessionPartyID.(int)
+	if !ok {
+		return 0, ErrFailedToGetPartyIDFromSession
+	}
+
+	return partyID, nil
 }
 
 func (a *Application) setInfoFlashMessage(w http.ResponseWriter, r *http.Request, msg string) {

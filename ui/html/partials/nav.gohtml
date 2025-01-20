@@ -1,8 +1,6 @@
 {{ define "nav" }}
   <!-- Main Navigation -->
-  <nav
-    class="navbar navbar-expand-lg navbar-light bg-white border-bottom sticky-top"
-  >
+  <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom">
     <div class="container">
       <!-- Brand -->
       <a class="navbar-brand d-flex align-items-center gap-2" href="/">
@@ -10,25 +8,11 @@
         <span class="fw-bold">MoviesWithFriends</span>
       </a>
 
-      <!-- Mobile Toggle -->
-      <button
-        class="navbar-toggler"
-        type="button"
-        data-bs-toggle="collapse"
-        data-bs-target="#navbarContent"
-      >
-        <span class="navbar-toggler-icon"></span>
-      </button>
-
       <!-- Navigation Items -->
       <div class="collapse navbar-collapse" id="navbarContent">
         <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-          <!-- <li class="nav-item"> -->
-          <!-- <a class="nav-link active" href="/home"> -->
-          <!-- <i class="fas fa-home me-1"></i>Home -->
-          <!-- </a> -->
-          <!-- </li> -->
           <li class="nav-item">
+            <!-- TODO: make this an input to search from anywhere-->
             <a
               class="nav-link {{ navClasses "/movies" .CurrentPagePath }}"
               href="/movies"
@@ -37,43 +21,6 @@
               <i class="fas fa-search me-1"></i>Search
             </a>
           </li>
-
-          {{ if .IsAuthenticated }}
-            <!-- Parties Dropdown -->
-            <li class="nav-item dropdown">
-              <a
-                class="nav-link dropdown-toggle"
-                href="#"
-                data-bs-toggle="dropdown"
-              >
-                <i class="fas fa-users me-1"></i>Parties
-              </a>
-              <ul class="dropdown-menu">
-                <li>
-                  <a class="dropdown-item" href="/parties">
-                    <i class="fas fa-calendar-alt me-2"></i>My Parties
-                  </a>
-                </li>
-                <!-- <li> -->
-                <!-- <a class="dropdown-item" href="#"> -->
-                <!-- <i class="fas fa-inbox me-2"></i>Invitations -->
-                <!-- <span class="badge bg-primary rounded-pill ms-2">2</span> -->
-                <!-- </a> -->
-                <!-- </li> -->
-                <li><hr class="dropdown-divider" /></li>
-                <li>
-                  <a class="dropdown-item" href="#">
-                    <i class="fas fa-plus me-2"></i>Create New Party
-                  </a>
-                </li>
-                <li>
-                  <a class="dropdown-item" href="#">
-                    <i class="fas fa-users me-2"></i>Join Party
-                  </a>
-                </li>
-              </ul>
-            </li>
-          {{ end }}
         </ul>
 
         <!-- User Menu (right side) -->
@@ -110,11 +57,6 @@
                 <li>
                   <a class="dropdown-item" href="/profile">
                     <i class="fas fa-cog me-2"></i>Profile
-                  </a>
-                </li>
-                <li>
-                  <a class="dropdown-item" href="#">
-                    <i class="fas fa-question-circle me-2"></i>Help
                   </a>
                 </li>
                 <li><hr class="dropdown-divider" /></li>

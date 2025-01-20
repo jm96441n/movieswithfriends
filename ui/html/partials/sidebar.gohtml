@@ -1,0 +1,164 @@
+{{ define "sidebar" }}
+  <!-- Sidebar -->
+  <div
+    class="offcanvas-lg offcanvas-start"
+    tabindex="-1"
+    id="sidebar"
+    style="width: 280px;"
+  >
+    <div class="offcanvas-header d-lg-none">
+      <h5 class="offcanvas-title d-flex align-items-center">
+        <i class="fas fa-film text-primary me-2"></i>
+        <span>Movie Night</span>
+      </h5>
+      <button
+        type="button"
+        class="btn-close"
+        data-bs-dismiss="offcanvas"
+        data-bs-target="#sidebar"
+      ></button>
+    </div>
+    <div class="offcanvas-body p-0 d-flex flex-column">
+      <!-- Brand (desktop only) -->
+      <div class="p-3 d-none d-lg-block">
+        <div class="d-flex align-items-center mb-4">
+          <i class="fas fa-film text-primary me-2"></i>
+          <span class="fs-5 fw-semibold">Movie Night</span>
+        </div>
+      </div>
+
+      <!-- Create Party Button -->
+      <div class="px-3 mb-3">
+        <button class="btn btn-primary w-100">
+          <i class="fas fa-plus me-2"></i>Create New Party
+        </button>
+      </div>
+
+      <!-- Party List -->
+      <div class="px-3 flex-grow-1">
+        <h6 class="text-uppercase text-muted fw-bold small mb-3">
+          Your Parties
+        </h6>
+
+        <div class="list-group list-group-flush">
+          {{ range $idx, $party := .Parties }}
+            {{ if eq 0 $idx }}
+              <!-- Active Party -->
+              <div
+                class="list-group-item list-group-item-action active border-start border-4 border-primary bg-primary bg-opacity-10 text-dark"
+              >
+                <div class="d-flex align-items-center">
+                  <i class="fas fa-users text-primary me-3"></i>
+                  <div
+                    class="d-flex align-items-center flex-grow-1"
+                    role="button"
+                    onclick="selectParty('Friday Night Movies')"
+                  >
+                    <span class="me-auto">{{ .Name }}</span>
+                    <!-- pill is to show count of movies -->
+                    <span class="badge bg-success rounded-pill me-2"
+                      >{{ .MovieCount }}</span
+                    >
+                  </div>
+                  <div class="dropdown">
+                    <button
+                      class="btn btn-link text-dark p-0 dropdown-toggle"
+                      data-bs-toggle="dropdown"
+                    >
+                      <i class="fas fa-ellipsis-vertical"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                      <li>
+                        <a class="dropdown-item" href="/parties/{{ .ID }}"
+                          ><i class="fas fa-external-link-alt me-2"></i>View
+                          Party</a
+                        >
+                      </li>
+                      <li>
+                        <a class="dropdown-item" href="#"
+                          ><i class="fas fa-user-plus me-2"></i>Invite
+                          Members</a
+                        >
+                      </li>
+                      <li><hr class="dropdown-divider" /></li>
+                      <li>
+                        <a class="dropdown-item text-danger" href="#"
+                          ><i class="fas fa-sign-out-alt me-2"></i>Leave
+                          Party</a
+                        >
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            {{ else }}
+              <div class="list-group-item list-group-item-action">
+                <div class="d-flex align-items-center">
+                  <i class="fas fa-users text-primary me-3"></i>
+                  <div
+                    class="d-flex align-items-center flex-grow-1"
+                    role="button"
+                    onclick="selectParty('Weekend Warriors')"
+                  >
+                    <span class="me-auto">{{ .Name }}</span>
+                    <span class="badge bg-secondary rounded-pill me-2"
+                      >{{ .MovieCount }}</span
+                    >
+                  </div>
+                  <div class="dropdown">
+                    <button
+                      class="btn btn-link text-dark p-0 dropdown-toggle"
+                      data-bs-toggle="dropdown"
+                    >
+                      <i class="fas fa-ellipsis-vertical"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                      <li>
+                        <a class="dropdown-item" href="/parties/{{ .ID }}"
+                          ><i class="fas fa-external-link-alt me-2"></i>View
+                          Party</a
+                        >
+                      </li>
+                      <li>
+                        <a class="dropdown-item" href="#"
+                          ><i class="fas fa-user-plus me-2"></i>Invite
+                          Members</a
+                        >
+                      </li>
+                      <li><hr class="dropdown-divider" /></li>
+                      <li>
+                        <a class="dropdown-item text-danger" href="#"
+                          ><i class="fas fa-sign-out-alt me-2"></i>Leave
+                          Party</a
+                        >
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            {{ end }}
+          {{ end }}
+        </div>
+
+        <!-- Other Parties -->
+
+        <!-- Invites Section -->
+        <h6 class="text-uppercase text-muted fw-bold small mb-3 mt-4">
+          Party Invites
+        </h6>
+
+        <div class="list-group list-group-flush">
+          <div class="list-group-item list-group-item-action">
+            <div class="d-flex align-items-center">
+              <i class="fas fa-envelope text-warning me-3"></i>
+              <div class="d-flex align-items-center flex-grow-1">
+                <span class="me-auto">Horror Movie Night</span>
+                <span class="badge bg-warning text-dark rounded-pill">New</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{{ end }}

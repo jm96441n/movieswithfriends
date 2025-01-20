@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"strconv"
 
 	"github.com/jm96441n/movieswithfriends/identityaccess"
 )
@@ -42,10 +43,21 @@ func (a *Application) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		a.serverError(w, r, err)
 		return
 	}
+
+	// TODO: use ACL to translate betwwen profile and watcher
+	watcher, _ := a.WatcherService.GetWatcher(r.Context(), profile.ID)
+	currentPartyID, err := watcher.GetCurrentPartyID(r.Context())
+	if err != nil {
+		a.Logger.Error("error getting session from store success path", slog.Any("error", err))
+		a.serverError(w, r, err)
+		return
+	}
+
 	session.Values["accountID"] = profile.Account.ID
 	session.Values["profileID"] = profile.ID
 	session.Values["fullName"] = profile.FirstName + " " + profile.LastName
 	session.Values["email"] = profile.Account.Email
+	a.setCurrentPartyInSession(r, w, currentPartyID)
 
 	err = session.Save(r, w)
 	if err != nil {
@@ -76,5 +88,37 @@ func (a *Application) logout(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func (a *Application) SetCurrentParty(w http.ResponseWriter, r *http.Request) {
+	idPartyParam := r.PathValue("party_id")
+	// TODO: make sure party is a valid party id for the given user
+	idParty, err := strconv.Atoi(idPartyParam)
+	if err != nil {
+		a.clientError(w, r, http.StatusBadRequest, "uh oh")
+		return
+	}
+
+	err = a.setCurrentPartyInSession(r, w, idParty)
+	if err != nil {
+		a.clientError(w, r, http.StatusBadRequest, "uh oh")
+		return
+	}
+}
+
+func (a *Application) setCurrentPartyInSession(r *http.Request, w http.ResponseWriter, idParty int) error {
+	session, err := a.SessionStore.Get(r, sessionName)
+	if err != nil {
+		return err
+	}
+
+	session.Values["currentPartyID"] = idParty
+
+	err = session.Save(r, w)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

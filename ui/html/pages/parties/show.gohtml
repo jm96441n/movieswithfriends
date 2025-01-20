@@ -27,180 +27,184 @@
     </div>
   </div>
 
-  <div class="container mb-5">
-    <!-- Current Selection Section -->
-    <div class="card border-0 shadow-sm mb-4">
-      <div class="card-body p-4">
-        <!-- When no movie is selected -->
-        {{ $party := .Party }}
-        {{ if .Party.SelectedMovie }}
-          {{ $selectedMovie := .Party.SelectedMovie }}
-          <div class="row g-4">
-            <div class="col-md-3">
-              <img
-                src="{{ $selectedMovie.PosterURL }}"
-                class="img-fluid rounded"
-                alt="Movie Poster"
-              />
-            </div>
-            <div class="col-md-9">
-              <div
-                class="d-flex justify-content-between align-items-start mb-2"
-              >
-                <h2 class="h3 mb-0">{{ $selectedMovie.Title }}</h2>
-                <span class="badge bg-warning text-dark"
-                  >{{ $selectedMovie.Rating }}</span
-                >
+  {{ $party := .Party }}
+  {{ with .Party.MoviesByStatus }}
+    <div class="container mb-5">
+      <!-- Current Selection Section -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+          <!-- When movie is selected -->
+          {{ if not (eq .SelectedMovie nil) }}
+            {{ $selectedMovie := .SelectedMovie }}
+            <div class="row g-4">
+              <div class="col-md-3">
+                <img
+                  src="{{ $selectedMovie.PosterURL }}"
+                  class="img-fluid rounded"
+                  alt="Movie Poster"
+                />
               </div>
-              <p class="text-muted mb-4">
-                {{ $selectedMovie.ReleaseDate }} • {{ $selectedMovie.Genres }} •
-                {{ timeToDuration $selectedMovie.Runtime }}
-              </p>
-              <p class="mb-4">{{ $selectedMovie.Tagline }}</p>
-              <div class="d-flex gap-2 mb-4">
-                <a
-                  href="{{ $selectedMovie.TrailerURL }}"
-                  class="btn btn-primary {{ disableIfEmpty $selectedMovie.TrailerURL }}"
+              <div class="col-md-9">
+                <div
+                  class="d-flex justify-content-between align-items-start mb-2"
                 >
-                  <i class="fas fa-play me-2"></i
-                  >{{- if $selectedMovie.TrailerURL }}
-                    Watch Trailer
-                  {{ else }}
-                    Trailer Not Available
-                  {{ end }}
-                </a>
-                <form
-                  action="/parties/{{ $party.ID }}/movies/{{ $selectedMovie.ID }}"
-                  method="post"
-                >
-                  <button class="btn btn-success" type="submit">
-                    <i class="fas fa-check me-2"></i>Mark as Watched
-                  </button>
-                </form>
-                <button class="btn btn-outline-danger">
-                  <i class="fas fa-random me-2"></i>Pick Another
-                </button>
-              </div>
-              <div class="small">
-                <p class="mb-1">
-                  <strong>Added by:</strong>
-                  {{ $selectedMovie.AddedBy.FirstName }}
-                  {{ $selectedMovie.AddedBy.LastName }}
+                  <h2 class="h3 mb-0">{{ $selectedMovie.Title }}</h2>
+                  <span class="badge bg-warning text-dark"
+                    >{{ $selectedMovie.Rating }}</span
+                  >
+                </div>
+                <p class="text-muted mb-4">
+                  {{ $selectedMovie.ReleaseDate }} • {{ $selectedMovie.Genres }}
+                  •
+                  {{ timeToDuration $selectedMovie.Runtime }}
                 </p>
-                <!-- <p class="mb-0"><strong>Selected on:</strong> October 27, 2023</p> -->
+                <p class="mb-4">{{ $selectedMovie.Tagline }}</p>
+                <div class="d-flex gap-2 mb-4">
+                  <a
+                    href="{{ $selectedMovie.TrailerURL }}"
+                    class="btn btn-primary {{ disableIfEmpty $selectedMovie.TrailerURL }}"
+                  >
+                    <i class="fas fa-play me-2"></i
+                    >{{- if $selectedMovie.TrailerURL }}
+                      Watch Trailer
+                    {{ else }}
+                      Trailer Not Available
+                    {{ end }}
+                  </a>
+                  <form
+                    action="/parties/{{ $party.ID }}/movies/{{ $selectedMovie.ID }}"
+                    method="post"
+                  >
+                    <button class="btn btn-success" type="submit">
+                      <i class="fas fa-check me-2"></i>Mark as Watched
+                    </button>
+                  </form>
+                  <button class="btn btn-outline-danger">
+                    <i class="fas fa-random me-2"></i>Pick Another
+                  </button>
+                </div>
+                <div class="small">
+                  <p class="mb-1">
+                    <strong>Added by:</strong>
+                    {{ $selectedMovie.AddedBy.FirstName }}
+                    {{ $selectedMovie.AddedBy.LastName }}
+                  </p>
+                  <!-- <p class="mb-0"><strong>Selected on:</strong> October 27, 2023</p> -->
+                </div>
               </div>
             </div>
-          </div>
-        {{ else }}
-          <div class="text-center py-5">
-            <div class="display-1 text-muted mb-4">
-              <i class="fas fa-film"></i>
+          {{ else }}
+          <!-- When movie is not selected -->
+            <div class="text-center py-5">
+              <div class="display-1 text-muted mb-4">
+                <i class="fas fa-film"></i>
+              </div>
+              <h2 class="h4 mb-3">No Movie Selected</h2>
+              <p class="text-muted mb-4">
+                Let the app choose your next movie from the unwatched list
+              </p>
+              <form action="/parties/{{ $party.ID }}/movies" method="post">
+                <button class="btn btn-primary btn-lg" type="submit">
+                  <i class="fas fa-random me-2"></i>Pick a Movie
+                </button>
+              </form>
             </div>
-            <h2 class="h4 mb-3">No Movie Selected</h2>
-            <p class="text-muted mb-4">
-              Let the app choose your next movie from the unwatched list
-            </p>
-            <form action="/parties/{{ .Party.ID }}/movies" method="post">
-              <button class="btn btn-primary btn-lg" type="submit">
-                <i class="fas fa-random me-2"></i>Pick a Movie
-              </button>
-            </form>
-          </div>
-        {{ end }}
-      </div>
-    </div>
-
-    <div class="row g-4">
-      <!-- Unwatched Movies -->
-      <div class="col-lg-6">
-        <div class="card border-0 shadow-sm h-100">
-          <div class="card-header bg-white py-3">
-            <h3 class="h5 mb-0">Unwatched Movies</h3>
-          </div>
-          <div class="card-body p-0">
-            <div class="list-group list-group-flush">
-              {{ range .Party.UnwatchedMovies }}
-                <div class="list-group-item">
-                  <div class="d-flex align-items-center">
-                    <div class="flex-grow-1">
-                      <h6 class="mb-1">{{ .Title }}</h6>
-                      <small class="text-muted"
-                        >Added by {{ .AddedBy.FirstName }} • ADD ADDED BY
-                        DATE</small
-                      >
-                    </div>
-                    <div class="badge bg-warning text-dark">8.5</div>
-                  </div>
-                </div>
-              {{ end }}
-            </div>
-          </div>
-          <div class="card-footer bg-white py-3">
-            <nav>
-              <ul class="pagination mb-0 justify-content-center">
-                <li class="page-item disabled">
-                  <a class="page-link" href="#">Previous</a>
-                </li>
-                <li class="page-item active">
-                  <a class="page-link" href="#">1</a>
-                </li>
-                <li class="page-item"><a class="page-link" href="#">2</a></li>
-                <li class="page-item">
-                  <a class="page-link" href="#">Next</a>
-                </li>
-              </ul>
-            </nav>
-          </div>
+          {{ end }}
         </div>
       </div>
 
-      <!-- Watched Movies -->
-      <div class="col-lg-6">
-        <div class="card border-0 shadow-sm h-100">
-          <div class="card-header bg-white py-3">
-            <h3 class="h5 mb-0">Watch History</h3>
-          </div>
-          <div class="card-body p-0">
-            <div class="list-group list-group-flush">
-              {{ range .Party.WatchedMovies }}
-                <div class="list-group-item">
-                  <div class="d-flex align-items-center">
-                    <div class="flex-grow-1">
-                      <h6 class="mb-1">{{ .Title }}</h6>
-                      <div class="text-warning small mb-1">
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="far fa-star"></i>
+      <div class="row g-4">
+        <!-- Unwatched Movies -->
+        <div class="col-lg-6">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white py-3">
+              <h3 class="h5 mb-0">Unwatched Movies</h3>
+            </div>
+            <div class="card-body p-0">
+              <div class="list-group list-group-flush">
+                {{ range .UnwatchedMovies }}
+                  <div class="list-group-item">
+                    <div class="d-flex align-items-center">
+                      <div class="flex-grow-1">
+                        <h6 class="mb-1">{{ .Title }}</h6>
+                        <small class="text-muted"
+                          >Added by {{ .AddedBy.FirstName }} • ADD ADDED BY
+                          DATE</small
+                        >
                       </div>
-                      <small class="text-muted"
-                        >Watched on {{ .WatchDate }}</small
-                      >
+                      <div class="badge bg-warning text-dark">8.5</div>
                     </div>
                   </div>
-                </div>
-              {{ end }}
+                {{ end }}
+              </div>
+            </div>
+            <div class="card-footer bg-white py-3">
+              <nav>
+                <ul class="pagination mb-0 justify-content-center">
+                  <li class="page-item disabled">
+                    <a class="page-link" href="#">Previous</a>
+                  </li>
+                  <li class="page-item active">
+                    <a class="page-link" href="#">1</a>
+                  </li>
+                  <li class="page-item"><a class="page-link" href="#">2</a></li>
+                  <li class="page-item">
+                    <a class="page-link" href="#">Next</a>
+                  </li>
+                </ul>
+              </nav>
             </div>
           </div>
-          <div class="card-footer bg-white py-3">
-            <nav>
-              <ul class="pagination mb-0 justify-content-center">
-                <li class="page-item disabled">
-                  <a class="page-link" href="#">Previous</a>
-                </li>
-                <li class="page-item active">
-                  <a class="page-link" href="#">1</a>
-                </li>
-                <li class="page-item"><a class="page-link" href="#">2</a></li>
-                <li class="page-item">
-                  <a class="page-link" href="#">Next</a>
-                </li>
-              </ul>
-            </nav>
+        </div>
+
+        <!-- Watched Movies -->
+        <div class="col-lg-6">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white py-3">
+              <h3 class="h5 mb-0">Watch History</h3>
+            </div>
+            <div class="card-body p-0">
+              <div class="list-group list-group-flush">
+                {{ range .WatchedMovies }}
+                  <div class="list-group-item">
+                    <div class="d-flex align-items-center">
+                      <div class="flex-grow-1">
+                        <h6 class="mb-1">{{ .Title }}</h6>
+                        <div class="text-warning small mb-1">
+                          <i class="fas fa-star"></i>
+                          <i class="fas fa-star"></i>
+                          <i class="fas fa-star"></i>
+                          <i class="fas fa-star"></i>
+                          <i class="far fa-star"></i>
+                        </div>
+                        <small class="text-muted"
+                          >Watched on {{ .WatchDate }}</small
+                        >
+                      </div>
+                    </div>
+                  </div>
+                {{ end }}
+              </div>
+            </div>
+            <div class="card-footer bg-white py-3">
+              <nav>
+                <ul class="pagination mb-0 justify-content-center">
+                  <li class="page-item disabled">
+                    <a class="page-link" href="#">Previous</a>
+                  </li>
+                  <li class="page-item active">
+                    <a class="page-link" href="#">1</a>
+                  </li>
+                  <li class="page-item"><a class="page-link" href="#">2</a></li>
+                  <li class="page-item">
+                    <a class="page-link" href="#">Next</a>
+                  </li>
+                </ul>
+              </nav>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
+  {{ end }}
 {{ end }}

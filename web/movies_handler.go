@@ -106,7 +106,7 @@ func (a *Application) MoviesShowHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	parties, err := watcher.GetPartiesToAddMovie(ctx, logger, movie.ID)
+	parties, err := watcher.GetParties(ctx)
 	if err != nil {
 		// TODO: maybe set something in the UI to show parties couldn't be loaded by still show the page?
 		logger.ErrorContext(ctx, "failed to get parties", "error", err)

@@ -87,7 +87,8 @@ const getPartiesForWatcherQuery = `
   with current_member_parties as (
     select 
       parties.id_party,
-      parties.name
+      parties.name,
+      party_members.created_at
     from parties
     join party_members on party_members.id_party = parties.id_party
     where party_members.id_member = $1
@@ -95,13 +96,19 @@ const getPartiesForWatcherQuery = `
     select 
       current_member_parties.id_party,
       current_member_parties.name,
+      current_member_parties.created_at,
       count(distinct party_members.id_member) as member_count,
       count(distinct party_movies.id_movie) as movie_count
     from party_members
-    left join party_movies on party_movies.id_party = party_members.id_party
+    left join party_movies on party_members.id_party = party_movies.id_party
     join current_member_parties on current_member_parties.id_party = party_members.id_party
     where party_members.id_party = current_member_parties.id_party
-    group by current_member_parties.id_party, current_member_parties.name;
+    group by 
+      current_member_parties.id_party, 
+      current_member_parties.name, 
+      current_member_parties.created_at
+    order by current_member_parties.created_at desc  -- Order by created_on
+    limit $2;
 `
 
 type PartiesForWatcherResult struct {
@@ -111,8 +118,8 @@ type PartiesForWatcherResult struct {
 	MovieCount  int
 }
 
-func (p *WatcherRepository) GetPartiesForWatcher(ctx context.Context, watcherID int) ([]PartiesForWatcherResult, error) {
-	rows, err := p.db.Query(ctx, getPartiesForWatcherQuery, watcherID)
+func (p *WatcherRepository) GetPartiesForWatcher(ctx context.Context, watcherID, limit int) ([]PartiesForWatcherResult, error) {
+	rows, err := p.db.Query(ctx, getPartiesForWatcherQuery, watcherID, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -121,11 +128,16 @@ func (p *WatcherRepository) GetPartiesForWatcher(ctx context.Context, watcherID 
 	var parties []PartiesForWatcherResult
 	for rows.Next() {
 		var party PartiesForWatcherResult
-		err := rows.Scan(&party.ID, &party.Name, &party.MemberCount, &party.MovieCount)
+		var t time.Time
+		err := rows.Scan(&party.ID, &party.Name, &t, &party.MemberCount, &party.MovieCount)
 		if err != nil {
 			return nil, err
 		}
 		parties = append(parties, party)
+	}
+
+	if rows.Err() != nil {
+		return nil, rows.Err()
 	}
 	return parties, nil
 }

@@ -2,15 +2,18 @@ package web
 
 import (
 	"embed"
+	"errors"
 	"fmt"
 	"html/template"
 	"io/fs"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/jm96441n/movieswithfriends/identityaccess"
 	"github.com/jm96441n/movieswithfriends/partymgmt"
+	partymgmtstore "github.com/jm96441n/movieswithfriends/partymgmt/store"
 )
 
 type partyNav struct {
@@ -33,20 +36,19 @@ type BaseTemplateData struct {
 	CurrentYear     int
 	FullName        string
 	UserEmail       string
+	Parties         []partymgmt.Party
+	CurrentParty    partymgmt.Party
 }
 
-// TODO: refactor out references to store from here
 type MoviesTemplateData struct {
 	Movies      []partymgmt.TMDBMovie
 	Movie       partymgmt.Movie
-	Parties     partymgmt.PartiesForMovie
 	SearchValue string
 	BaseTemplateData
 }
 
 type ProfilesTemplateData struct {
 	Profile           *identityaccess.Profile
-	Parties           []partymgmt.Party
 	WatchedMovies     []partymgmt.PartyMovie
 	NumPages          int
 	CurPage           int
@@ -65,8 +67,7 @@ func (s *ProfilesTemplateData) InitHasErrorFields() {
 }
 
 type PartiesTemplateData struct {
-	Party   partymgmt.Party
-	Parties []partymgmt.Party
+	Party partymgmt.Party
 	BaseTemplateData
 }
 
@@ -117,12 +118,15 @@ func (a *Application) newBaseTemplateData(r *http.Request, w http.ResponseWriter
 	authed := isAuthenticated(r.Context())
 
 	var (
-		fullName string
-		email    string
+		fullName       string
+		email          string
+		currentPartyID int
 	)
+
 	if authed {
 		fullName = r.Context().Value(fullNameContextKey).(string)
 		email = r.Context().Value(emailContextKey).(string)
+		currentPartyID = r.Context().Value(currentPartyIDContextKey).(int)
 	}
 
 	var (
@@ -138,6 +142,11 @@ func (a *Application) newBaseTemplateData(r *http.Request, w http.ResponseWriter
 		session.Save(r, w)
 	}
 
+	currentParty, err := a.PartiesRepository.GetPartyByID(r.Context(), currentPartyID)
+	if errors.Is(err, partymgmtstore.ErrNoRecord) {
+		a.Logger.Error("party not found", slog.Any("error", err))
+	}
+
 	return BaseTemplateData{
 		ErrorFlashes:    errorFlashes,
 		InfoFlashes:     infoFlashes,
@@ -147,6 +156,10 @@ func (a *Application) newBaseTemplateData(r *http.Request, w http.ResponseWriter
 		IsAuthenticated: authed,
 		FullName:        fullName,
 		UserEmail:       email,
+		CurrentParty: partymgmt.Party{
+			ID:   currentParty.ID,
+			Name: currentParty.Name,
+		},
 	}
 }
 
@@ -233,6 +246,16 @@ var functions = template.FuncMap{
 
 		return pages
 	},
+	"showSidebar": func(path string) bool {
+		_, ok := nonsidebarPaths[path]
+		return !ok
+	},
+}
+
+var nonsidebarPaths = map[string]struct{}{
+	"/login":  {},
+	"/signup": {},
+	"/":       {},
 }
 
 func NewTemplateCache(filesystem embed.FS) (map[string]*template.Template, error) {

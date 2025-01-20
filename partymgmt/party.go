@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"math/rand"
 	"time"
 
 	"github.com/jm96441n/movieswithfriends/partymgmt/store"
-	legacystore "github.com/jm96441n/movieswithfriends/store"
 )
 
 var ErrMemberExistsInParty = errors.New("member already exists in party")
@@ -17,9 +17,8 @@ var ErrMemberExistsInParty = errors.New("member already exists in party")
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
 type PartyService struct {
-	Logger           *slog.Logger
-	DB               *store.PartyRepository
-	MoviesRepository *legacystore.PGStore
+	Logger *slog.Logger
+	DB     *store.PartyRepository
 }
 
 type PartyMovie struct {
@@ -40,7 +39,7 @@ type PartyMovie struct {
 type MoviesByStatus struct {
 	WatchedMovies   []PartyMovie
 	UnwatchedMovies []PartyMovie
-	SelectedMovie   PartyMovie
+	SelectedMovie   *PartyMovie
 }
 
 type Party struct {
@@ -126,6 +125,7 @@ func (s *PartyService) GetPartyWithMovies(ctx context.Context, logger *slog.Logg
 		MemberCount:  results.MemberCount,
 		MovieCount:   results.MovieCount,
 		WatchedCount: results.WatchedCount,
+		db:           s.DB,
 	}
 
 	moviesByStatus, err := party.GetMoviesByStatus(ctx, logger)
@@ -143,7 +143,7 @@ func (p Party) GetMoviesByStatus(ctx context.Context, logger *slog.Logger) (Movi
 	moviesByStatus := MoviesByStatus{
 		WatchedMovies:   make([]PartyMovie, 0, 10),
 		UnwatchedMovies: make([]PartyMovie, 0, 10),
-		SelectedMovie:   PartyMovie{},
+		SelectedMovie:   nil,
 	}
 	err := p.db.GetMoviesForParty(ctx, logger, p.ID, 0, func(status store.WatchStatusEnum, movieJSON []byte) error {
 		switch status {
@@ -155,7 +155,7 @@ func (p Party) GetMoviesByStatus(ctx context.Context, logger *slog.Logger) (Movi
 			}
 		case store.WatchStatusSelected:
 			// this will always be 1 movie, but we have an array from the agg so we'll just always take the first one
-			selectedMovies := []PartyMovie{}
+			selectedMovies := []*PartyMovie{}
 			err := json.Unmarshal(movieJSON, &selectedMovies)
 			if err != nil {
 				logger.Error(err.Error(), slog.String("marshalType", "selectedMovie"))
@@ -164,6 +164,7 @@ func (p Party) GetMoviesByStatus(ctx context.Context, logger *slog.Logger) (Movi
 			if len(selectedMovies) > 0 {
 				moviesByStatus.SelectedMovie = selectedMovies[0]
 			}
+			fmt.Println(*moviesByStatus.SelectedMovie)
 		case store.WatchStatusWatched:
 			err := json.Unmarshal(movieJSON, &moviesByStatus.WatchedMovies)
 			if err != nil {
