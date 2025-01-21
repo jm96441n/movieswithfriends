@@ -129,41 +129,4 @@
       </div>
     </div>
   </div>
-  <script>
-    document
-      .getElementById('profileForm')
-      .addEventListener('submit', function (e) {
-        e.preventDefault()
-
-        // Get all password fields
-        const passwordFields = document.querySelectorAll('.password-field')
-        const passwordValues = Array.from(passwordFields).map((field) =>
-          field.value.trim()
-        )
-
-        // Check if any password field has a value
-        const anyPasswordFilled = passwordValues.some((value) => value !== '')
-        // Check if all password fields have values
-        const allPasswordsFilled = passwordValues.every((value) => value !== '')
-
-        // Reset validation state
-        passwordFields.forEach((field) => {
-          field.classList.remove('is-invalid')
-        })
-
-        // If any password field is filled, all must be filled
-        if (anyPasswordFilled && !allPasswordsFilled) {
-          passwordFields.forEach((field) => {
-            if (!field.value.trim()) {
-              field.classList.add('is-invalid')
-            }
-          })
-          return
-        }
-
-        // If we get here, either all password fields are empty or all are filled
-        // You can proceed with form submission
-        console.log('Form is valid, ready to submit')
-      })
-  </script>
 {{ end }}

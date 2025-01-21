@@ -45,12 +45,12 @@
             </button>
 
             <!-- Add To Party Button -->
+            <!-- TOOD: make this work -->
             {{ if .IsAuthenticated }}
-            <button
-              class="btn btn-success btn-lg"
-            >
-              <i class="fas fa-plus me-2"></i> Add to Weekend Warriors 
-            </button>
+              <button class="btn btn-success btn-lg">
+                <i class="fas fa-plus me-2"></i> Add to
+                {{ .CurrentParty.Name }}
+              </button>
             {{ end }}
           </div>
         </div>

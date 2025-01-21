@@ -5,7 +5,7 @@ tmp_dir = "tmp"
 [build]
   args_bin = []
   bin = "./movieswithfriends"
-  cmd = "make migrate && go build -buildvcs=false ./cmd/movieswithfriends"
+  cmd = "make build-assets && make migrate && go build -buildvcs=false ./cmd/movieswithfriends"
   delay = 1000
   exclude_dir = ["testdata", "_data"]
   exclude_file = []

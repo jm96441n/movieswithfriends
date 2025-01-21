@@ -54,7 +54,8 @@
                   >
                 </div>
                 <p class="text-muted mb-4">
-                  {{ $selectedMovie.ReleaseDate }} • {{ $selectedMovie.Genres }}
+                  {{ $selectedMovie.ReleaseDate }} •
+                  {{ $selectedMovie.Genres }}
                   •
                   {{ timeToDuration $selectedMovie.Runtime }}
                 </p>
@@ -94,7 +95,7 @@
               </div>
             </div>
           {{ else }}
-          <!-- When movie is not selected -->
+            <!-- When movie is not selected -->
             <div class="text-center py-5">
               <div class="display-1 text-muted mb-4">
                 <i class="fas fa-film"></i>

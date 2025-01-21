@@ -145,7 +145,7 @@ func (p *ProfileAggregatorService) getProfileStats(ctx context.Context, logger *
 }
 
 func (p *ProfileAggregatorService) getParties(ctx context.Context, profileID int) ([]partymgmt.Party, error) {
-	partyRes, err := p.watcherRepository.GetPartiesForWatcher(ctx, profileID)
+	partyRes, err := p.watcherRepository.GetPartiesForWatcher(ctx, profileID, 50)
 	if err != nil {
 		return nil, err
 	}

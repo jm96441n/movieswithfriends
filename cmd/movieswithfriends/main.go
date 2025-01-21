@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -107,12 +108,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	tmplCache, err := web.NewTemplateCache(ui.TemplateFS)
-	if err != nil {
-		logger.Error(err.Error())
-		os.Exit(1)
-	}
-
 	tmdbClient, err := partymgmt.NewTMDBClient("https://api.themoviedb.org/3", tmdbApiKey, logger)
 	if err != nil {
 		logger.Error(err.Error())
@@ -136,32 +131,46 @@ func main() {
 
 	moviesRepo := partymgmtstore.NewMoviesRepository(connPool)
 
-	app := web.Application{
-		TemplateCache:    tmplCache,
-		Logger:           logger,
-		SessionStore:     sessionStore,
-		MoviesService:    partymgmt.NewMovieService(tmdbClient, moviesRepo),
-		MoviesRepository: moviesRepo,
-		PartyService: &partymgmt.PartyService{
-			DB:     partymgmtstore.NewPartyRepository(connPool),
-			Logger: logger,
-		},
-		PartiesRepository: partymgmtstore.NewPartyRepository(connPool),
-		ProfilesService: identityaccess.NewProfileService(
-			iamstore.NewProfileRepository(connPool),
-		),
-		WatcherService: partymgmt.NewWatcherService(
-			partymgmtstore.NewWatcherRepository(connPool),
-		),
-		Auth: &identityaccess.Authenticator{
-			Logger:            logger,
-			ProfileRepository: iamstore.NewProfileRepository(connPool),
-		},
-		ProfileAggregatorService: services.NewProfileAggregatorService(
-			iamstore.NewProfileRepository(connPool),
-			partymgmtstore.NewWatcherRepository(connPool),
-		),
+	assetDir, err := fs.Sub(ui.TemplateFS, "dist")
+	if err != nil {
+		logger.Error(err.Error())
+		os.Exit(1)
 	}
+
+	loader, err := web.NewLoader(assetDir, "manifest.json")
+	if err != nil {
+		logger.Error("error loading manifest", slog.Any("err", err.Error()))
+		os.Exit(1)
+	}
+
+	profileRepo := iamstore.NewProfileRepository(connPool)
+	watcherRepo := partymgmtstore.NewWatcherRepository(connPool)
+	partyRepo := partymgmtstore.NewPartyRepository(connPool)
+
+	app := web.NewApplication(
+		web.AppConfig{
+			Logger:           logger,
+			SessionStore:     sessionStore,
+			MoviesService:    partymgmt.NewMovieService(tmdbClient, moviesRepo),
+			MoviesRepository: moviesRepo,
+			PartyService: &partymgmt.PartyService{
+				DB:     partyRepo,
+				Logger: logger,
+			},
+			PartiesRepository: partyRepo,
+			ProfilesService:   identityaccess.NewProfileService(profileRepo),
+			WatcherService:    partymgmt.NewWatcherService(watcherRepo),
+			Auth: &identityaccess.Authenticator{
+				Logger:            logger,
+				ProfileRepository: profileRepo,
+			},
+			ProfileAggregatorService: services.NewProfileAggregatorService(
+				profileRepo,
+				watcherRepo,
+			),
+			AssetLoader: loader,
+		},
+	)
 
 	addr := os.Getenv("ADDR")
 	if addr == "" {

@@ -41,8 +41,9 @@
         </h6>
 
         <div class="list-group list-group-flush">
+          {{ $currentPartyID := .CurrentParty.ID }}
           {{ range $idx, $party := .Parties }}
-            {{ if eq 0 $idx }}
+            {{ if eq $party.ID $currentPartyID }}
               <!-- Active Party -->
               <div
                 class="list-group-item list-group-item-action active border-start border-4 border-primary bg-primary bg-opacity-10 text-dark"

@@ -8,6 +8,10 @@ setupprettier:
 migrate:
 	cd migrations && GOOSE_DBSTRING="user=$$DB_USERNAME password=$$DB_PASSWORD host=$$DB_HOST sslmode=disable dbname=movieswithfriends" GOOSE_DRIVER="postgres" goose up && cd ..
 
+.PHONY: build-assets
+build-assets:
+	go run ./tools/assetbuilder/
+
 .PHONY: psql
 psql:
 	docker compose exec -it db psql -U user movieswithfriends

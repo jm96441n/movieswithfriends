@@ -118,6 +118,38 @@ func (m *MovieService) GetMovie(ctx context.Context, logger *slog.Logger, movieI
 	return movie, nil
 }
 
+func (m *MovieService) GetOrCreateMovie(ctx context.Context, logger *slog.Logger, movieID MovieID) (int, error) {
+	err := movieID.validate()
+	if err != nil {
+		return 0, err
+	}
+
+	// if we have the actual id of the movie then we know it exists
+	if movieID.MovieID != nil {
+		return *movieID.MovieID, nil
+	}
+
+	// this is racy, it's very possible that we duplicate the create movie path
+	// this is fine for now
+	movie, err := m.GetMovie(ctx, logger, movieID)
+	if errors.Is(err, ErrMovieDoesNotExist) {
+		// we know tmdbid is set from the validate call earlier
+		id, err := m.CreateMovie(ctx, logger, *movieID.TMDBID)
+		if err != nil {
+			return 0, err
+		}
+
+		return id, nil
+	}
+
+	if err != nil {
+		return 0, err
+	}
+
+	// movie exists so we just return it
+	return movie.ID, nil
+}
+
 func convertGetResultToMovie(movie *Movie) store.GetAssignFn {
 	return func(res *store.GetMovieResult) {
 		movie.ID = res.ID

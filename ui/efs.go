@@ -2,5 +2,5 @@ package ui
 
 import "embed"
 
-//go:embed "html"
+//go:embed "html" "dist"
 var TemplateFS embed.FS

@@ -14,6 +14,7 @@ import (
 	"github.com/jm96441n/movieswithfriends/identityaccess/services"
 	"github.com/jm96441n/movieswithfriends/partymgmt"
 	partymgmtstore "github.com/jm96441n/movieswithfriends/partymgmt/store"
+	"github.com/jm96441n/movieswithfriends/ui"
 )
 
 var (
@@ -22,9 +23,8 @@ var (
 	ErrFailedToGetAccountIDFromSession = errors.New("failed to get accountl id from session")
 )
 
-type Application struct {
+type AppConfig struct {
 	Logger                   *slog.Logger
-	TemplateCache            map[string]*template.Template
 	SessionStore             *sessions.CookieStore
 	MoviesService            *partymgmt.MovieService
 	MoviesRepository         *partymgmtstore.MoviesRepository
@@ -34,6 +34,42 @@ type Application struct {
 	ProfilesService          *identityaccess.ProfileService
 	ProfileAggregatorService *services.ProfileAggregatorService
 	Auth                     *identityaccess.Authenticator
+	AssetLoader              *Loader
+}
+
+type Application struct {
+	Logger                   *slog.Logger
+	templateCache            map[string]*template.Template
+	SessionStore             *sessions.CookieStore
+	MoviesService            *partymgmt.MovieService
+	MoviesRepository         *partymgmtstore.MoviesRepository
+	PartyService             *partymgmt.PartyService
+	PartiesRepository        *partymgmtstore.PartyRepository
+	WatcherService           *partymgmt.WatcherService
+	ProfilesService          *identityaccess.ProfileService
+	ProfileAggregatorService *services.ProfileAggregatorService
+	Auth                     *identityaccess.Authenticator
+	AssetLoader              *Loader
+}
+
+func NewApplication(cfg AppConfig) *Application {
+	a := &Application{
+		Logger:                   cfg.Logger,
+		SessionStore:             cfg.SessionStore,
+		MoviesService:            cfg.MoviesService,
+		MoviesRepository:         cfg.MoviesRepository,
+		PartyService:             cfg.PartyService,
+		PartiesRepository:        cfg.PartiesRepository,
+		WatcherService:           cfg.WatcherService,
+		ProfilesService:          cfg.ProfilesService,
+		ProfileAggregatorService: cfg.ProfileAggregatorService,
+		Auth:                     cfg.Auth,
+		AssetLoader:              cfg.AssetLoader,
+	}
+
+	a.initTemplateCache(ui.TemplateFS)
+
+	return a
 }
 
 func (a *Application) serverError(w http.ResponseWriter, r *http.Request, err error) {
@@ -56,7 +92,7 @@ func (a *Application) clientError(w http.ResponseWriter, r *http.Request, status
 }
 
 func (a *Application) render(w http.ResponseWriter, r *http.Request, status int, page string, data interface{}) {
-	ts, ok := a.TemplateCache[page]
+	ts, ok := a.templateCache[page]
 
 	if !ok {
 		a.serverError(w, r, fmt.Errorf("template does not exist for page %q", page))
@@ -77,7 +113,7 @@ func (a *Application) render(w http.ResponseWriter, r *http.Request, status int,
 }
 
 func (a *Application) renderPartial(w http.ResponseWriter, r *http.Request, status int, page string, data interface{}) {
-	ts, ok := a.TemplateCache[page]
+	ts, ok := a.templateCache[page]
 
 	if !ok {
 		a.Logger.Error("template does not exist for page", slog.Any("page", page))
@@ -166,6 +202,27 @@ func (a *Application) getProfileIDFromSession(r *http.Request) (int, error) {
 	}
 
 	return profileID, nil
+}
+
+func (a *Application) getCurrentPartyFromSession(r *http.Request) (partymgmt.Party, error) {
+	currentPartyID, err := a.getCurrentPartyIDFromSession(r)
+	if err != nil {
+		return partymgmt.Party{}, err
+	}
+
+	res, err := a.PartiesRepository.GetPartyByID(r.Context(), currentPartyID)
+	if err != nil {
+		return partymgmt.Party{}, err
+	}
+
+	party := partymgmt.Party{
+		ID:      currentPartyID,
+		Name:    res.Name,
+		ShortID: res.ShortID,
+		DB:      a.PartiesRepository,
+	}
+
+	return party, nil
 }
 
 func (a *Application) getCurrentPartyIDFromSession(r *http.Request) (int, error) {

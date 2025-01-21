@@ -126,7 +126,9 @@ func (a *Application) newBaseTemplateData(r *http.Request, w http.ResponseWriter
 	if authed {
 		fullName = r.Context().Value(fullNameContextKey).(string)
 		email = r.Context().Value(emailContextKey).(string)
-		currentPartyID = r.Context().Value(currentPartyIDContextKey).(int)
+		if id, ok := r.Context().Value(currentPartyIDContextKey).(int); ok {
+			currentPartyID = id
+		}
 	}
 
 	var (
@@ -142,9 +144,29 @@ func (a *Application) newBaseTemplateData(r *http.Request, w http.ResponseWriter
 		session.Save(r, w)
 	}
 
-	currentParty, err := a.PartiesRepository.GetPartyByID(r.Context(), currentPartyID)
-	if errors.Is(err, partymgmtstore.ErrNoRecord) {
-		a.Logger.Error("party not found", slog.Any("error", err))
+	var currentParty partymgmt.Party
+
+	if currentPartyID > 0 {
+		res, err := a.PartiesRepository.GetPartyByID(r.Context(), currentPartyID)
+		if errors.Is(err, partymgmtstore.ErrNoRecord) {
+			a.Logger.Error("party not found", slog.Any("error", err))
+		}
+		currentParty.ID = res.ID
+		currentParty.Name = res.Name
+	}
+
+	watcher, err := a.getWatcherFromSession(r)
+
+	if errors.Is(err, ErrFailedToGetProfileIDFromSession) {
+		a.Logger.DebugContext(r.Context(), "profileID is not in session")
+	} else if err != nil {
+		a.Logger.Error("failed to get watcher from session", slog.Any("error", err))
+	}
+
+	parties, err := watcher.GetParties(r.Context())
+	if err != nil {
+		// handle later
+		a.Logger.Error("failed to get watcher from session", slog.Any("error", err))
 	}
 
 	return BaseTemplateData{
@@ -156,100 +178,106 @@ func (a *Application) newBaseTemplateData(r *http.Request, w http.ResponseWriter
 		IsAuthenticated: authed,
 		FullName:        fullName,
 		UserEmail:       email,
-		CurrentParty: partymgmt.Party{
-			ID:   currentParty.ID,
-			Name: currentParty.Name,
-		},
+		CurrentParty:    currentParty,
+		Parties:         parties,
 	}
 }
 
-var functions = template.FuncMap{
-	"navClasses": func(currentPath, targetPath string) string {
-		if currentPath == targetPath {
-			return "active"
-		}
-		return ""
-	},
-	"hyphenate": func(s string) string {
-		return strings.ReplaceAll(strings.ToLower(s), " ", "-")
-	},
-	"disableClassForTrailerButton": func(s string) string {
-		if s == "" {
-			return "disabled"
-		}
-		return ""
-	},
-	"joinGenres": func(genres []partymgmt.Genre) string {
-		res := ""
-		for i, g := range genres {
-			if i == 0 {
-				res = g.Name
-			} else {
-				res = fmt.Sprintf("%s, %s", res, g.Name)
+func (a *Application) templFunctions() template.FuncMap {
+	return template.FuncMap{
+		"navClasses": func(currentPath, targetPath string) string {
+			if currentPath == targetPath {
+				return "active"
 			}
-		}
-		return res
-	},
-	"timeToDuration": func(minutes int) string {
-		hours := minutes / 60
-		mins := minutes % 60
-		return fmt.Sprintf("%dh %dm", hours, mins)
-	},
-	"formatDate": func(date time.Time) string {
-		return date.Format("January 2006")
-	},
-	"formatWatchDate": func(date time.Time) string {
-		return date.Format("January 03, 2006")
-	},
-	"disableIfEmpty": func(s string) string {
-		if s == "" {
-			return "disabled"
-		}
-		return ""
-	},
-	"isInvalidClass": func(invalid *bool) string {
-		if invalid == nil {
 			return ""
-		}
-		val := *invalid
-		if val {
-			return "is-invalid"
-		}
+		},
+		"hyphenate": func(s string) string {
+			s = strings.ReplaceAll(strings.ToLower(s), ":", "")
+			return strings.ReplaceAll(strings.ToLower(s), " ", "-")
+		},
+		"disableClassForTrailerButton": func(s string) string {
+			if s == "" {
+				return "disabled"
+			}
+			return ""
+		},
+		"joinGenres": func(genres []partymgmt.Genre) string {
+			res := ""
+			for i, g := range genres {
+				if i == 0 {
+					res = g.Name
+				} else {
+					res = fmt.Sprintf("%s, %s", res, g.Name)
+				}
+			}
+			return res
+		},
+		"timeToDuration": func(minutes int) string {
+			hours := minutes / 60
+			mins := minutes % 60
+			return fmt.Sprintf("%dh %dm", hours, mins)
+		},
+		"formatDate": func(date time.Time) string {
+			return date.Format("January 2006")
+		},
+		"formatWatchDate": func(date time.Time) string {
+			return date.Format("January 03, 2006")
+		},
+		"disableIfEmpty": func(s string) string {
+			if s == "" {
+				return "disabled"
+			}
+			return ""
+		},
+		"isInvalidClass": func(invalid *bool) string {
+			if invalid == nil {
+				return ""
+			}
+			val := *invalid
+			if val {
+				return "is-invalid"
+			}
 
-		return "is-valid"
-	},
-	"activeIfCurrentPageForPagination": func(currentPage, targetPage int) string {
-		if currentPage == targetPage {
-			return "active"
-		}
-		return ""
-	},
-	"pageNums": func(curPage, numPages int) []int {
-		pages := make([]int, 0, 3)
-		// when on the first page show the following 2 pages
-		// when on the last page show the previous 2 pages
-		// when on a page in the middle show the previous page, current page, and next page
-		switch curPage {
-		case 1:
-			for i := curPage; i <= numPages && i < curPage+3; i++ {
-				pages = append(pages, i)
+			return "is-valid"
+		},
+		"activeIfCurrentPageForPagination": func(currentPage, targetPage int) string {
+			if currentPage == targetPage {
+				return "active"
 			}
-		case numPages:
-			for i := max(1, curPage-2); i <= numPages; i++ {
-				pages = append(pages, i)
+			return ""
+		},
+		"pageNums": func(curPage, numPages int) []int {
+			pages := make([]int, 0, 3)
+			// when on the first page show the following 2 pages
+			// when on the last page show the previous 2 pages
+			// when on a page in the middle show the previous page, current page, and next page
+			switch curPage {
+			case 1:
+				for i := curPage; i <= numPages && i < curPage+3; i++ {
+					pages = append(pages, i)
+				}
+			case numPages:
+				for i := max(1, curPage-2); i <= numPages; i++ {
+					pages = append(pages, i)
+				}
+			default:
+				for i := curPage - 1; i <= curPage+1; i++ {
+					pages = append(pages, i)
+				}
 			}
-		default:
-			for i := curPage - 1; i <= curPage+1; i++ {
-				pages = append(pages, i)
-			}
-		}
 
-		return pages
-	},
-	"showSidebar": func(path string) bool {
-		_, ok := nonsidebarPaths[path]
-		return !ok
-	},
+			return pages
+		},
+		"showSidebar": func(path string) bool {
+			_, ok := nonsidebarPaths[path]
+			return !ok
+		},
+		"assetPath": a.assetPath,
+	}
+}
+
+func (a *Application) assetPath(path string) string {
+	return a.AssetLoader.Path(path)
 }
 
 var nonsidebarPaths = map[string]struct{}{
@@ -258,7 +286,7 @@ var nonsidebarPaths = map[string]struct{}{
 	"/":       {},
 }
 
-func NewTemplateCache(filesystem embed.FS) (map[string]*template.Template, error) {
+func (a *Application) initTemplateCache(filesystem embed.FS) error {
 	cache := make(map[string]*template.Template)
 
 	fs.WalkDir(filesystem, "html/pages", func(path string, d fs.DirEntry, _ error) error {
@@ -287,7 +315,7 @@ func NewTemplateCache(filesystem embed.FS) (map[string]*template.Template, error
 		}
 
 		// parse the base template file into a template set
-		ts, err := template.New(name).Funcs(functions).ParseFS(filesystem, patterns...)
+		ts, err := template.New(name).Funcs(a.templFunctions()).ParseFS(filesystem, patterns...)
 		if err != nil {
 			return err
 		}
@@ -295,7 +323,8 @@ func NewTemplateCache(filesystem embed.FS) (map[string]*template.Template, error
 		cache[name] = ts
 		return nil
 	})
-	return cache, nil
+	a.templateCache = cache
+	return nil
 }
 
 func partialDirExist(filesystem fs.FS, dir string) bool {

@@ -49,17 +49,19 @@ func (a *Application) authenticateMiddleware() func(http.HandlerFunc) http.Handl
 					a.serverError(w, req, err)
 					return
 				}
+
 				currentPartyID, err := a.getCurrentPartyIDFromSession(req)
 				if err != nil {
 					logger.ErrorContext(ctx, "error getting party ID", slog.Any("error", err))
-					a.serverError(w, req, err)
-					return
 				}
 
 				ctx := context.WithValue(req.Context(), isAuthenticatedContextKey, true)
 				ctx = context.WithValue(ctx, emailContextKey, profile.Account.Email)
 				ctx = context.WithValue(ctx, fullNameContextKey, profile.FirstName+" "+profile.LastName)
-				ctx = context.WithValue(ctx, currentPartyIDContextKey, currentPartyID)
+				if currentPartyID > 0 {
+					ctx = context.WithValue(ctx, currentPartyIDContextKey, currentPartyID)
+				}
+
 				req = req.WithContext(ctx)
 			}
 

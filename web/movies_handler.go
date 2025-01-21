@@ -82,15 +82,6 @@ func (a *Application) MoviesShowHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	watcher, err := a.getWatcherFromSession(r)
-	if errors.Is(err, ErrFailedToGetProfileIDFromSession) {
-		logger.DebugContext(ctx, "profileID is not in session")
-	} else if err != nil {
-		logger.Error("failed to get profile id from session", slog.Any("error", err))
-		a.serverError(w, r, err)
-		return
-	}
-
 	movie, err := a.MoviesService.GetMovie(ctx, logger, partymgmt.MovieID{MovieID: &id})
 	if err != nil {
 		if errors.Is(err, partymgmt.ErrMovieDoesNotExist) {
@@ -106,16 +97,7 @@ func (a *Application) MoviesShowHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	parties, err := watcher.GetParties(ctx)
-	if err != nil {
-		// TODO: maybe set something in the UI to show parties couldn't be loaded by still show the page?
-		logger.ErrorContext(ctx, "failed to get parties", "error", err)
-		a.serverError(w, r, err)
-		return
-	}
-
 	templateData := a.NewMoviesTemplateData(r, w, "/movie")
 	templateData.Movie = movie
-	templateData.Parties = parties
 	a.render(w, r, http.StatusOK, "movies/show.gohtml", templateData)
 }

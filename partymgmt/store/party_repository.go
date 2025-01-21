@@ -153,27 +153,6 @@ func (p *PartyRepository) AddMovieToParty(ctx context.Context, idParty, idMovie,
 	return nil
 }
 
-const GetPartiesByMemberIDQuery = `
-  with current_member_parties as (
-    select 
-      parties.id_party,
-      parties.name
-    from parties
-    join party_members on party_members.id_party = parties.id_party
-    where party_members.id_member = $1
-  )
-    select 
-      current_member_parties.id_party,
-      current_member_parties.name,
-      count(distinct party_members.id_member) as member_count,
-      count(distinct party_movies.id_movie) as movie_count
-    from party_members
-    left join party_movies on party_movies.id_party = party_members.id_party
-    join current_member_parties on current_member_parties.id_party = party_members.id_party
-    where party_members.id_party = current_member_parties.id_party
-    group by current_member_parties.id_party, current_member_parties.name;
-`
-
 func (p *PartyRepository) MarkPartyMovieAsWatched(ctx context.Context, idParty, idMovie int) error {
 	curTime := time.Now().UTC()
 	return p.updatePartyMovieStatus(ctx, idParty, idMovie, WatchStatusWatched, &curTime)

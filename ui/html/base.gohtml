@@ -29,6 +29,7 @@
         src="https://kit.fontawesome.com/50e4b5de6c.js"
         crossorigin="anonymous"
       ></script>
+      <script src="{{ assetPath "js/main.js" }}"></script>
     </head>
     <body class="bg-light">
       {{ template "nav" . }}
@@ -110,30 +111,6 @@
             </a>
           </div>
         </nav>
-        <script>
-          ;(function () {
-            'use strict'
-
-            // Fetch all the forms we want to apply custom Bootstrap validation styles to
-            var forms = document.querySelectorAll('.needs-validation')
-
-            // Loop over them and prevent submission
-            Array.prototype.slice.call(forms).forEach(function (form) {
-              form.addEventListener(
-                'submit',
-                function (event) {
-                  if (!form.checkValidity()) {
-                    event.preventDefault()
-                    event.stopPropagation()
-                  }
-
-                  form.classList.add('was-validated')
-                },
-                false
-              )
-            })
-          })()
-        </script>
       </main>
     </body>
   </html>

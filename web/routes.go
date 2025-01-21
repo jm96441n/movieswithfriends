@@ -22,6 +22,7 @@ func (a *Application) Routes() http.Handler {
 	staticRoutes := a.staticRoutes()
 	movieRoutes := a.movieRoutes()
 	partyRoutes := a.partyRoutes()
+	partyMovieRoutes := a.partyMovieRoutes()
 	sessionRoutes := a.sessionRoutes()
 	profileRoutes := a.profileRoutes()
 	partyMemberRoutes := a.partyMemberRoutes()
@@ -34,6 +35,7 @@ func (a *Application) Routes() http.Handler {
 		staticRoutes,
 		movieRoutes,
 		partyRoutes,
+		partyMovieRoutes,
 		sessionRoutes,
 		profileRoutes,
 		partyMemberRoutes,
@@ -41,6 +43,15 @@ func (a *Application) Routes() http.Handler {
 
 	authenticatorMW := a.authenticateMiddleware()
 	requireAuthMW := a.authenticatedMiddleware()
+
+	fsys, err := fs.Sub(ui.TemplateFS, "dist")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Create a file server handler
+	fileServer := http.FileServer(http.FS(fsys))
+	router.Handle("/dist/", http.StripPrefix("/dist", fileServer))
 
 	for _, r := range routes {
 		handlerFunc := r.handler
@@ -52,14 +63,6 @@ func (a *Application) Routes() http.Handler {
 		router.Handle(r.path, handlerFunc)
 	}
 
-	fsys, err := fs.Sub(ui.TemplateFS, "static")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Create a file server handler
-	fileServer := http.FileServer(http.FS(fsys))
-	router.Handle("/static/", http.StripPrefix("/static", fileServer))
 	return router
 }
 
@@ -100,6 +103,16 @@ func (a *Application) movieRoutes() []Route {
 	}
 }
 
+func (a *Application) partyMovieRoutes() []Route {
+	return []Route{
+		{
+			path:               "POST /party_movies",
+			handler:            a.AddMovietoPartyHandler,
+			authenticatedRoute: true,
+		},
+	}
+}
+
 func (a *Application) partyRoutes() []Route {
 	return []Route{
 		{
@@ -115,11 +128,6 @@ func (a *Application) partyRoutes() []Route {
 		{
 			path:               "GET /parties/{id}",
 			handler:            a.PartyShowHandler,
-			authenticatedRoute: true,
-		},
-		{
-			path:               "PUT /parties/{id}",
-			handler:            a.AddMovietoPartyHandler,
 			authenticatedRoute: true,
 		},
 		{
