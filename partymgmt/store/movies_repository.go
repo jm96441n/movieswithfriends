@@ -140,3 +140,30 @@ func (p *MoviesRepository) CreateMovie(ctx context.Context, createParams CreateM
 
 	return movieID, nil
 }
+
+const getMovieTMDBIDsFromPartyQuery = `select movies.tmdb_id from movies
+join party_movies on movies.id_movie = party_movies.id_movie
+where party_movies.id_party = $1 AND movies.tmdb_id = any($2);`
+
+func (p *MoviesRepository) GetMovieTMDBIDsFromParty(ctx context.Context, partyID int, tmdbIDs []int, assignFn func(int)) error {
+	rows, err := p.db.Query(ctx, getMovieTMDBIDsFromPartyQuery, partyID, tmdbIDs)
+	if err != nil {
+		return err
+	}
+
+	var id int
+
+	for rows.Next() {
+		err := rows.Scan(&id)
+		if err != nil {
+			return err
+		}
+		assignFn(id)
+	}
+
+	if err := rows.Err(); err != nil {
+		return err
+	}
+
+	return nil
+}

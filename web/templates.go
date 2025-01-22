@@ -41,9 +41,10 @@ type BaseTemplateData struct {
 }
 
 type MoviesTemplateData struct {
-	Movies      []partymgmt.TMDBMovie
-	Movie       partymgmt.Movie
-	SearchValue string
+	Movies                   []partymgmt.TMDBMovie
+	CurrentPartyMovieTMDBIDs map[int]struct{}
+	Movie                    partymgmt.Movie
+	SearchValue              string
 	BaseTemplateData
 }
 
@@ -311,6 +312,10 @@ func (a *Application) templFunctions() template.FuncMap {
 			return !ok
 		},
 		"assetPath": a.assetPath,
+		"movieWatched": func(id int, tmdbIDS map[int]struct{}) bool {
+			_, ok := tmdbIDS[id]
+			return ok
+		},
 	}
 }
 

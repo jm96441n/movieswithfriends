@@ -74,6 +74,24 @@ func (m *MovieService) SearchMovies(ctx context.Context, logger *slog.Logger, se
 	return result.Movies, nil
 }
 
+func (m *MovieService) GetMovieTMDBIDsFromCurrentParty(ctx context.Context, logger *slog.Logger, partyID int, movies []TMDBMovie) (map[int]struct{}, error) {
+	tmdbIDs := make([]int, 0, len(movies))
+	for _, movie := range movies {
+		tmdbIDs = append(tmdbIDs, movie.TMDBID)
+	}
+
+	movieIDSet := make(map[int]struct{})
+	err := m.db.GetMovieTMDBIDsFromParty(ctx, partyID, tmdbIDs, func(id int) {
+		movieIDSet[id] = struct{}{}
+	})
+	if err != nil {
+		logger.ErrorContext(ctx, "Failed to get movie tmdbids from party", slog.Any("err", err), slog.Any("partyID", partyID))
+		return nil, err
+	}
+
+	return movieIDSet, nil
+}
+
 type MovieID struct {
 	TMDBID  *int
 	MovieID *int

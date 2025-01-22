@@ -29,9 +29,25 @@ func (a *Application) MoviesIndexHandler(w http.ResponseWriter, r *http.Request)
 	if err != nil {
 		logger.ErrorContext(ctx, "failed to search movies", slog.Any("error", err))
 		a.serverError(w, r, err)
+		return
+	}
+
+	currentPartyID, err := a.getCurrentPartyIDFromSession(r)
+	if err != nil {
+		logger.ErrorContext(ctx, "failed to search movies", slog.Any("error", err))
+		a.serverError(w, r, err)
+		return
+	}
+
+	currentPartyMovieTMDBIDs, err := a.MoviesService.GetMovieTMDBIDsFromCurrentParty(r.Context(), logger, currentPartyID, movies)
+	if err != nil {
+		logger.ErrorContext(ctx, "failed to search movies", slog.Any("error", err))
+		a.serverError(w, r, err)
+		return
 	}
 
 	templateData.Movies = movies
+	templateData.CurrentPartyMovieTMDBIDs = currentPartyMovieTMDBIDs
 	if r.Header.Get("HX-Request") != "" {
 		a.renderPartial(w, r, http.StatusOK, "movies/partials/search_results.gohtml", templateData)
 		return

@@ -286,3 +286,14 @@ func (p *PartyRepository) GetMoviesForParty(ctx context.Context, logger *slog.Lo
 
 	return nil
 }
+
+const createPartyMovieQuery = `insert into party_movies (id_party, id_movie, id_added_by) values ($1, $2, $3)`
+
+// CreatePartMovie creates a movie within a party
+func (p *PartyRepository) CreatePartyMovie(ctx context.Context, idParty, idMovie, idAddedBy int) error {
+	_, err := p.db.Exec(ctx, createPartyMovieQuery, idParty, idMovie, idAddedBy)
+	if err != nil {
+		return err
+	}
+	return nil
+}

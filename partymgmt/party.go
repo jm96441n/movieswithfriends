@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log/slog"
 	"math/rand"
 	"time"
@@ -178,7 +177,6 @@ func (p Party) GetMoviesByStatus(ctx context.Context, logger *slog.Logger) (Movi
 			if len(selectedMovies) > 0 {
 				moviesByStatus.SelectedMovie = selectedMovies[0]
 			}
-			fmt.Println(*moviesByStatus.SelectedMovie)
 		case store.WatchStatusWatched:
 			err := json.Unmarshal(movieJSON, &moviesByStatus.WatchedMovies)
 			if err != nil {
@@ -196,7 +194,10 @@ func (p Party) GetMoviesByStatus(ctx context.Context, logger *slog.Logger) (Movi
 }
 
 func (p Party) AddMovie(ctx context.Context, watcherID, idMovie int) error {
-	// return p.DB.AddMovieToParty(ctx, idMovie, p.ID)
+	err := p.DB.CreatePartyMovie(ctx, p.ID, idMovie, watcherID)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

@@ -124,6 +124,7 @@ func (t *TMDBClient) Search(ctx context.Context, term string, page int) (SearchR
 
 	defer res.Body.Close()
 
+	// TODO: use a limited reader here
 	respBody, err := io.ReadAll(res.Body)
 	if err != nil {
 		return SearchResults{}, err
