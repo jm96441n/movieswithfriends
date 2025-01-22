@@ -106,7 +106,7 @@ func (a *Application) SetCurrentPartyHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	// w.Header().Set("HX-Trigger", "changeCurrentParty")
+	w.Header().Set("HX-Trigger", "changeCurrentParty")
 
 	data := a.NewSidebarTemplateData(r, w, idParty)
 	a.renderPartial(w, r, http.StatusOK, "partials/sidebar.gohtml", data)
