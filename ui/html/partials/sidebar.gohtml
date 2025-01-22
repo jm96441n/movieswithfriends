@@ -53,7 +53,6 @@
                   <div
                     class="d-flex align-items-center flex-grow-1"
                     role="button"
-                    onclick="selectParty('Friday Night Movies')"
                   >
                     <span class="me-auto">{{ .Name }}</span>
                     <!-- pill is to show count of movies -->
@@ -99,7 +98,8 @@
                   <div
                     class="d-flex align-items-center flex-grow-1"
                     role="button"
-                    onclick="selectParty('Weekend Warriors')"
+                    hx-post="/current_party/{{ .ID }}"
+                    hx-target="#sidebar"
                   >
                     <span class="me-auto">{{ .Name }}</span>
                     <span class="badge bg-secondary rounded-pill me-2"
@@ -163,3 +163,5 @@
     </div>
   </div>
 {{ end }}
+
+{{ template "sidebar" .}}

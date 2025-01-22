@@ -79,6 +79,11 @@ type SignupTemplateData struct {
 	BaseTemplateData
 }
 
+type SidebarTemplateData struct {
+	Parties      []partymgmt.Party
+	CurrentParty partymgmt.Party
+}
+
 func (s *SignupTemplateData) InitHasErrorFields() {
 	s.HasEmailError = new(bool)
 	s.HasPasswordError = new(bool)
@@ -111,6 +116,39 @@ func (a *Application) NewPartiesTemplateData(r *http.Request, w http.ResponseWri
 func (a *Application) NewSignupTemplateData(r *http.Request, w http.ResponseWriter, path string) *SignupTemplateData {
 	return &SignupTemplateData{
 		BaseTemplateData: a.newBaseTemplateData(r, w, path),
+	}
+}
+
+func (a *Application) NewSidebarTemplateData(r *http.Request, w http.ResponseWriter, currentPartyID int) SidebarTemplateData {
+	watcher, err := a.getWatcherFromSession(r)
+
+	if errors.Is(err, ErrFailedToGetProfileIDFromSession) {
+		a.Logger.DebugContext(r.Context(), "profileID is not in session")
+	} else if err != nil {
+		a.Logger.Error("failed to get watcher from session", slog.Any("error", err))
+	}
+
+	parties, err := watcher.GetParties(r.Context())
+	if err != nil {
+		// handle later
+		a.Logger.Error("failed to get watcher from session", slog.Any("error", err))
+	}
+
+	currentParty := parties[0]
+
+	if currentPartyID > 0 {
+		res, err := a.PartiesRepository.GetPartyByID(r.Context(), currentPartyID)
+		if errors.Is(err, partymgmtstore.ErrNoRecord) {
+			a.Logger.Error("party not found", slog.Any("error", err))
+		}
+		currentParty = partymgmt.Party{
+			ID:   res.ID,
+			Name: res.Name,
+		}
+	}
+	return SidebarTemplateData{
+		Parties:      parties,
+		CurrentParty: currentParty,
 	}
 }
 
@@ -289,12 +327,17 @@ var nonsidebarPaths = map[string]struct{}{
 func (a *Application) initTemplateCache(filesystem embed.FS) error {
 	cache := make(map[string]*template.Template)
 
-	fs.WalkDir(filesystem, "html/pages", func(path string, d fs.DirEntry, _ error) error {
+	fs.WalkDir(filesystem, "html", func(path string, d fs.DirEntry, _ error) error {
 		if d.IsDir() {
 			return nil
 		}
 
 		name, _ := strings.CutPrefix(path, "html/pages/")
+		base := "html/pages"
+		if strings.Contains(path, "html/partials/") {
+			name, _ = strings.CutPrefix(path, "html/")
+			base = "html"
+		}
 
 		var patterns []string
 		if strings.Contains(name, "partials") {
@@ -308,7 +351,7 @@ func (a *Application) initTemplateCache(filesystem embed.FS) error {
 			paths := strings.Split(name, "/")
 			if len(paths) > 1 && partialDirExist(filesystem, paths[0]) {
 				pageGroup := paths[0]
-				patterns = append(patterns, fmt.Sprintf("html/pages/%s/partials/*.gohtml", pageGroup))
+				patterns = append(patterns, fmt.Sprintf("%s/%s/partials/*.gohtml", base, pageGroup))
 			}
 
 			patterns = append(patterns, path)

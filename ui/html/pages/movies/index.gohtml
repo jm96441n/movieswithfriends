@@ -19,7 +19,7 @@
               value="{{ .SearchValue }}"
               hx-get="/movies"
               hx-push-url="true"
-              hx-trigger="input changed delay:500ms, search"
+              hx-trigger="input changed delay:500ms, search, changeCurrentParty from:body"
               hx-target="#search-results"
               hx-params="*"
             />

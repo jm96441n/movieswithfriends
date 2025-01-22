@@ -91,7 +91,7 @@ func (a *Application) logout(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-func (a *Application) SetCurrentParty(w http.ResponseWriter, r *http.Request) {
+func (a *Application) SetCurrentPartyHandler(w http.ResponseWriter, r *http.Request) {
 	idPartyParam := r.PathValue("party_id")
 	// TODO: make sure party is a valid party id for the given user
 	idParty, err := strconv.Atoi(idPartyParam)
@@ -105,6 +105,11 @@ func (a *Application) SetCurrentParty(w http.ResponseWriter, r *http.Request) {
 		a.clientError(w, r, http.StatusBadRequest, "uh oh")
 		return
 	}
+
+	// w.Header().Set("HX-Trigger", "changeCurrentParty")
+
+	data := a.NewSidebarTemplateData(r, w, idParty)
+	a.renderPartial(w, r, http.StatusOK, "partials/sidebar.gohtml", data)
 }
 
 func (a *Application) setCurrentPartyInSession(r *http.Request, w http.ResponseWriter, idParty int) error {

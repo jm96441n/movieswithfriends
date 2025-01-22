@@ -185,6 +185,11 @@ func (a *Application) sessionRoutes() []Route {
 			handler:            a.LogoutHandler,
 			authenticatedRoute: false,
 		},
+		{
+			path:               "POST /current_party/{party_id}",
+			handler:            a.SetCurrentPartyHandler,
+			authenticatedRoute: true,
+		},
 	}
 }
 
