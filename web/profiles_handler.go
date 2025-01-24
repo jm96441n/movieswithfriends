@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/jm96441n/movieswithfriends/identityaccess"
-	"github.com/jm96441n/movieswithfriends/store"
+	"github.com/jm96441n/movieswithfriends/identityaccess/store"
 )
 
 func (a *Application) ProfileShowHandler(w http.ResponseWriter, r *http.Request) {
