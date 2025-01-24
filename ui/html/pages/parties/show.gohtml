@@ -116,7 +116,7 @@
 
       <div class="row g-4">
         <!-- Unwatched Movies -->
-        <div class="col-lg-6">
+        <div class="col-lg-6" id="unwatched-movies">
           <div class="card border-0 shadow-sm h-100">
             <div class="card-header bg-white py-3">
               <h3 class="h5 mb-0">Unwatched Movies</h3>
@@ -124,7 +124,7 @@
             <div class="card-body p-0">
               <div class="list-group list-group-flush">
                 {{ range .UnwatchedMovies }}
-                  <div class="list-group-item">
+                  <div class="list-group-item unwatched-movie">
                     <div class="d-flex align-items-center">
                       <div class="flex-grow-1">
                         <h6 class="mb-1">{{ .Title }}</h6>

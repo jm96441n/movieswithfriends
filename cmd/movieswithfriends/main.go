@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/rand"
+	"database/sql"
 	_ "embed"
 	"errors"
 	"fmt"
@@ -15,17 +16,19 @@ import (
 	"time"
 
 	"github.com/exaring/otelpgx"
+	"github.com/gorilla/sessions"
+	"github.com/honeycombio/otel-config-go/otelconfig"
 	"github.com/jackc/pgx/v5/pgxpool"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jm96441n/movieswithfriends/identityaccess"
 	"github.com/jm96441n/movieswithfriends/identityaccess/services"
 	iamstore "github.com/jm96441n/movieswithfriends/identityaccess/store"
+	"github.com/jm96441n/movieswithfriends/migrations"
 	"github.com/jm96441n/movieswithfriends/partymgmt"
 	partymgmtstore "github.com/jm96441n/movieswithfriends/partymgmt/store"
 	"github.com/jm96441n/movieswithfriends/ui"
 	"github.com/jm96441n/movieswithfriends/web"
-
-	"github.com/gorilla/sessions"
-	"github.com/honeycombio/otel-config-go/otelconfig"
+	"github.com/pressly/goose/v3"
 	slogmulti "github.com/samber/slog-multi"
 	"go.opentelemetry.io/contrib/bridges/otelslog"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -75,6 +78,32 @@ func main() {
 	defer otelShutdown()
 
 	logger.Info("successfully setup otel")
+
+	logger.Info("running migrations")
+
+	migrationUser := os.Getenv("DB_MIGRATION_USER")
+	if migrationUser == "" {
+		logger.Error("DB_MIGRATION_USER is not set")
+		os.Exit(1)
+	}
+
+	migrationPassword := os.Getenv("DB_MIGRATION_PASSWORD")
+	if migrationPassword == "" {
+		logger.Error("DB_MIGRATION_PASSWORD is not set")
+		os.Exit(1)
+	}
+
+	migrationCreds, err := newDBCreds(migrationUser, migrationPassword)
+	if err != nil {
+		logger.Error(err.Error())
+		os.Exit(1)
+	}
+
+	err = runMigrations(os.Getenv("DB_HOST"), os.Getenv("DB_DATABASE_NAME"), migrationCreds)
+	if err != nil {
+		logger.Error(err.Error())
+		os.Exit(1)
+	}
 
 	logger.Info("setting up postgres store")
 	dbUser := os.Getenv("DB_USERNAME")
@@ -241,6 +270,32 @@ func createConnPool(host string, dbname string, creds DBCreds) (*pgxpool.Pool, e
 
 	db.Ping(ctx)
 	return db, nil
+}
+
+func runMigrations(host, dbname string, creds DBCreds) error {
+	goose.SetBaseFS(migrations.MigrationsFS)
+
+	if err := goose.SetDialect("postgres"); err != nil {
+		return err
+	}
+	connString := fmt.Sprintf("postgres://%s:%s@%s/%s", creds.Username, creds.Password, host, dbname)
+
+	db, err := sql.Open("pgx", connString)
+	if err != nil {
+		return err
+	}
+
+	err = goose.Up(db, "migrations")
+	if err != nil {
+		return err
+	}
+
+	err = db.Close()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 var (

@@ -53,7 +53,7 @@ type PartyConfig struct {
 
 var partyNumber = atomic.Int64{}
 
-func SeedPartyWithUsersAndMovies(ctx context.Context, t *testing.T, conn *pgxpool.Pool, cfg PartyConfig) {
+func SeedPartyWithUsersAndMovies(ctx context.Context, t *testing.T, conn *pgxpool.Pool, cfg PartyConfig) (string, int) {
 	t.Helper()
 
 	accountInfos := make([]TestAccountInfo, 0, cfg.NumMembers+1)
@@ -77,8 +77,8 @@ func SeedPartyWithUsersAndMovies(ctx context.Context, t *testing.T, conn *pgxpoo
 	for i := 0; i < cfg.NumMovies; i++ {
 		movies = append(movies, SeedMovie(ctx, t, conn, fmt.Sprintf("Movie %d", i), cfg.MovieRuntime))
 	}
-
-	partyID := SeedParty(ctx, t, conn, fmt.Sprintf("party name %d", partyNumber.Add(1)))
+	partyName := fmt.Sprintf("party name %d", partyNumber.Add(1))
+	partyID := SeedParty(ctx, t, conn, partyName)
 
 	owned := false
 	for _, accountInfo := range accountInfos {
@@ -102,6 +102,7 @@ func SeedPartyWithUsersAndMovies(ctx context.Context, t *testing.T, conn *pgxpoo
 		}
 		addMovieToParty(ctx, t, conn, partyID, movieID, accountAddedBy.AccountID)
 	}
+	return partyName, partyID
 }
 
 const insertMovieQuery = `INSERT INTO movies (title, poster_url, tmdb_id, overview, tagline, runtime) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id_movie`

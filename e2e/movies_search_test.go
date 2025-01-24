@@ -17,7 +17,8 @@ func TestMovieSearch(t *testing.T) {
 	connPool, page, port := helpers.SetupSuite(ctx, t)
 
 	tests := map[string]func(*testing.T){
-		"testSearchSuccessfulSearchFromSearchPage": testSearchSuccessfulSearchFromSearchPage(ctx, connPool, page, port),
+		"testSearchSuccessfulSearchFromSearchPage":  testSearchSuccessfulSearchFromSearchPage(ctx, connPool, page, port),
+		"testSearchSuccessfulSearchWhenNotLoggedIn": testSearchSuccessfulSearchFromSearchPage(ctx, connPool, page, port),
 	}
 
 	for name, testFn := range tests {
@@ -63,6 +64,71 @@ func testSearchSuccessfulSearchFromSearchPage(ctx context.Context, testConn *pgx
 			helpers.Assert(t, strings.Contains(curURL, "/movies/"), "expected to be on movie detail page, got %s", curURL)
 
 			helpers.Ok(t, asserter.Locator(page.Locator("#title")).ToHaveText(title), "'%s' title is not on page", title)
+
+			page.GoBack()
+
+			helpers.Ok(t, asserter.Locator(matrixOne).ToBeVisible(), "Matrix One Card is not visible")
+			helpers.Ok(t, asserter.Locator(matrixTwo).ToBeVisible(), "Matrix Reloaded Card is not visible")
+			helpers.Ok(t, asserter.Locator(matrixThree).ToBeVisible(), "Matrix Revolutions Card is not visible")
+
+			curURL = page.URL()
+			helpers.Assert(t, strings.Contains(curURL, "/movies"), "expected to be on movie search page, got %s", curURL)
+		}
+	}
+}
+
+func testSearchSuccessfulSearchAndAddMovieToPartyWhenLoggedIn(ctx context.Context, testConn *pgxpool.Pool, page playwright.Page, appPort string) func(t *testing.T) {
+	return func(t *testing.T) {
+		helpers.Setup(ctx, t, testConn, page)
+		currentAccount := helpers.SeedAccountWithProfile(ctx, t, testConn, helpers.TestAccountInfo{Email: "buddy@santa.com", Password: "anotherpassword", FirstName: "Buddy", LastName: "TheElf"})
+		partyName, partyID := helpers.SeedPartyWithUsersAndMovies(ctx, t, testConn, helpers.PartyConfig{
+			NumMembers:       2,
+			NumMovies:        8,
+			NumWatchedMovies: 7,
+			MovieRuntime:     125,
+			CurrentAccount:   currentAccount,
+		})
+
+		helpers.LoginAs(t, page, currentAccount)
+
+		_, err := page.Goto(fmt.Sprintf("http://localhost:%s", appPort))
+		helpers.Ok(t, err, "could not go to the index page")
+
+		err = page.Locator("#nav-search").Click()
+		helpers.Ok(t, err, "could not click search button")
+
+		curURL := page.URL()
+		helpers.Assert(t, strings.Contains(curURL, "/movies"), "expected to be on movie search page, got %s", curURL)
+
+		helpers.FillInField(t, helpers.FormField{Label: "", Value: "The Matrix"}, page)
+		page.Keyboard().Press("Enter")
+		asserter := playwright.NewPlaywrightAssertions()
+
+		matrixOne := page.Locator("#the-matrix").First()
+		matrixTwo := page.Locator("#the-matrix-reloaded").First()
+		matrixThree := page.Locator("#the-matrix-revolutions").First()
+
+		helpers.Ok(t, asserter.Locator(matrixOne).ToBeVisible(), "Matrix One Card is not visible")
+		helpers.Ok(t, asserter.Locator(matrixTwo).ToBeVisible(), "Matrix Reloaded Card is not visible")
+		helpers.Ok(t, asserter.Locator(matrixThree).ToBeVisible(), "Matrix Revolutions Card is not visible")
+
+		cases := map[string]playwright.Locator{
+			"The Matrix":             matrixOne,
+			"The Matrix Reloaded":    matrixTwo,
+			"The Matrix Revolutions": matrixThree,
+		}
+		unwatchedCount := 1
+		for title, locator := range cases {
+			err = locator.Locator(fmt.Sprintf("text='Add to %s'", partyName)).Click()
+			helpers.Ok(t, err, "could not click Add to Party button for '%s'", title)
+
+			addedButton := locator.Locator(fmt.Sprintf("text='Added to %s'", partyName))
+			helpers.Ok(t, asserter.Locator(addedButton).ToBeVisible(), "could not find 'Added to %s' button", partyName)
+
+			page.Goto(fmt.Sprintf("http://localhost:%s/parties/%d", appPort, partyID))
+
+			unwatchedMovies := page.Locator(".unwatched-movies")
+			helpers.Ok(t, asserter.Locator(unwatchedMovies).ToHaveCount(unwatchedCount), "expected %d unwatched movies", unwatchedCount)
 
 			page.GoBack()
 

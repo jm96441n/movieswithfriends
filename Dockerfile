@@ -1,7 +1,6 @@
 ## DEV BUILD
 FROM golang:1.23-bookworm AS dev-base
 
-RUN go install github.com/pressly/goose/v3/cmd/goose@latest
 RUN go install github.com/air-verse/air@latest
 
 FROM dev-base AS dev-code
@@ -29,12 +28,9 @@ COPY ./web ./web
 COPY ./identityaccess/ ./identityaccess
 COPY ./partymgmt/ ./partymgmt
 COPY ./ui ./ui
-COPY ./store ./store
 COPY ./migrations ./migrations
 
-RUN go mod download
-
-RUN CGO_ENABLED=0 go build -o /go/bin/app ./cmd/movieswithfriends/ 
+RUN go mod download && CGO_ENABLED=0 go build -o /go/bin/app ./cmd/movieswithfriends/ 
 
 FROM gcr.io/distroless/static-debian12 AS prod
 
