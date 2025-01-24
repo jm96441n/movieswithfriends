@@ -32,6 +32,8 @@ copy-migrations:
 deploy: build-deploy copy-migrations
 	source ./infra/.envrc && ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i './infra/ansible/inventory/app.yml' -u root --private-key ~/.ssh/do ./infra/ansible/deploy_app.yml
 
+headless ?= true
+
 .PHONY: e2e
 e2e:
-	cd ./e2e && go test -count=1 ./...
+	cd ./e2e && gotestsum -- ./... -count=1 -run="$(TEST)" -headless=$(headless)

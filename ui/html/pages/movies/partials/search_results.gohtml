@@ -23,25 +23,27 @@
           {{- end }}
           <p class="card-text small mb-3">{{ .Tagline }}</p>
           <div class="d-flex gap-2">
-            {{ if movieWatched .TMDBID $partyTMDBIDs }}
-              <button class="btn btn-outline-secondary btn-sm" disabled>
-                <i class="fas fa-plus me-2"></i> Added to
-                {{ $currentParty.Name }}
-              </button>
-            {{ else }}
-              <div id="add-to-{{ hyphenate .Title }}">
-                <form>
-                  <input type="hidden" name="tmdb_id" value="{{ .TMDBID }}" />
-                  <button
-                    class="btn btn-outline-primary btn-sm"
-                    hx-post="/party_movies"
-                    hx-target="#add-to-{{ hyphenate .Title }}"
-                  >
-                    <i class="fas fa-plus me-2"></i>Add to
-                    {{ $currentParty.Name }}
-                  </button>
-                </form>
-              </div>
+            {{ if not (eq $currentParty.Name "") }}
+              {{ if movieWatched .TMDBID $partyTMDBIDs }}
+                <button class="btn btn-outline-secondary btn-sm" disabled>
+                  <i class="fas fa-plus me-2"></i> Added to
+                  {{ $currentParty.Name }}
+                </button>
+              {{ else }}
+                <div id="add-to-{{ hyphenate .Title }}">
+                  <form>
+                    <input type="hidden" name="tmdb_id" value="{{ .TMDBID }}" />
+                    <button
+                      class="btn btn-outline-primary btn-sm"
+                      hx-post="/party_movies"
+                      hx-target="#add-to-{{ hyphenate .Title }}"
+                    >
+                      <i class="fas fa-plus me-2"></i>Add to
+                      {{ $currentParty.Name }}
+                    </button>
+                  </form>
+                </div>
+              {{ end }}
             {{ end }}
             <form method="POST" action="/movies/create">
               <input type="hidden" name="tmdb_id" value="{{ .TMDBID }}" />

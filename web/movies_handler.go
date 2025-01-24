@@ -34,16 +34,22 @@ func (a *Application) MoviesIndexHandler(w http.ResponseWriter, r *http.Request)
 
 	currentPartyID, err := a.getCurrentPartyIDFromSession(r)
 	if err != nil {
-		logger.ErrorContext(ctx, "failed to search movies", slog.Any("error", err))
-		a.serverError(w, r, err)
-		return
+		if !errors.Is(err, ErrFailedToGetPartyIDFromSession) {
+			logger.ErrorContext(ctx, "failed to search movies", slog.Any("error", err))
+			a.serverError(w, r, err)
+			return
+		}
+		logger.ErrorContext(ctx, "failed to get currentPartyID", slog.Any("error", err))
 	}
 
-	currentPartyMovieTMDBIDs, err := a.MoviesService.GetMovieTMDBIDsFromCurrentParty(r.Context(), logger, currentPartyID, movies)
-	if err != nil {
-		logger.ErrorContext(ctx, "failed to search movies", slog.Any("error", err))
-		a.serverError(w, r, err)
-		return
+	var currentPartyMovieTMDBIDs map[int]struct{}
+	if currentPartyID > 0 {
+		currentPartyMovieTMDBIDs, err = a.MoviesService.GetMovieTMDBIDsFromCurrentParty(r.Context(), logger, currentPartyID, movies)
+		if err != nil {
+			logger.ErrorContext(ctx, "failed to search movies", slog.Any("error", err))
+			a.serverError(w, r, err)
+			return
+		}
 	}
 
 	templateData.Movies = movies

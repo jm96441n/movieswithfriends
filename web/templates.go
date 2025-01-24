@@ -125,6 +125,7 @@ func (a *Application) NewSidebarTemplateData(r *http.Request, w http.ResponseWri
 
 	if errors.Is(err, ErrFailedToGetProfileIDFromSession) {
 		a.Logger.DebugContext(r.Context(), "profileID is not in session")
+		return SidebarTemplateData{}
 	} else if err != nil {
 		a.Logger.Error("failed to get watcher from session", slog.Any("error", err))
 	}
@@ -183,6 +184,23 @@ func (a *Application) newBaseTemplateData(r *http.Request, w http.ResponseWriter
 		session.Save(r, w)
 	}
 
+	watcher, err := a.getWatcherFromSession(r)
+
+	if errors.Is(err, ErrFailedToGetProfileIDFromSession) {
+		return BaseTemplateData{
+			ErrorFlashes:    errorFlashes,
+			InfoFlashes:     infoFlashes,
+			WarningFlashes:  warningFlashes,
+			CurrentPagePath: path,
+			CurrentYear:     2024,
+			IsAuthenticated: authed,
+			FullName:        fullName,
+			UserEmail:       email,
+		}
+	} else if err != nil {
+		a.Logger.Error("failed to get watcher from session", slog.Any("error", err))
+	}
+
 	var currentParty partymgmt.Party
 
 	if currentPartyID > 0 {
@@ -192,14 +210,6 @@ func (a *Application) newBaseTemplateData(r *http.Request, w http.ResponseWriter
 		}
 		currentParty.ID = res.ID
 		currentParty.Name = res.Name
-	}
-
-	watcher, err := a.getWatcherFromSession(r)
-
-	if errors.Is(err, ErrFailedToGetProfileIDFromSession) {
-		a.Logger.DebugContext(r.Context(), "profileID is not in session")
-	} else if err != nil {
-		a.Logger.Error("failed to get watcher from session", slog.Any("error", err))
 	}
 
 	parties, err := watcher.GetParties(r.Context())

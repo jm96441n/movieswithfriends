@@ -104,6 +104,8 @@ func (p *ProfileAggregatorService) GetProfilePageData(ctx context.Context, logge
 		return ProfilePageData{}, movieDataRes.err
 	}
 
+	profRes.profile.Stats = statsRes.stats
+
 	return ProfilePageData{
 		Profile:       profRes.profile,
 		Parties:       partiesRes.parties,
