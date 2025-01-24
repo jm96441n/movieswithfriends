@@ -17,8 +17,8 @@ func TestMovieSearch(t *testing.T) {
 	connPool, page, port := helpers.SetupSuite(ctx, t)
 
 	tests := map[string]func(*testing.T){
-		"testSearchSuccessfulSearchFromSearchPage":  testSearchSuccessfulSearchFromSearchPage(ctx, connPool, page, port),
-		"testSearchSuccessfulSearchWhenNotLoggedIn": testSearchSuccessfulSearchFromSearchPage(ctx, connPool, page, port),
+		"testSearchSuccessfulSearchFromSearchPage":                 testSearchSuccessfulSearchFromSearchPage(ctx, connPool, page, port),
+		"testSearchSuccessfulSearchAndAddMovieToPartyWhenLoggedIn": testSearchSuccessfulSearchAndAddMovieToPartyWhenLoggedIn(ctx, connPool, page, port),
 	}
 
 	for name, testFn := range tests {
@@ -81,13 +81,15 @@ func testSearchSuccessfulSearchAndAddMovieToPartyWhenLoggedIn(ctx context.Contex
 	return func(t *testing.T) {
 		helpers.Setup(ctx, t, testConn, page)
 		currentAccount := helpers.SeedAccountWithProfile(ctx, t, testConn, helpers.TestAccountInfo{Email: "buddy@santa.com", Password: "anotherpassword", FirstName: "Buddy", LastName: "TheElf"})
-		partyName, partyID := helpers.SeedPartyWithUsersAndMovies(ctx, t, testConn, helpers.PartyConfig{
+		partyCfg := helpers.PartyConfig{
 			NumMembers:       2,
 			NumMovies:        8,
 			NumWatchedMovies: 7,
 			MovieRuntime:     125,
 			CurrentAccount:   currentAccount,
-		})
+		}
+		partyName, partyID := helpers.SeedPartyWithUsersAndMovies(ctx, t, testConn, partyCfg)
+		currentAccount.CurrentPartyID = partyID
 
 		helpers.LoginAs(t, page, currentAccount)
 
@@ -117,17 +119,18 @@ func testSearchSuccessfulSearchAndAddMovieToPartyWhenLoggedIn(ctx context.Contex
 			"The Matrix Reloaded":    matrixTwo,
 			"The Matrix Revolutions": matrixThree,
 		}
-		unwatchedCount := 1
+		unwatchedCount := partyCfg.NumMovies - partyCfg.NumWatchedMovies
 		for title, locator := range cases {
 			err = locator.Locator(fmt.Sprintf("text='Add to %s'", partyName)).Click()
 			helpers.Ok(t, err, "could not click Add to Party button for '%s'", title)
 
-			addedButton := locator.Locator(fmt.Sprintf("text='Added to %s'", partyName))
-			helpers.Ok(t, asserter.Locator(addedButton).ToBeVisible(), "could not find 'Added to %s' button", partyName)
+			addedButton := locator.Locator(".btn-outline-secondary")
+			helpers.Ok(t, asserter.Locator(addedButton).ToHaveText(fmt.Sprintf("Added to %s", partyName)), "could not find 'Added to %s' button", partyName)
+			unwatchedCount += 1
 
 			page.Goto(fmt.Sprintf("http://localhost:%s/parties/%d", appPort, partyID))
 
-			unwatchedMovies := page.Locator(".unwatched-movies")
+			unwatchedMovies := page.Locator(".unwatched-movie")
 			helpers.Ok(t, asserter.Locator(unwatchedMovies).ToHaveCount(unwatchedCount), "expected %d unwatched movies", unwatchedCount)
 
 			page.GoBack()

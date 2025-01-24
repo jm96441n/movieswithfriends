@@ -12,12 +12,13 @@ import (
 )
 
 type TestAccountInfo struct {
-	AccountID int
-	ProfileID int
-	Email     string
-	Password  string
-	FirstName string
-	LastName  string
+	AccountID      int
+	ProfileID      int
+	Email          string
+	Password       string
+	FirstName      string
+	LastName       string
+	CurrentPartyID int
 }
 
 func SeedAccountWithProfile(ctx context.Context, t *testing.T, conn *pgxpool.Pool, accountInfo TestAccountInfo) TestAccountInfo {

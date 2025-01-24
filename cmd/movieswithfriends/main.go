@@ -20,6 +20,14 @@ import (
 	"github.com/honeycombio/otel-config-go/otelconfig"
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/pressly/goose/v3"
+	slogmulti "github.com/samber/slog-multi"
+	"go.opentelemetry.io/contrib/bridges/otelslog"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
+	"go.opentelemetry.io/otel/log/global"
+	"go.opentelemetry.io/otel/sdk/log"
+
 	"github.com/jm96441n/movieswithfriends/identityaccess"
 	"github.com/jm96441n/movieswithfriends/identityaccess/services"
 	iamstore "github.com/jm96441n/movieswithfriends/identityaccess/store"
@@ -28,13 +36,6 @@ import (
 	partymgmtstore "github.com/jm96441n/movieswithfriends/partymgmt/store"
 	"github.com/jm96441n/movieswithfriends/ui"
 	"github.com/jm96441n/movieswithfriends/web"
-	"github.com/pressly/goose/v3"
-	slogmulti "github.com/samber/slog-multi"
-	"go.opentelemetry.io/contrib/bridges/otelslog"
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
-	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
-	"go.opentelemetry.io/otel/log/global"
-	"go.opentelemetry.io/otel/sdk/log"
 )
 
 const length = 32

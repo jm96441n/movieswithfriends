@@ -381,6 +381,7 @@ func (a *Application) initTemplateCache(filesystem embed.FS) error {
 		cache[name] = ts
 		return nil
 	})
+
 	a.templateCache = cache
 	return nil
 }

@@ -25,10 +25,7 @@
           <div class="d-flex gap-2">
             {{ if not (eq $currentParty.Name "") }}
               {{ if movieWatched .TMDBID $partyTMDBIDs }}
-                <button class="btn btn-outline-secondary btn-sm" disabled>
-                  <i class="fas fa-plus me-2"></i> Added to
-                  {{ $currentParty.Name }}
-                </button>
+                {{ template "added_movie_button_search" $currentParty }}
               {{ else }}
                 <div id="add-to-{{ hyphenate .Title }}">
                   <form>

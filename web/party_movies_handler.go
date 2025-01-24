@@ -78,5 +78,5 @@ func (a *Application) AddMovietoPartyHandler(w http.ResponseWriter, r *http.Requ
 	logger.Info("successfully added movie to party")
 	templateData := a.NewMoviesTemplateData(r, w, "/parties")
 
-	a.renderPartial(w, r, http.StatusOK, "movies/partials/added_movie_button.gohtml", templateData)
+	a.renderPartial(w, r, http.StatusOK, "movies/partials/added_movie_button_search.gohtml", templateData.CurrentParty)
 }
