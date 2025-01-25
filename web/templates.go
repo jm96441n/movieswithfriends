@@ -8,8 +8,10 @@ import (
 	"io/fs"
 	"log/slog"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/jm96441n/movieswithfriends/identityaccess"
 	"github.com/jm96441n/movieswithfriends/partymgmt"
@@ -326,6 +328,34 @@ func (a *Application) templFunctions() template.FuncMap {
 			_, ok := tmdbIDS[id]
 			return ok
 		},
+		"sanitizeToID": func(input string) string {
+			// If empty string, return a default
+			if len(strings.TrimSpace(input)) == 0 {
+				return "id"
+			}
+
+			// Convert to lowercase and trim spaces
+			s := strings.ToLower(strings.TrimSpace(input))
+
+			// Replace any whitespace with hyphens
+			s = strings.Join(strings.Fields(s), "-")
+
+			// Remove all characters except letters, numbers, hyphens, underscores, periods, and colons
+			reg := regexp.MustCompile(`[^a-z0-9\-_.:]+`)
+			s = reg.ReplaceAllString(s, "")
+
+			// Ensure it starts with a letter
+			if len(s) > 0 && !unicode.IsLetter(rune(s[0])) {
+				s = "id-" + s
+			}
+
+			// Handle empty string after sanitization
+			if s == "" {
+				return "id"
+			}
+
+			return s
+		},
 	}
 }
 
@@ -355,8 +385,17 @@ func (a *Application) initTemplateCache(filesystem embed.FS) error {
 		}
 
 		var patterns []string
-		if strings.Contains(name, "partials") {
+		isPartial := strings.Contains(name, "partials")
+
+		if isPartial {
 			patterns = []string{path}
+			paths := strings.Split(name, "/")
+
+			if len(paths) > 1 && paths[0] != "partials" {
+				pageGroup := paths[0]
+				patterns = append(patterns, fmt.Sprintf("%s/%s/partials/*.gohtml", base, pageGroup))
+			}
+
 		} else {
 			patterns = []string{
 				"html/base.gohtml",
@@ -368,7 +407,6 @@ func (a *Application) initTemplateCache(filesystem embed.FS) error {
 				pageGroup := paths[0]
 				patterns = append(patterns, fmt.Sprintf("%s/%s/partials/*.gohtml", base, pageGroup))
 			}
-
 			patterns = append(patterns, path)
 		}
 

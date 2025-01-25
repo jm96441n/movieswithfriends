@@ -54,6 +54,7 @@ func (a *Application) MoviesIndexHandler(w http.ResponseWriter, r *http.Request)
 
 	templateData.Movies = movies
 	templateData.CurrentPartyMovieTMDBIDs = currentPartyMovieTMDBIDs
+
 	if r.Header.Get("HX-Request") != "" {
 		a.renderPartial(w, r, http.StatusOK, "movies/partials/search_results.gohtml", templateData)
 		return
