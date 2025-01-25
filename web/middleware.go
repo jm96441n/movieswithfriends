@@ -58,6 +58,7 @@ func (a *Application) authenticateMiddleware() func(http.HandlerFunc) http.Handl
 				ctx := context.WithValue(req.Context(), isAuthenticatedContextKey, true)
 				ctx = context.WithValue(ctx, emailContextKey, profile.Account.Email)
 				ctx = context.WithValue(ctx, fullNameContextKey, profile.FirstName+" "+profile.LastName)
+
 				if currentPartyID > 0 {
 					ctx = context.WithValue(ctx, currentPartyIDContextKey, currentPartyID)
 				}
