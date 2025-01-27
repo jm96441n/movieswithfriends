@@ -1,4 +1,10 @@
 {{ define "sidebar" }}
+<div id="sidebar"
+  hx-target="this"
+  hx-swap="outerHTML"
+  hx-trigger="reloadSidebar from:body"
+  hx-get="/current_party/{{.CurrentParty.ID }}"
+>
   <!-- Sidebar -->
   <div
     class="offcanvas-lg offcanvas-start"
@@ -161,6 +167,7 @@
         </div>
       </div>
     </div>
+  </div>
   </div>
 {{ end }}
 

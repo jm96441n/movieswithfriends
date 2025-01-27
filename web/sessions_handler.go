@@ -100,13 +100,21 @@ func (a *Application) SetCurrentPartyHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	currentPartyID, err := a.getCurrentPartyIDFromSession(r)
+	if err != nil {
+		a.serverError(w, r, err)
+		return
+	}
+
 	err = a.setCurrentPartyInSession(r, w, idParty)
 	if err != nil {
 		a.clientError(w, r, http.StatusBadRequest, "uh oh")
 		return
 	}
 
-	w.Header().Set("HX-Trigger", "changeCurrentParty")
+	if idParty != currentPartyID {
+		w.Header().Set("HX-Trigger", "changeCurrentParty")
+	}
 
 	data := a.NewSidebarTemplateData(r, w, idParty)
 	a.renderPartial(w, r, http.StatusOK, "partials/sidebar.gohtml", data)

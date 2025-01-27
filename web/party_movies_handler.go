@@ -80,6 +80,8 @@ func (a *Application) AddMovietoPartyHandler(w http.ResponseWriter, r *http.Requ
 		partial = "movies/partials/added_movie_button_show.gohtml"
 	}
 
+	w.Header().Set("HX-Trigger", "reloadSidebar")
+
 	logger.Info("successfully added movie to party")
 	a.renderPartial(w, r, http.StatusOK, partial, currentParty)
 }
