@@ -35,7 +35,7 @@ type GetMovieResult struct {
 	Rating      float64
 	Genres      []string
 	TMDBID      int
-	Budget      int
+	Budget      *int
 }
 
 const (
@@ -90,12 +90,12 @@ func (p *MoviesRepository) getMovieBySomeID(ctx context.Context, id int, assignF
 }
 
 const insertMovieQuery = `INSERT INTO movies(
-  title, 
-  release_date, 
-  overview, 
-  tagline, 
-  poster_url, 
-  tmdb_id, 
+  title,
+  release_date,
+  overview,
+  tagline,
+  poster_url,
+  tmdb_id,
   trailer_url,
   rating,
   runtime,

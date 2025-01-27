@@ -171,6 +171,10 @@ func (m *MovieService) GetOrCreateMovie(ctx context.Context, logger *slog.Logger
 
 func convertGetResultToMovie(movie *Movie) store.GetAssignFn {
 	return func(res *store.GetMovieResult) {
+		budget := 0
+		if res.Budget != nil {
+			budget = *res.Budget
+		}
 		movie.ID = res.ID
 		movie.Title = res.Title
 		movie.ReleaseDate = res.ReleaseDate
@@ -182,7 +186,7 @@ func convertGetResultToMovie(movie *Movie) store.GetAssignFn {
 		movie.Rating = res.Rating
 		movie.Genres = res.Genres
 		movie.TMDBID = res.TMDBID
-		movie.Budget = res.Budget
+		movie.Budget = budget
 	}
 }
 

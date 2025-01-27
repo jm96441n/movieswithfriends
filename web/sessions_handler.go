@@ -117,7 +117,18 @@ func (a *Application) SetCurrentPartyHandler(w http.ResponseWriter, r *http.Requ
 	}
 
 	data := a.NewSidebarTemplateData(r, w, idParty)
-	a.renderPartial(w, r, http.StatusOK, "partials/sidebar.gohtml", data)
+	a.renderPartial(w, r, http.StatusOK, "partials/sidebar_parties.gohtml", data)
+}
+
+func (a *Application) GetSidebarParties(w http.ResponseWriter, r *http.Request) {
+	currentPartyID, err := a.getCurrentPartyIDFromSession(r)
+	if err != nil {
+		a.serverError(w, r, err)
+		return
+	}
+
+	data := a.NewSidebarTemplateData(r, w, currentPartyID)
+	a.renderPartial(w, r, http.StatusOK, "partials/sidebar_parties.gohtml", data)
 }
 
 func (a *Application) setCurrentPartyInSession(r *http.Request, w http.ResponseWriter, idParty int) error {

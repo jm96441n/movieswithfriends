@@ -347,8 +347,8 @@ func (a *Application) templFunctions() template.FuncMap {
 			// Replace any whitespace with hyphens
 			s = strings.Join(strings.Fields(s), "-")
 
-			// Remove all characters except letters, numbers, hyphens, underscores, periods, and colons
-			reg := regexp.MustCompile(`[^a-z0-9\-_.:]+`)
+			// Remove all characters except letters, numbers, hyphens, underscores, periods
+			reg := regexp.MustCompile(`[^a-z0-9\-_.]+`)
 			s = reg.ReplaceAllString(s, "")
 
 			// Ensure it starts with a letter
@@ -412,7 +412,6 @@ func (a *Application) initTemplateCache(filesystem embed.FS) error {
 				pageGroup := paths[0]
 				patterns = append(patterns, fmt.Sprintf("%s/%s/partials/*.gohtml", base, pageGroup))
 			}
-
 		} else {
 			patterns = []string{
 				"html/base.gohtml",

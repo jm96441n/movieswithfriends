@@ -1,0 +1,121 @@
+{{ define "sidebar_parties" }}
+  <div class="px-3 flex-grow-1" id="party-list">
+    <h6 class="text-uppercase text-muted fw-bold small mb-3">Your Parties</h6>
+
+    <div class="list-group list-group-flush">
+      {{ $currentPartyID := .CurrentParty.ID }}
+      {{ range $idx, $party := .Parties }}
+        {{ if eq $party.ID $currentPartyID }}
+          <!-- Active Party -->
+          <div
+            class="list-group-item list-group-item-action active border-start border-4 border-primary bg-primary bg-opacity-10 text-dark"
+          >
+            <div class="d-flex align-items-center">
+              <i class="fas fa-users text-primary me-3"></i>
+              <div class="d-flex align-items-center flex-grow-1" role="button">
+                <span class="me-auto">{{ .Name }}</span>
+                <!-- pill is to show count of movies -->
+                <span class="badge bg-success rounded-pill me-2"
+                  >{{ .MovieCount }}</span
+                >
+              </div>
+              <div class="dropdown">
+                <button
+                  class="btn btn-link text-dark p-0 dropdown-toggle"
+                  data-bs-toggle="dropdown"
+                >
+                  <i class="fas fa-ellipsis-vertical"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                  <li>
+                    <a class="dropdown-item" href="/parties/{{ .ID }}"
+                      ><i class="fas fa-external-link-alt me-2"></i>View
+                      Party</a
+                    >
+                  </li>
+                  <li>
+                    <a class="dropdown-item" href="#"
+                      ><i class="fas fa-user-plus me-2"></i>Invite Members</a
+                    >
+                  </li>
+                  <li><hr class="dropdown-divider" /></li>
+                  <li>
+                    <a class="dropdown-item text-danger" href="#"
+                      ><i class="fas fa-sign-out-alt me-2"></i>Leave Party</a
+                    >
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        {{ else }}
+          <div class="list-group-item list-group-item-action">
+            <div class="d-flex align-items-center">
+              <i class="fas fa-users text-primary me-3"></i>
+              <div
+                class="d-flex align-items-center flex-grow-1"
+                role="button"
+                hx-post="/current_party/{{ .ID }}"
+                hx-target="#party-list"
+                hx-swap="outerHTML"
+              >
+                <span class="me-auto">{{ .Name }}</span>
+                <span class="badge bg-secondary rounded-pill me-2"
+                  >{{ .MovieCount }}</span
+                >
+              </div>
+              <div class="dropdown">
+                <button
+                  class="btn btn-link text-dark p-0 dropdown-toggle"
+                  data-bs-toggle="dropdown"
+                >
+                  <i class="fas fa-ellipsis-vertical"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                  <li>
+                    <a class="dropdown-item" href="/parties/{{ .ID }}"
+                      ><i class="fas fa-external-link-alt me-2"></i>View
+                      Party</a
+                    >
+                  </li>
+                  <li>
+                    <a class="dropdown-item" href="#"
+                      ><i class="fas fa-user-plus me-2"></i>Invite Members</a
+                    >
+                  </li>
+                  <li><hr class="dropdown-divider" /></li>
+                  <li>
+                    <a class="dropdown-item text-danger" href="#"
+                      ><i class="fas fa-sign-out-alt me-2"></i>Leave Party</a
+                    >
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        {{ end }}
+      {{ end }}
+    </div>
+
+    <!-- Other Parties -->
+
+    <!-- Invites Section -->
+    <h6 class="text-uppercase text-muted fw-bold small mb-3 mt-4">
+      Party Invites
+    </h6>
+
+    <div class="list-group list-group-flush">
+      <div class="list-group-item list-group-item-action">
+        <div class="d-flex align-items-center">
+          <i class="fas fa-envelope text-warning me-3"></i>
+          <div class="d-flex align-items-center flex-grow-1">
+            <span class="me-auto">Horror Movie Night</span>
+            <span class="badge bg-warning text-dark rounded-pill">New</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{{ end }}
+
+{{ template "sidebar_parties" . }}

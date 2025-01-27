@@ -190,6 +190,11 @@ func (a *Application) sessionRoutes() []Route {
 			handler:            a.SetCurrentPartyHandler,
 			authenticatedRoute: true,
 		},
+		{
+			path:               "GET /sidebar",
+			handler:            a.GetSidebarParties,
+			authenticatedRoute: true,
+		},
 	}
 }
 
