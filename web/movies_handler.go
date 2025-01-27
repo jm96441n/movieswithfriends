@@ -135,5 +135,9 @@ func (a *Application) MoviesShowHandler(w http.ResponseWriter, r *http.Request) 
 	templateData := a.NewMoviesTemplateData(r, w, "/movie")
 	templateData.Movie = movie
 	templateData.MovieAddedToCurrentParty = movieAdded
+	if r.Header.Get("HX-Request") != "" {
+		a.renderPartial(w, r, http.StatusOK, "movies/partials/movie_header.gohtml", templateData)
+		return
+	}
 	a.render(w, r, http.StatusOK, "movies/show.gohtml", templateData)
 }

@@ -1,0 +1,96 @@
+{{ define "movie_header" }}
+  <div id="movie-header">
+    <div
+      class="bg-dark text-white py-5"
+      hx-get="/movies/{{ .Movie.ID }}"
+      hx-trigger="changeCurrentParty from:body"
+      hx-target="#movie-header"
+    >
+      <div class="container">
+        <div class="row align-items-center g-4">
+          <!-- Movie Poster -->
+          <div class="col-md-4 col-lg-3">
+            <img
+              src="{{ .Movie.PosterURL }}"
+              alt="Movie Poster"
+              class="img-fluid rounded shadow"
+            />
+          </div>
+
+          <!-- Movie Info -->
+          <div class="col-md-8 col-lg-9">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <h1 id="title" class="display-5 fw-bold mb-3">
+                {{ .Movie.Title }}
+              </h1>
+              <!-- <span class="badge bg-warning text-dark fs-5">8.5</span> -->
+            </div>
+            <p class="lead mb-4">{{ .Movie.Tagline }}</p>
+
+            <!-- Quick Info -->
+            <div class="d-flex flex-wrap gap-3 mb-4 text-light">
+              <div>
+                <i class="fas fa-calendar me-2"></i>{{ .Movie.ReleaseDate }}
+              </div>
+              <div>
+                <i class="fas fa-clock me-2"></i
+                >{{ timeToDuration .Movie.Runtime }}
+              </div>
+              <div>
+                <i class="fas fa-film me-2"></i>{{ join .Movie.Genres ", " }}
+              </div>
+              <!-- <div><i class="fas fa-star me-2"></i>PG-13</div> -->
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="d-flex gap-3">
+              {{ if not (eq .Movie.TrailerURL "") }}
+                <!-- Trailer Button -->
+                <a
+                  href="{{ .Movie.TrailerURL }}"
+                  target="_blank"
+                  class="btn btn-primary btn-lg"
+                >
+                  <i class="fas fa-play me-2"></i>Watch Trailer
+                </a>
+              {{ else }}
+                <!-- Trailer Button -->
+                <button class="btn btn-secondary btn-lg" disabled>
+                  <i class="fas fa-play me-2"></i>No Trailer Available
+                </button>
+              {{ end }}
+
+
+              <!-- Add To Party Button -->
+              {{ if .IsAuthenticated }}
+                {{ if .MovieAddedToCurrentParty }}
+                  {{ template "added_movie_button_show" .CurrentParty }}
+                {{ else }}
+                  <div id="add-to-{{ sanitizeToID .Movie.Title }}">
+                    <form>
+                      <input
+                        type="hidden"
+                        name="id_movie"
+                        value="{{ .Movie.ID }}"
+                      />
+                      <button
+                        class="btn btn-success btn-lg"
+                        hx-post="/party_movies"
+                        hx-target="#add-to-{{ sanitizeToID .Movie.Title }}"
+                      >
+                        <i class="fas fa-plus me-2"></i> Add to
+                        {{ .CurrentParty.Name }}
+                      </button>
+                    </form>
+                  </div>
+                {{ end }}
+              {{ end }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{{ end }}
+
+{{ template "movie_header" . }}
