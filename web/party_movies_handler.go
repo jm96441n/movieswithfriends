@@ -75,6 +75,11 @@ func (a *Application) AddMovietoPartyHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	partial := "movies/partials/added_movie_button_search.gohtml"
+	if formMovieID != "" {
+		partial = "movies/partials/added_movie_button_show.gohtml"
+	}
+
 	logger.Info("successfully added movie to party")
-	a.renderPartial(w, r, http.StatusOK, "movies/partials/added_movie_button_search.gohtml", currentParty)
+	a.renderPartial(w, r, http.StatusOK, partial, currentParty)
 }

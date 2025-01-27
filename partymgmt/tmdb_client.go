@@ -51,6 +51,7 @@ type TMDBMovie struct {
 	Genres      []Genre `json:"genres"`
 	GenreIDs    []int   `json:"genre_ids"`
 	TMDBID      int     `json:"id"`
+	Budget      int     `json:"budget"`
 }
 
 type Genre struct {
@@ -139,7 +140,7 @@ func (t *TMDBClient) Search(ctx context.Context, term string, page int) (SearchR
 }
 
 func (t *TMDBClient) GetMovie(ctx context.Context, id int) (*TMDBMovie, error) {
-	req, err := t.newRequest(ctx, http.MethodGet, fmt.Sprintf("%s/movie/%d", t.baseURL, id))
+	req, err := t.newRequest(ctx, http.MethodGet, fmt.Sprintf("%s/movie/%d?append_to_response=credits", t.baseURL, id))
 	if err != nil {
 		return nil, err
 	}
@@ -214,6 +215,7 @@ func (t *TMDBMovie) ToStoreMovie() store.CreateMovieParams {
 	for i, genre := range t.Genres {
 		genres[i] = genre.Name
 	}
+
 	return store.CreateMovieParams{
 		Title:       t.Title,
 		ReleaseDate: t.ReleaseDate,
@@ -225,5 +227,6 @@ func (t *TMDBMovie) ToStoreMovie() store.CreateMovieParams {
 		Runtime:     t.Runtime,
 		Rating:      t.Rating,
 		Genres:      genres,
+		Budget:      t.Budget,
 	}
 }

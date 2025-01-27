@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/jm96441n/movieswithfriends/identityaccess"
+	"github.com/jm96441n/movieswithfriends/identityaccess/services"
 	"github.com/jm96441n/movieswithfriends/identityaccess/store"
 )
 
@@ -174,7 +175,7 @@ func (a *Application) GetPaginatedWatchHistoryHandler(w http.ResponseWriter, r *
 		return
 	}
 
-	movieData, err := a.ProfileAggregatorService.GetWatchPaginatedHistory(ctx, logger, profileID, pageNum)
+	movieData, err := a.ProfileAggregatorService.GetWatchPaginatedHistory(ctx, logger, profileID, services.PageInfo{PageNum: pageNum})
 	if err != nil {
 		a.serverError(w, r, err)
 		return
@@ -184,5 +185,9 @@ func (a *Application) GetPaginatedWatchHistoryHandler(w http.ResponseWriter, r *
 	templateData.WatchedMovies = movieData.WatchedMovies
 	templateData.CurPage = pageNum
 	templateData.NumPages = movieData.NumPages
-	a.renderPartial(w, r, http.StatusOK, "profiles/partials/watch_list.gohtml", templateData)
+
+	if r.Header.Get("HX-Request") != "" {
+		a.renderPartial(w, r, http.StatusOK, "profiles/partials/watch_list.gohtml", templateData)
+		return
+	}
 }

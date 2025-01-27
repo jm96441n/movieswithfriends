@@ -201,6 +201,14 @@ func (p Party) AddMovie(ctx context.Context, watcherID, idMovie int) error {
 	return nil
 }
 
+func (p Party) HasMovieAdded(ctx context.Context, movieID int) (bool, error) {
+	exists, err := p.DB.MovieAddedToParty(ctx, p.ID, movieID)
+	if err != nil {
+		return false, err
+	}
+	return exists, nil
+}
+
 // generate a random 6 character string
 func generateRandomString() string {
 	b := make([]byte, 6)

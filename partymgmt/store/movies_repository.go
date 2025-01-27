@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -34,43 +35,46 @@ type GetMovieResult struct {
 	Rating      float64
 	Genres      []string
 	TMDBID      int
+	Budget      int
 }
 
 const (
-	findMovieByTMDBIDQuery = `SELECT id_movie, title, release_date, overview, tagline, poster_url, tmdb_id, trailer_url FROM movies WHERE tmdb_id = $1`
-	findMovieByIDQuery     = `SELECT id_movie, title, release_date, overview, tagline, poster_url, tmdb_id, trailer_url FROM movies WHERE id_movie = $1`
+	findMovieByIDQuery = `
+  SELECT 
+    id_movie, 
+    title, 
+    release_date, 
+    overview, 
+    tagline, 
+    poster_url, 
+    tmdb_id, 
+    trailer_url,
+    runtime,
+    genres,
+    budget
+  FROM movies WHERE %s = $1`
 )
 
 type GetAssignFn func(*GetMovieResult)
 
 // GetMovieByTMDBID returns a movie from the database by its TMDB ID
 func (p *MoviesRepository) GetMovieByTMDBID(ctx context.Context, id int, assignFn GetAssignFn) error {
-	row := p.db.QueryRow(ctx, findMovieByTMDBIDQuery, id)
-
-	res := &GetMovieResult{}
-	var releaseDate time.Time
-	err := row.Scan(&res.ID, &res.Title, &releaseDate, &res.Overview, &res.Tagline, &res.PosterURL, &res.TMDBID, &res.TrailerURL)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return ErrNoRecord
-		}
-
-		return err
-	}
-
-	res.ReleaseDate = releaseDate.Format("2006-01-02")
-	assignFn(res)
-
-	return nil
+	query := fmt.Sprintf(findMovieByIDQuery, "tmdb_id")
+	return p.getMovieBySomeID(ctx, id, assignFn, query)
 }
 
 // GetMovieByID returns a movie from the database by its ID
 func (p *MoviesRepository) GetMovieByID(ctx context.Context, id int, assignFn GetAssignFn) error {
-	row := p.db.QueryRow(ctx, findMovieByIDQuery, id)
+	query := fmt.Sprintf(findMovieByIDQuery, "id_movie")
+	return p.getMovieBySomeID(ctx, id, assignFn, query)
+}
+
+func (p *MoviesRepository) getMovieBySomeID(ctx context.Context, id int, assignFn GetAssignFn, query string) error {
+	row := p.db.QueryRow(ctx, query, id)
 
 	res := &GetMovieResult{}
 	var releaseDate time.Time
-	err := row.Scan(&res.ID, &res.Title, &releaseDate, &res.Overview, &res.Tagline, &res.PosterURL, &res.TMDBID, &res.TrailerURL)
+	err := row.Scan(&res.ID, &res.Title, &releaseDate, &res.Overview, &res.Tagline, &res.PosterURL, &res.TMDBID, &res.TrailerURL, &res.Runtime, &res.Genres, &res.Budget)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return ErrNoRecord
@@ -95,8 +99,9 @@ const insertMovieQuery = `INSERT INTO movies(
   trailer_url,
   rating,
   runtime,
-  genres
-  ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id_movie`
+  genres,
+  budget
+  ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id_movie`
 
 type CreateMovieParams struct {
 	Title       string
@@ -111,6 +116,7 @@ type CreateMovieParams struct {
 	Genres      []string
 	GenreIDs    []int
 	TMDBID      int
+	Budget      int
 }
 
 // CreateMovie creates a movie in the database
@@ -133,6 +139,7 @@ func (p *MoviesRepository) CreateMovie(ctx context.Context, createParams CreateM
 		createParams.Rating,
 		createParams.Runtime,
 		createParams.Genres,
+		createParams.Budget,
 	).Scan(&movieID)
 	if err != nil {
 		return 0, err

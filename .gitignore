@@ -23,6 +23,8 @@ tmp/**
 
 **/**/*.tfstate*
 
+ui/dist
+
 cover.html
 cover.out
 

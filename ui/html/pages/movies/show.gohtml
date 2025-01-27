@@ -19,7 +19,7 @@
             <h1 id="title" class="display-5 fw-bold mb-3">
               {{ .Movie.Title }}
             </h1>
-            <span class="badge bg-warning text-dark fs-5">8.5</span>
+            <!-- <span class="badge bg-warning text-dark fs-5">8.5</span> -->
           </div>
           <p class="lead mb-4">{{ .Movie.Tagline }}</p>
 
@@ -28,29 +28,58 @@
             <div>
               <i class="fas fa-calendar me-2"></i>{{ .Movie.ReleaseDate }}
             </div>
-            <div><i class="fas fa-clock me-2"></i>2h 15m</div>
-            <div><i class="fas fa-film me-2"></i>Action, Adventure</div>
-            <div><i class="fas fa-star me-2"></i>PG-13</div>
+            <div>
+              <i class="fas fa-clock me-2"></i
+              >{{ timeToDuration .Movie.Runtime }}
+            </div>
+            <div>
+              <i class="fas fa-film me-2"></i>{{ join .Movie.Genres ", " }}
+            </div>
+            <!-- <div><i class="fas fa-star me-2"></i>PG-13</div> -->
           </div>
 
           <!-- Action Buttons -->
           <div class="d-flex gap-3">
-            <!-- Trailer Button -->
-            <button
-              class="btn btn-primary btn-lg"
-              data-bs-toggle="modal"
-              data-bs-target="#trailerModal"
-            >
-              <i class="fas fa-play me-2"></i>Watch Trailer
-            </button>
+            {{ if not (eq .Movie.TrailerURL "") }}
+              <!-- Trailer Button -->
+              <a
+                href="{{ .Movie.TrailerURL }}"
+                target="_blank"
+                class="btn btn-primary btn-lg"
+              >
+                <i class="fas fa-play me-2"></i>Watch Trailer
+              </a>
+            {{ else }}
+              <!-- Trailer Button -->
+              <button class="btn btn-secondary btn-lg" disabled>
+                <i class="fas fa-play me-2"></i>No Trailer Available
+              </button>
+            {{ end }}
+
 
             <!-- Add To Party Button -->
-            <!-- TOOD: NEXT make this work -->
             {{ if .IsAuthenticated }}
-              <button class="btn btn-success btn-lg">
-                <i class="fas fa-plus me-2"></i> Add to
-                {{ .CurrentParty.Name }}
-              </button>
+              {{ if .MovieAddedToCurrentParty }}
+                {{ template "added_movie_button_show" .CurrentParty }}
+              {{ else }}
+                <div id="add-to-{{ sanitizeToID .Movie.Title }}">
+                  <form>
+                    <input
+                      type="hidden"
+                      name="id_movie"
+                      value="{{ .Movie.ID }}"
+                    />
+                    <button
+                      class="btn btn-success btn-lg"
+                      hx-post="/party_movies"
+                      hx-target="#add-to-{{ sanitizeToID .Movie.Title }}"
+                    >
+                      <i class="fas fa-plus me-2"></i> Add to
+                      {{ .CurrentParty.Name }}
+                    </button>
+                  </form>
+                </div>
+              {{ end }}
             {{ end }}
           </div>
         </div>
@@ -72,113 +101,98 @@
         </div>
 
         <!-- Cast -->
-        <div class="card border-0 shadow-sm mb-4">
-          <div class="card-body">
-            <h2 class="h4 mb-3">Cast</h2>
-            <div class="row g-3">
-              <div class="col-6 col-md-3">
-                <img
-                  src="https://placehold.co/150x150?text="
-                  class="rounded-circle mb-2"
-                  alt="Actor"
-                />
-                <h6 class="mb-1">Actor Name</h6>
-                <small class="text-muted">Character Name</small>
-              </div>
-              <div class="col-6 col-md-3">
-                <img
-                  src="https://placehold.co/150x150?text="
-                  class="rounded-circle mb-2"
-                  alt="Actor"
-                />
-                <h6 class="mb-1">Actor Name</h6>
-                <small class="text-muted">Character Name</small>
-              </div>
-              <div class="col-6 col-md-3">
-                <img
-                  src="https://placehold.co/150x150?text="
-                  class="rounded-circle mb-2"
-                  alt="Actor"
-                />
-                <h6 class="mb-1">Actor Name</h6>
-                <small class="text-muted">Character Name</small>
-              </div>
-              <div class="col-6 col-md-3">
-                <img
-                  src="https://placehold.co/150x150?text="
-                  class="rounded-circle mb-2"
-                  alt="Actor"
-                />
-                <h6 class="mb-1">Actor Name</h6>
-                <small class="text-muted">Character Name</small>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+        <!--   <div class="card border-0 shadow-sm mb-4"> -->
+        <!--     <div class="card-body"> -->
+        <!--       <h2 class="h4 mb-3">Cast</h2> -->
+        <!--       <div class="row g-3"> -->
+        <!--         <div class="col-6 col-md-3"> -->
+        <!--           <img -->
+        <!--             src="https://placehold.co/150x150?text=" -->
+        <!--             class="rounded-circle mb-2" -->
+        <!--             alt="Actor" -->
+        <!--           /> -->
+        <!--           <h6 class="mb-1">Actor Name</h6> -->
+        <!--           <small class="text-muted">Character Name</small> -->
+        <!--         </div> -->
+        <!--         <div class="col-6 col-md-3"> -->
+        <!--           <img -->
+        <!--             src="https://placehold.co/150x150?text=" -->
+        <!--             class="rounded-circle mb-2" -->
+        <!--             alt="Actor" -->
+        <!--           /> -->
+        <!--           <h6 class="mb-1">Actor Name</h6> -->
+        <!--           <small class="text-muted">Character Name</small> -->
+        <!--         </div> -->
+        <!--         <div class="col-6 col-md-3"> -->
+        <!--           <img -->
+        <!--             src="https://placehold.co/150x150?text=" -->
+        <!--             class="rounded-circle mb-2" -->
+        <!--             alt="Actor" -->
+        <!--           /> -->
+        <!--           <h6 class="mb-1">Actor Name</h6> -->
+        <!--           <small class="text-muted">Character Name</small> -->
+        <!--         </div> -->
+        <!--         <div class="col-6 col-md-3"> -->
+        <!--           <img -->
+        <!--             src="https://placehold.co/150x150?text=" -->
+        <!--             class="rounded-circle mb-2" -->
+        <!--             alt="Actor" -->
+        <!--           /> -->
+        <!--           <h6 class="mb-1">Actor Name</h6> -->
+        <!--           <small class="text-muted">Character Name</small> -->
+        <!--         </div> -->
+        <!--       </div> -->
+        <!--     </div> -->
+        <!--   </div> -->
+        <!-- </div> -->
 
-      <!-- Sidebar -->
-      <div class="col-lg-4">
-        <!-- Movie Details -->
-        <div class="card border-0 shadow-sm mb-4">
-          <div class="card-body">
-            <h2 class="h4 mb-3">Details</h2>
-            <div class="d-flex justify-content-between mb-2">
-              <span class="text-muted">Director</span>
-              <span>Director Name</span>
-            </div>
-            <div class="d-flex justify-content-between mb-2">
-              <span class="text-muted">Writers</span>
-              <span>Writer Name</span>
-            </div>
-            <div class="d-flex justify-content-between mb-2">
-              <span class="text-muted">Release Date</span>
-              <span>October 15, 2023</span>
-            </div>
-            <div class="d-flex justify-content-between mb-2">
-              <span class="text-muted">Runtime</span>
-              <span>2h 15m</span>
-            </div>
-            <div class="d-flex justify-content-between">
-              <span class="text-muted">Budget</span>
-              <span>$150 million</span>
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+          <!-- Movie Details -->
+          <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+              <h2 class="h4 mb-3">Details</h2>
+              <!-- <div class="d-flex justify-content-between mb-2"> -->
+              <!-- <span class="text-muted">Director</span> -->
+              <!-- <span>Director Name</span> -->
+              <!-- </div> -->
+              <!-- <div class="d-flex justify-content-between mb-2"> -->
+              <!-- <span class="text-muted">Writers</span> -->
+              <!-- <span>Writer Name</span> -->
+              <!-- </div> -->
+              <div class="d-flex justify-content-between mb-2">
+                <span class="text-muted">Release Date</span>
+                <span>{{ .Movie.ReleaseDate }}</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <span class="text-muted">Runtime</span>
+                <span>{{ timeToDuration .Movie.Runtime }}</span>
+              </div>
+              <div class="d-flex justify-content-between">
+                <span class="text-muted">Budget</span>
+                <span>{{ formatBudget .Movie.Budget }}</span>
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- Ratings -->
-        <div class="card border-0 shadow-sm">
-          <div class="card-body">
-            <h2 class="h4 mb-3">Ratings</h2>
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <span>IMDb</span>
-              <span class="badge bg-warning text-dark">8.5/10</span>
-            </div>
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <span>Rotten Tomatoes</span>
-              <span class="badge bg-success">92%</span>
-            </div>
-            <div class="d-flex justify-content-between align-items-center">
-              <span>Metacritic</span>
-              <span class="badge bg-primary">85/100</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Trailer Modal -->
-  <div class="modal fade" id="trailerModal" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-body p-0">
-          <div class="ratio ratio-16x9">
-            <img
-              src="https://placehold.co/1920x1080?text="
-              alt="Trailer Placeholder"
-            />
-          </div>
+          <!-- Ratings -->
+          <!-- <div class="card border-0 shadow-sm"> -->
+          <!--   <div class="card-body"> -->
+          <!--     <h2 class="h4 mb-3">Ratings</h2> -->
+          <!--     <div class="d-flex justify-content-between align-items-center mb-2"> -->
+          <!--       <span>IMDb</span> -->
+          <!--       <span class="badge bg-warning text-dark">8.5/10</span> -->
+          <!--     </div> -->
+          <!--     <div class="d-flex justify-content-between align-items-center mb-2"> -->
+          <!--       <span>Rotten Tomatoes</span> -->
+          <!--       <span class="badge bg-success">92%</span> -->
+          <!--     </div> -->
+          <!--     <div class="d-flex justify-content-between align-items-center"> -->
+          <!--       <span>Metacritic</span> -->
+          <!--       <span class="badge bg-primary">85/100</span> -->
+          <!--     </div> -->
+          <!--   </div> -->
+          <!-- </div> -->
         </div>
       </div>
     </div>

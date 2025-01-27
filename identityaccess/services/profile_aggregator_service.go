@@ -79,7 +79,7 @@ func (p *ProfileAggregatorService) GetProfilePageData(ctx context.Context, logge
 	}()
 
 	go func() {
-		movieData, err := p.GetWatchPaginatedHistory(ctx, logger, profileID, 1)
+		movieData, err := p.GetWatchPaginatedHistory(ctx, logger, profileID, PageInfo{PageNum: 1})
 		watchHistoryResultCh <- watchHistoryResult{movieData: movieData, err: err}
 	}()
 
@@ -165,8 +165,18 @@ func (p *ProfileAggregatorService) getParties(ctx context.Context, profileID int
 	return parties, nil
 }
 
-func (p *ProfileAggregatorService) GetWatchPaginatedHistory(ctx context.Context, logger *slog.Logger, profileID, pageNum int) (MovieData, error) {
-	offset := 5 * (pageNum - 1)
+type PageInfo struct {
+	PageNum  int
+	PageSize int
+}
+
+const defaultPageSize = 5
+
+func (p *ProfileAggregatorService) GetWatchPaginatedHistory(ctx context.Context, logger *slog.Logger, profileID int, pageInfo PageInfo) (MovieData, error) {
+	pageNum := pageInfo.PageNum
+	pageSize := max(defaultPageSize, pageInfo.PageSize)
+
+	offset := pageSize * (pageNum - 1)
 
 	watchedMovies, err := p.watcherRepository.GetWatchedMoviesForWatcher(ctx, profileID, offset)
 	if err != nil {
@@ -178,8 +188,8 @@ func (p *ProfileAggregatorService) GetWatchPaginatedHistory(ctx context.Context,
 		return MovieData{}, err
 	}
 
-	numPages := numMovies / 5
-	if numMovies > numPages*5 {
+	numPages := numMovies / pageSize
+	if numMovies > numPages*pageSize {
 		numPages++
 	}
 
@@ -196,7 +206,7 @@ func (p *ProfileAggregatorService) GetWatchPaginatedHistory(ctx context.Context,
 
 	return MovieData{
 		NumPages:      numPages,
-		CurPage:       1,
+		CurPage:       pageNum,
 		WatchedMovies: movies,
 	}, nil
 }

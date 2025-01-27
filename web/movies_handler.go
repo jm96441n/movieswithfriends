@@ -99,6 +99,12 @@ func (a *Application) MoviesShowHandler(w http.ResponseWriter, r *http.Request) 
 	ctx := r.Context()
 	idParams := r.PathValue("id")
 
+	currentParty, err := a.getCurrentPartyFromSession(r)
+	if err != nil {
+		a.serverError(w, r, err)
+		return
+	}
+
 	id, err := strconv.Atoi(idParams)
 	if err != nil {
 		a.clientError(w, r, http.StatusBadRequest, "Please try again")
@@ -120,7 +126,14 @@ func (a *Application) MoviesShowHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	movieAdded, err := currentParty.HasMovieAdded(ctx, movie.ID)
+	if err != nil {
+		a.serverError(w, r, err)
+		return
+	}
+
 	templateData := a.NewMoviesTemplateData(r, w, "/movie")
 	templateData.Movie = movie
+	templateData.MovieAddedToCurrentParty = movieAdded
 	a.render(w, r, http.StatusOK, "movies/show.gohtml", templateData)
 }

@@ -193,6 +193,16 @@ func (a *Application) sessionRoutes() []Route {
 	}
 }
 
+func (a *Application) watcherRoutes() []Route {
+	return []Route{
+		{
+			path:               "GET /watched_movies",
+			handler:            a.WatchedMoviesHandler,
+			authenticatedRoute: true,
+		},
+	}
+}
+
 func (a *Application) profileRoutes() []Route {
 	return []Route{
 		{

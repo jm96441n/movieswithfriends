@@ -297,3 +297,16 @@ func (p *PartyRepository) CreatePartyMovie(ctx context.Context, idParty, idMovie
 	}
 	return nil
 }
+
+const movieInPartyQuery = `SELECT EXISTS(select 1 from party_movies where id_movie = $1 and id_party = $2)`
+
+func (p *PartyRepository) MovieAddedToParty(ctx context.Context, idParty, idMovie int) (bool, error) {
+	var exists bool
+
+	err := p.db.QueryRow(ctx, movieInPartyQuery, idMovie, idParty).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+
+	return exists, nil
+}

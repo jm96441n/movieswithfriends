@@ -46,6 +46,7 @@ type MoviesTemplateData struct {
 	Movies                   []partymgmt.TMDBMovie
 	CurrentPartyMovieTMDBIDs map[int]struct{}
 	Movie                    partymgmt.Movie
+	MovieAddedToCurrentParty bool
 	SearchValue              string
 	BaseTemplateData
 }
@@ -60,6 +61,11 @@ type ProfilesTemplateData struct {
 	HasFirstNameError *bool
 	HasLastNameError  *bool
 	BaseTemplateData
+}
+
+type PartyMovieButtonTemplate struct {
+	CurrentParty partymgmt.Party
+	ButtonSize   string
 }
 
 func (s *ProfilesTemplateData) InitHasErrorFields() {
@@ -225,7 +231,7 @@ func (a *Application) newBaseTemplateData(r *http.Request, w http.ResponseWriter
 		InfoFlashes:     infoFlashes,
 		WarningFlashes:  warningFlashes,
 		CurrentPagePath: path,
-		CurrentYear:     2024,
+		CurrentYear:     2025,
 		IsAuthenticated: authed,
 		FullName:        fullName,
 		UserEmail:       email,
@@ -252,6 +258,7 @@ func (a *Application) templFunctions() template.FuncMap {
 			}
 			return ""
 		},
+		"join": strings.Join,
 		"joinGenres": func(genres []partymgmt.Genre) string {
 			res := ""
 			for i, g := range genres {
@@ -355,6 +362,16 @@ func (a *Application) templFunctions() template.FuncMap {
 			}
 
 			return s
+		},
+		"formatBudget": func(budget int) string {
+			switch {
+			case budget >= 1000000:
+				return fmt.Sprintf("$%d million", budget/1000000)
+			case budget >= 1000:
+				return fmt.Sprintf("$%d thousand", budget/1000)
+			default:
+				return fmt.Sprintf("$%d", budget)
+			}
 		},
 	}
 }

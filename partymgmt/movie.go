@@ -27,6 +27,7 @@ type Movie struct {
 	Genres      []string
 	TMDBID      int
 	AddedBy     FullName
+	Budget      int
 }
 
 type movieFetcher interface {
@@ -181,6 +182,7 @@ func convertGetResultToMovie(movie *Movie) store.GetAssignFn {
 		movie.Rating = res.Rating
 		movie.Genres = res.Genres
 		movie.TMDBID = res.TMDBID
+		movie.Budget = res.Budget
 	}
 }
 
@@ -206,12 +208,14 @@ func (m *MovieService) CreateMovie(ctx context.Context, logger *slog.Logger, tmd
 		return 0, err
 	}
 
+	fmt.Printf("%#v\n", tmdbMovie)
+
 	movieID, err := m.db.CreateMovie(ctx, tmdbMovie.ToStoreMovie())
 	if err != nil {
 		logger.ErrorContext(ctx, "Failed to create movie", slog.Any("err", err), slog.Any("movie", tmdbMovie.Title))
 		return 0, err
 	}
-	logger.InfoContext(ctx, "movie created in db", slog.Any("movie", movie))
+	logger.InfoContext(ctx, "movie created in db", slog.Any("movieID", movieID))
 
 	return movieID, nil
 }
