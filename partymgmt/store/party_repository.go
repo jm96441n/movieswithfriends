@@ -80,12 +80,13 @@ type GetPartyByIDWithStatsResult struct {
 }
 
 const getPartyByIDWithStatsQuery = `
-  select
+select
     parties.id_party,
     parties.name,
     parties.short_id,
     count(distinct party_members.id_member) as member_count,
-    count(distinct party_movies.id_movie) as movie_count
+    count(distinct party_movies.id_movie) as movie_count,
+	  count(distinct case when party_movies.watch_status = 'watched' then party_movies.id_movie end) as watched_count
   from parties
   join party_members on party_members.id_party = parties.id_party
   left join party_movies on party_movies.id_party = parties.id_party
@@ -93,14 +94,26 @@ const getPartyByIDWithStatsQuery = `
   group by parties.id_party;
 `
 
-func (p *PartyRepository) GetPartyByIDWithStats(ctx context.Context, id int) (GetPartyByIDWithStatsResult, error) {
+type getAssignFn func(GetPartyByIDWithStatsResult)
+
+func (p *PartyRepository) GetPartyByIDWithStats(ctx context.Context, id int, assignFn getAssignFn) error {
 	// logger.Info("GetPartyByIDWithStats", "id", id)
-	party := GetPartyByIDWithStatsResult{}
-	err := p.db.QueryRow(ctx, getPartyByIDWithStatsQuery, id).Scan(&party.ID, &party.Name, &party.ShortID, &party.MemberCount, &party.MovieCount)
+	result := GetPartyByIDWithStatsResult{}
+	err := p.db.QueryRow(ctx, getPartyByIDWithStatsQuery, id).
+		Scan(
+			&result.ID,
+			&result.Name,
+			&result.ShortID,
+			&result.MemberCount,
+			&result.MovieCount,
+			&result.WatchedCount,
+		)
 	if err != nil {
-		return GetPartyByIDWithStatsResult{}, err
+		return err
 	}
-	return party, nil
+
+	assignFn(result)
+	return nil
 }
 
 const (
@@ -158,6 +171,12 @@ func (p *PartyRepository) MarkPartyMovieAsWatched(ctx context.Context, idParty, 
 	return p.updatePartyMovieStatus(ctx, idParty, idMovie, WatchStatusWatched, &curTime)
 }
 
+const setCurrentSelectMoviesToUnwatched = `
+UPDATE party_movies
+SET watch_status = 'unwatched'
+WHERE id_party = $1 AND watch_status = 'selected';
+`
+
 const selectMovieForPartyQuery = `
 WITH party_members_for_selection AS (
   select distinct(id_added_by) as id_member
@@ -168,22 +187,42 @@ WITH party_members_for_selection AS (
   from party_members_for_selection
   order by random()
   limit 1
-)
+), selected_movie AS (
   select id_movie 
   from party_movies 
-  where id_party = $1 and id_added_by = (select id_member from selected_member_id) AND watch_status = 'unwatched'
+  where id_party = $1 
+  and id_added_by = (select id_member from selected_member_id) 
+  AND watch_status = 'unwatched'
   order by random()
-  limit 1;
+  limit 1
+)
+UPDATE party_movies
+SET watch_status = 'selected'
+WHERE id_movie = (select id_movie from selected_movie)
+AND id_party = $1
+RETURNING id_movie;
 `
 
 func (p *PartyRepository) SelectMovieForParty(ctx context.Context, idParty int) error {
-	var selectedMovieID int
-	err := p.db.QueryRow(ctx, selectMovieForPartyQuery, idParty).Scan(&selectedMovieID)
+	tx, err := p.db.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		return err
 	}
 
-	return p.updatePartyMovieStatus(ctx, idParty, selectedMovieID, WatchStatusSelected, nil)
+	defer tx.Rollback(ctx)
+
+	_, err = tx.Exec(ctx, setCurrentSelectMoviesToUnwatched, idParty)
+	if err != nil {
+		return err
+	}
+
+	var selectedMovieID int
+	err = tx.QueryRow(ctx, selectMovieForPartyQuery, idParty).Scan(&selectedMovieID)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit(ctx)
 }
 
 const updateWatchStatusQuery = `

@@ -215,12 +215,10 @@ func (a *Application) getCurrentPartyFromSession(r *http.Request) (partymgmt.Par
 		return partymgmt.Party{}, err
 	}
 
-	party := partymgmt.Party{
-		ID:      currentPartyID,
-		Name:    res.Name,
-		ShortID: res.ShortID,
-		DB:      a.PartiesRepository,
-	}
+	party := a.PartyService.NewParty()
+	party.ID = currentPartyID
+	party.Name = res.Name
+	party.ShortID = res.ShortID
 
 	return party, nil
 }

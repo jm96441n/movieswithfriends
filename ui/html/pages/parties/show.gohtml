@@ -80,9 +80,15 @@
                       <i class="fas fa-check me-2"></i>Mark as Watched
                     </button>
                   </form>
-                  <button class="btn btn-outline-danger">
-                    <i class="fas fa-random me-2"></i>Pick Another
-                  </button>
+
+                  <form
+                    action="/parties/{{ $party.ID }}/movies"
+                    method="post"
+                  >
+                    <button class="btn btn-outline-danger">
+                      <i class="fas fa-random me-2"></i>Pick Another
+                    </button>
+                  </form>
                 </div>
                 <div class="small">
                   <p class="mb-1">

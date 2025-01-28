@@ -119,17 +119,21 @@ func (a *Application) MarkMovieAsWatchedHandler(w http.ResponseWriter, r *http.R
 
 func (a *Application) SelectMovieForParty(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	logger := a.Logger.With("handler", "SelectMovieForParty")
 	idPartyParam := r.PathValue("party_id")
 	idParty, err := strconv.Atoi(idPartyParam)
 	if err != nil {
+		logger.Error("failed to get party ID from path", slog.Any("error", err))
 		a.clientError(w, r, http.StatusBadRequest, "uh oh")
 		return
 	}
 
 	err = a.PartiesRepository.SelectMovieForParty(ctx, idParty)
 	if err != nil {
+		logger.Error("failed to select movie for party", slog.Any("error", err))
 		a.serverError(w, r, err)
 		return
 	}
+
 	http.Redirect(w, r, "/parties/"+idPartyParam, http.StatusSeeOther)
 }

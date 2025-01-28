@@ -16,8 +16,8 @@ var ErrMemberExistsInParty = errors.New("member already exists in party")
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
 type PartyService struct {
-	Logger *slog.Logger
-	DB     *store.PartyRepository
+	logger *slog.Logger
+	db     *store.PartyRepository
 }
 
 type PartyMovie struct {
@@ -50,16 +50,27 @@ type Party struct {
 	WatchedCount int
 
 	MoviesByStatus MoviesByStatus
-	DB             *store.PartyRepository
+	db             *store.PartyRepository
+}
+
+func NewPartyService(logger *slog.Logger, db *store.PartyRepository) *PartyService {
+	return &PartyService{
+		logger: logger,
+		db:     db,
+	}
+}
+
+func (s *PartyService) NewParty() Party {
+	return Party{db: s.db}
 }
 
 func (s *PartyService) AddNewMemberToParty(ctx context.Context, idMember int, shortID string) error {
-	party, err := s.DB.GetPartyByShortID(ctx, shortID)
+	party, err := s.db.GetPartyByShortID(ctx, shortID)
 	if err != nil {
 		return err
 	}
 
-	err = s.DB.CreatePartyMember(ctx, idMember, party.ID)
+	err = s.db.CreatePartyMember(ctx, idMember, party.ID)
 	if errors.Is(err, store.ErrMemberPartyCombinationNotUnique) {
 		return errors.Join(ErrMemberExistsInParty, err)
 	}
@@ -78,7 +89,7 @@ func (s *PartyService) CreateParty(ctx context.Context, idMember int, name strin
 	)
 	for i := 0; i < 5; i++ {
 		shortID := generateRandomString()
-		id, err = s.DB.CreateParty(ctx, idMember, name, shortID)
+		id, err = s.db.CreateParty(ctx, idMember, name, shortID)
 		if errors.Is(err, store.ErrDuplicatePartyShortID) {
 			continue
 		}
@@ -98,25 +109,23 @@ func (s *PartyService) CreateParty(ctx context.Context, idMember int, name strin
 }
 
 func (s *PartyService) GetPartyWithMovies(ctx context.Context, logger *slog.Logger, id int) (Party, error) {
-	results, err := s.DB.GetPartyByIDWithStats(ctx, id)
+	party := s.NewParty()
+	err := s.db.GetPartyByIDWithStats(ctx, id, func(res store.GetPartyByIDWithStatsResult) {
+		party.ID = res.ID
+		party.Name = res.Name
+		party.ShortID = res.ShortID
+		party.MemberCount = res.MemberCount
+		party.MovieCount = res.MovieCount
+		party.WatchedCount = res.WatchedCount
+	})
 	if err != nil {
-		s.Logger.Error("failed to get party by id", slog.Any("error", err))
+		s.logger.Error("failed to get party by id", slog.Any("error", err))
 		return Party{}, err
-	}
-
-	party := Party{
-		ID:           results.ID,
-		Name:         results.Name,
-		ShortID:      results.ShortID,
-		MemberCount:  results.MemberCount,
-		MovieCount:   results.MovieCount,
-		WatchedCount: results.WatchedCount,
-		DB:           s.DB,
 	}
 
 	moviesByStatus, err := party.GetMoviesByStatus(ctx, logger)
 	if err != nil {
-		s.Logger.Error("failed to get movies for party", slog.Any("error", err))
+		s.logger.Error("failed to get movies for party", slog.Any("error", err))
 		return Party{}, err
 	}
 
@@ -126,7 +135,7 @@ func (s *PartyService) GetPartyWithMovies(ctx context.Context, logger *slog.Logg
 }
 
 func (s *PartyService) GetPartyByShortID(ctx context.Context, shortID string) (Party, error) {
-	res, err := s.DB.GetPartyByShortID(ctx, shortID)
+	res, err := s.db.GetPartyByShortID(ctx, shortID)
 	if err != nil {
 		return Party{}, err
 	}
@@ -135,12 +144,12 @@ func (s *PartyService) GetPartyByShortID(ctx context.Context, shortID string) (P
 		ID:      res.ID,
 		Name:    res.Name,
 		ShortID: res.ShortID,
-		DB:      s.DB,
+		db:      s.db,
 	}, nil
 }
 
 func (p Party) AddMember(ctx context.Context, idMember int) error {
-	err := p.DB.CreatePartyMember(ctx, idMember, p.ID)
+	err := p.db.CreatePartyMember(ctx, idMember, p.ID)
 
 	if errors.Is(err, store.ErrMemberPartyCombinationNotUnique) {
 		return errors.Join(ErrMemberExistsInParty, err)
@@ -158,7 +167,7 @@ func (p Party) GetMoviesByStatus(ctx context.Context, logger *slog.Logger) (Movi
 		UnwatchedMovies: make([]PartyMovie, 0, 10),
 		SelectedMovie:   nil,
 	}
-	err := p.DB.GetMoviesForParty(ctx, logger, p.ID, 0, func(status store.WatchStatusEnum, movieJSON []byte) error {
+	err := p.db.GetMoviesForParty(ctx, logger, p.ID, 0, func(status store.WatchStatusEnum, movieJSON []byte) error {
 		switch status {
 		case store.WatchStatusUnwatched:
 			err := json.Unmarshal(movieJSON, &moviesByStatus.UnwatchedMovies)
@@ -194,7 +203,7 @@ func (p Party) GetMoviesByStatus(ctx context.Context, logger *slog.Logger) (Movi
 }
 
 func (p Party) AddMovie(ctx context.Context, watcherID, idMovie int) error {
-	err := p.DB.CreatePartyMovie(ctx, p.ID, idMovie, watcherID)
+	err := p.db.CreatePartyMovie(ctx, p.ID, idMovie, watcherID)
 	if err != nil {
 		return err
 	}
@@ -202,7 +211,7 @@ func (p Party) AddMovie(ctx context.Context, watcherID, idMovie int) error {
 }
 
 func (p Party) HasMovieAdded(ctx context.Context, movieID int) (bool, error) {
-	exists, err := p.DB.MovieAddedToParty(ctx, p.ID, movieID)
+	exists, err := p.db.MovieAddedToParty(ctx, p.ID, movieID)
 	if err != nil {
 		return false, err
 	}

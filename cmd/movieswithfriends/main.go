@@ -179,14 +179,11 @@ func main() {
 
 	app := web.NewApplication(
 		web.AppConfig{
-			Logger:           logger,
-			SessionStore:     sessionStore,
-			MoviesService:    partymgmt.NewMovieService(tmdbClient, moviesRepo),
-			MoviesRepository: moviesRepo,
-			PartyService: &partymgmt.PartyService{
-				DB:     partyRepo,
-				Logger: logger,
-			},
+			Logger:            logger,
+			SessionStore:      sessionStore,
+			MoviesService:     partymgmt.NewMovieService(tmdbClient, moviesRepo),
+			MoviesRepository:  moviesRepo,
+			PartyService:      partymgmt.NewPartyService(logger, partyRepo),
 			PartiesRepository: partyRepo,
 			ProfilesService:   identityaccess.NewProfileService(profileRepo),
 			WatcherService:    partymgmt.NewWatcherService(watcherRepo),
