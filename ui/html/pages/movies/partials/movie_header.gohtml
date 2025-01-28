@@ -30,7 +30,8 @@
             <!-- Quick Info -->
             <div class="d-flex flex-wrap gap-3 mb-4 text-light">
               <div>
-                <i class="fas fa-calendar me-2"></i>{{ .Movie.ReleaseDate }}
+                <i class="fas fa-calendar me-2"></i
+                >{{ formatStringDate .Movie.ReleaseDate }}
               </div>
               <div>
                 <i class="fas fa-clock me-2"></i

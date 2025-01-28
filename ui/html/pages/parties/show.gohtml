@@ -127,18 +127,23 @@
             <div class="card-body p-0">
               <div class="list-group list-group-flush">
                 {{ range .UnwatchedMovies }}
-                  <div class="list-group-item unwatched-movie">
-                    <div class="d-flex align-items-center">
-                      <div class="flex-grow-1">
-                        <h6 class="mb-1">{{ .Title }}</h6>
-                        <small class="text-muted">
-                          Added by {{ .AddedBy.FirstName }} •
-                          {{ .AddedOn }}
-                        </small>
+                  <a
+                    href="/movies/{{ .ID }}"
+                    class="text-decoration-none text-dark"
+                  >
+                    <div class="list-group-item unwatched-movie">
+                      <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                          <h6 class="mb-1">{{ .Title }}</h6>
+                          <small class="text-muted">
+                            Added by {{ .AddedBy.FirstName }} •
+                            {{ formatFullDate .AddedOn }}
+                          </small>
+                        </div>
+                        <div class="badge bg-warning text-dark">8.5</div>
                       </div>
-                      <div class="badge bg-warning text-dark">8.5</div>
                     </div>
-                  </div>
+                  </a>
                 {{ end }}
               </div>
             </div>
@@ -170,23 +175,29 @@
             <div class="card-body p-0">
               <div class="list-group list-group-flush">
                 {{ range .WatchedMovies }}
-                  <div class="list-group-item">
-                    <div class="d-flex align-items-center">
-                      <div class="flex-grow-1">
-                        <h6 class="mb-1">{{ .Title }}</h6>
-                        <div class="text-warning small mb-1">
-                          <i class="fas fa-star"></i>
-                          <i class="fas fa-star"></i>
-                          <i class="fas fa-star"></i>
-                          <i class="fas fa-star"></i>
-                          <i class="far fa-star"></i>
+                  <a
+                    href="/movies/{{ .ID }}"
+                    class="text-decoration-none text-dark"
+                  >
+                    <div class="list-group-item">
+                      <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                          <!-- <h6 class="mb-1"><a href="/movies/{{ .ID }}">{{ .Title }}</a></h6> -->
+                          <h6 class="mb-1">{{ .Title }}</h6>
+                          <div class="text-warning small mb-1">
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="far fa-star"></i>
+                          </div>
+                          <small class="text-muted"
+                            >Watched on {{ formatFullDate .WatchDate }}</small
+                          >
                         </div>
-                        <small class="text-muted"
-                          >Watched on {{ .WatchDate }}</small
-                        >
                       </div>
                     </div>
-                  </div>
+                  </a>
                 {{ end }}
               </div>
             </div>

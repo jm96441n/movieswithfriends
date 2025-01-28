@@ -373,6 +373,34 @@ func (a *Application) templFunctions() template.FuncMap {
 				return fmt.Sprintf("$%d", budget)
 			}
 		},
+		"formatFullDate": func(date time.Time) string {
+			est, err := time.LoadLocation("America/New_York")
+			if err != nil {
+				fmt.Printf("Error loading timezone: %v\n", err)
+				return ""
+			}
+
+			// Convert to EST and format date only
+			dateOnly := date.In(est).Format("Jan 02, 2006")
+			return dateOnly
+		},
+		"formatStringDate": func(in string) string {
+			utcTime, err := time.Parse("2006-01-02", in)
+			if err != nil {
+				fmt.Printf("Error parsing time: %v\n", err)
+				return ""
+			}
+
+			est, err := time.LoadLocation("America/New_York")
+			if err != nil {
+				fmt.Printf("Error loading timezone: %v\n", err)
+				return ""
+			}
+
+			// Convert to EST and format date only
+			dateOnly := utcTime.In(est).Format("Jan 02, 2006")
+			return dateOnly
+		},
 	}
 }
 
