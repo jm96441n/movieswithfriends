@@ -278,9 +278,6 @@ func (a *Application) templFunctions() template.FuncMap {
 		"formatDate": func(date time.Time) string {
 			return date.Format("January 2006")
 		},
-		"formatWatchDate": func(date time.Time) string {
-			return date.Format("January 03, 2006")
-		},
 		"disableIfEmpty": func(s string) string {
 			if s == "" {
 				return "disabled"
