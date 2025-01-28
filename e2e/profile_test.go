@@ -172,7 +172,6 @@ func testCanEditProfile(ctx context.Context, testConn *pgxpool.Pool, page playwr
 		curURL = page.URL()
 		helpers.Assert(t, curURL == fmt.Sprintf("http://localhost:%s/profile", appPort), "expected to be on the profile page, got %s", curURL)
 
-		// time.Sleep(30 * time.Minute)
 		// logout and then login to try the new email
 		logoutViaDropdown(t, page)
 

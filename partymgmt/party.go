@@ -32,6 +32,7 @@ type PartyMovie struct {
 	Genres      []string  `json:"genres"`
 	WatchDate   time.Time `json:"watch_date"`
 	AddedBy     FullName  `json:"added_by"`
+	AddedOn     time.Time `json:"created_at"`
 	PartyName   string
 }
 

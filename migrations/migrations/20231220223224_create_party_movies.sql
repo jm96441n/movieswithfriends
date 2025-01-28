@@ -7,8 +7,8 @@ create table party_movies (
     id INT GENERATED ALWAYS AS IDENTITY,
     id_party INT,
     id_movie INT,
-    created_at TIMESTAMP NOT NULL DEFAULT clock_timestamp(),
-    updated_at TIMESTAMP,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT (clock_timestamp() AT TIME ZONE 'UTC'),
+    updated_at TIMESTAMPTZ,
     PRIMARY KEY(id),
     CONSTRAINT fk_party_movies_parties FOREIGN KEY(id_party) REFERENCES parties(id_party),
     CONSTRAINT fk_party_movies_movies FOREIGN KEY(id_movie) REFERENCES movies(id_movie)

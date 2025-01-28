@@ -8,8 +8,8 @@ create table party_members (
     id_member INT NOT NULL,
     id_party INT NOT NULL,
     owner BOOLEAN NOT NULL DEFAULT FALSE,
-    created_at TIMESTAMP NOT NULL DEFAULT clock_timestamp(),
-    updated_at TIMESTAMP,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT (clock_timestamp() AT TIME ZONE 'UTC'),
+    updated_at TIMESTAMPTZ,
     PRIMARY KEY(id_profile_party),
     CONSTRAINT fk_party_members_members FOREIGN KEY(id_member) REFERENCES profiles(id_profile),
     CONSTRAINT fk_party_members_parties FOREIGN KEY(id_party) REFERENCES parties(id_party)

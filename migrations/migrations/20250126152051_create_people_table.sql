@@ -4,8 +4,8 @@ SELECT 'up SQL query';
 CREATE TABLE people (
     id_people INT GENERATED ALWAYS AS IDENTITY,
     name VARCHAR(100) NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT clock_timestamp(),
-    updated_at TIMESTAMP,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT (clock_timestamp() AT TIME ZONE 'UTC'),
+    updated_at TIMESTAMPTZ,
     PRIMARY KEY(id_actor)
 );
 -- +goose StatementEnd

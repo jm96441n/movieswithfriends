@@ -81,10 +81,7 @@
                     </button>
                   </form>
 
-                  <form
-                    action="/parties/{{ $party.ID }}/movies"
-                    method="post"
-                  >
+                  <form action="/parties/{{ $party.ID }}/movies" method="post">
                     <button class="btn btn-outline-danger">
                       <i class="fas fa-random me-2"></i>Pick Another
                     </button>
@@ -134,10 +131,10 @@
                     <div class="d-flex align-items-center">
                       <div class="flex-grow-1">
                         <h6 class="mb-1">{{ .Title }}</h6>
-                        <small class="text-muted"
-                          >Added by {{ .AddedBy.FirstName }} • ADD ADDED BY
-                          DATE</small
-                        >
+                        <small class="text-muted">
+                          Added by {{ .AddedBy.FirstName }} •
+                          {{ .AddedOn }}
+                        </small>
                       </div>
                       <div class="badge bg-warning text-dark">8.5</div>
                     </div>

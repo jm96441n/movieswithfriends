@@ -11,8 +11,8 @@ create table movies (
     overview TEXT NOT NULL,
     tagline TEXT NOT NULL,
     release_date TIMESTAMP,
-    created_at TIMESTAMP NOT NULL DEFAULT clock_timestamp(),
-    updated_at TIMESTAMP,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT (clock_timestamp() AT TIME ZONE 'UTC'),
+    updated_at TIMESTAMPTZ,
     PRIMARY KEY(id_movie)
 );
 -- Add an index on the created column.

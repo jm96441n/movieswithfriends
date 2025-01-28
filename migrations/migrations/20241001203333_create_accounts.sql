@@ -7,7 +7,7 @@ create table accounts (
     id_account INT GENERATED ALWAYS AS IDENTITY,
     email VARCHAR(100) NOT NULL,
     password VARCHAR(100) NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT clock_timestamp(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT (clock_timestamp() AT TIME ZONE 'UTC'),
     updated_at TIMESTAMP,
     PRIMARY KEY(id_account)
 );

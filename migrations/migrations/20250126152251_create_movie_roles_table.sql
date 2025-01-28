@@ -7,8 +7,8 @@ CREATE TABLE movie_roles (
     id_people INT NOT NULL,
     character_name VARCHAR(100) NOT NULL,
     job VARCHAR(100) NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT clock_timestamp(),
-    updated_at TIMESTAMP,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT (clock_timestamp() AT TIME ZONE 'UTC'),
+    updated_at TIMESTAMPTZ,
     PRIMARY KEY(id_movie_role),
     FOREIGN KEY (id_movie) REFERENCES movies(id_movie),
     FOREIGN KEY (id_people) REFERENCES people(id_people)

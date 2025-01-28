@@ -266,7 +266,8 @@ SELECT watch_status, jsonb_agg(
             'last_name', last_name
         ),
         'watch_date', watch_date,
-        'genres', genres
+        'genres', genres,
+        'created_at', created_at
     )
 ) as movies
 FROM (
@@ -281,6 +282,7 @@ FROM (
           profiles.last_name,
           party_movies.watch_status,
           party_movies.watch_date,
+          party_movies.created_at,
           ROW_NUMBER() OVER (PARTITION BY party_movies.watch_status ORDER BY party_movies.created_at DESC) as rn
         FROM movies
         INNER JOIN party_movies ON movies.id_movie = party_movies.id_movie
