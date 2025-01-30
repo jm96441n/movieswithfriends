@@ -7,10 +7,10 @@ services:
       - '4000:4000'
     environment:
       - TMDB_API_KEY=${TMDB_API_KEY}
-      - DB_USERNAME=user
+      - DB_USERNAME=app_user
       - DB_PASSWORD=password
-      - DB_MIGRATION_USER=user
-      - DB_MIGRATION_PASSWORD=password
+      - DB_MIGRATION_USER=migration_user
+      - DB_MIGRATION_PASSWORD=migration_password
       - DB_HOST=db
       - DB_DATABASE_NAME=movieswithfriends
       - SESSION_KEY=${SESSION_KEY}
@@ -27,17 +27,22 @@ services:
     ports:
       - '5432:5432'
     environment:
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=strongpassword
       - POSTGRES_DB=movieswithfriends
+      - MIGRATION_USER=migration_user
+      - MIGRATION_PASSWORD=migration_password
+      - APP_USER=app_user
+      - APP_PASSWORD=password
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U user -d movieswithfriends']
+      test: ['CMD-SHELL', 'pg_isready -U app_user -d movieswithfriends']
       interval: 5s
       timeout: 5s
       retries: 5
       start_period: 10s
     volumes:
       - ./${VOLUME_LOCATION}:/var/lib/postgresql/data
+      - ./infra/postgres/setup.sh:/docker-entrypoint-initdb.d/10_setup.sh
     networks:
       - app-network
 

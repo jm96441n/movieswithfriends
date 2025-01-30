@@ -1,12 +1,3 @@
 ---
-- name: setup postgres
-  include_tasks: "postgres.yml"
-
-- name: configure caddy
-  include_tasks: "caddy.yml"
-
-- name: configure fail2ban 
-  include_tasks: "fail2ban.yml"
-
-- name: configure goose 
-  include_tasks: "goose.yml"
+- name: configure fail2ban
+  include_tasks: 'fail2ban.yml'
