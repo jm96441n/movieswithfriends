@@ -1,5 +1,5 @@
 #! /bin/bash
-POSTGRES="psql --username ${POSTGRES_USER}"
+POSTGRES="psql -U ${POSTGRES_USER} ${POSTGRES_DB}"
 
 $POSTGRES <<EOSQL
 -- First, create the migration user with full access
@@ -45,7 +45,13 @@ GRANT USAGE ON SCHEMA public TO ${APP_USER};
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO ${APP_USER};
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO ${APP_USER};
 
--- Revoke ability to create new tables/schemas from app_user
+-- Set default privileges for future tables/sequences created by migration_user
+ALTER DEFAULT PRIVILEGES FOR USER ${MIGRATION_USER} IN SCHEMA public 
+    GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO ${APP_USER};
+ALTER DEFAULT PRIVILEGES FOR USER ${MIGRATION_USER} IN SCHEMA public 
+    GRANT USAGE, SELECT ON SEQUENCES TO ${APP_USER};
+
+    -- Revoke ability to create new tables/schemas from app_user
 REVOKE CREATE ON SCHEMA public FROM ${APP_USER};
 
 -- Optional: If you want to restrict app_user from truncating tables

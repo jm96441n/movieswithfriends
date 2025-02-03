@@ -9,27 +9,13 @@
         backend: systemd
         ignoreip: 127.0.0.1/8 ::1
       sshd:
-        enabled: "true"
+        enabled: 'true'
         port: ssh
         filter: sshd
         logpath: /var/log/auth.log
         maxretry: 3
         findtime: 5m
         bantime: 2h
-      caddyhttpauth:
-        enabled: "true"
-        filter: caddy-http-auth
-        logpath: /var/log/caddy/*.log
-        maxretry: 5
-        findtime: 10m
-        bantime: 1h
-      caddynotfound:
-        enabled: "true"
-        filter: caddy-notfound
-        logpath: /var/log/caddy/*.log
-        maxretry: 10
-        findtime: 5m
-        bantime: 30m
 
   block:
     - name: Install fail2ban
@@ -47,24 +33,6 @@
       template:
         src: templates/jail.local.j2
         dest: /etc/fail2ban/jail.local
-        mode: '0644'
-
-    - name: Create Caddy HTTP auth filter
-      copy:
-        dest: /etc/fail2ban/filter.d/caddy-http-auth.conf
-        content: |
-          [Definition]
-          failregex = ^.*"request_id":"[^"]*","status":401.*"remote_ip":"<HOST>".*$
-          ignoreregex =
-        mode: '0644'
-
-    - name: Create Caddy not found filter
-      copy:
-        dest: /etc/fail2ban/filter.d/caddy-notfound.conf
-        content: |
-          [Definition]
-          failregex = ^.*"request_id":"[^"]*","status":404.*"remote_ip":"<HOST>".*$
-          ignoreregex =
         mode: '0644'
 
     - name: Ensure fail2ban is started and enabled

@@ -24,13 +24,14 @@ WORKDIR /go/src/app
 
 COPY ./go.mod ./go.sum ./
 COPY ./cmd ./cmd
+COPY ./tools ./tools
 COPY ./web ./web
 COPY ./identityaccess/ ./identityaccess
 COPY ./partymgmt/ ./partymgmt
 COPY ./ui ./ui
 COPY ./migrations ./migrations
 
-RUN go mod download && CGO_ENABLED=0 go build -o /go/bin/app ./cmd/movieswithfriends/ 
+RUN go mod download && go run ./tools/assetbuilder/ && CGO_ENABLED=0 go build -o /go/bin/app ./cmd/movieswithfriends/ 
 
 FROM gcr.io/distroless/static-debian12 AS prod
 

@@ -266,7 +266,10 @@ func createConnPool(host string, dbname string, creds DBCreds) (*pgxpool.Pool, e
 		return nil, err
 	}
 
-	db.Ping(ctx)
+	err = db.Ping(ctx)
+	if err != nil {
+		return nil, err
+	}
 	return db, nil
 }
 
@@ -278,7 +281,13 @@ func runMigrations(host, dbname string, creds DBCreds) error {
 	}
 	connString := fmt.Sprintf("postgres://%s:%s@%s/%s", creds.Username, creds.Password, host, dbname)
 
+	fmt.Println(host, dbname, creds.Username)
 	db, err := sql.Open("pgx", connString)
+	if err != nil {
+		return err
+	}
+
+	err = db.Ping()
 	if err != nil {
 		return err
 	}

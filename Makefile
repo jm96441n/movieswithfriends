@@ -1,3 +1,4 @@
+### LOCAL DEV
 .DEFAULT_GOAL := run
 
 .PHONY: setupprettier
@@ -20,20 +21,27 @@ psql:
 run:
 	docker compose up --build
 
-.PHONY: build-deploy
-build-deploy:
-	go build -o ./infra/ansible/files/movieswithfriends ./cmd/movieswithfriends
-
-.PHONY: copy-migrations
-copy-migrations:
-	cp -r ./migrations ./infra/ansible/files
-
-.PHONY: deploy
-deploy: build-deploy copy-migrations
-	source ./infra/.envrc && ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i './infra/ansible/inventory/app.yml' -u root --private-key ~/.ssh/do ./infra/ansible/deploy_app.yml
-
+### TESTS
 headless ?= true
 
 .PHONY: e2e
 e2e:
 	cd ./e2e && gotestsum -- ./... -count=1 -run="$(TEST)" -headless=$(headless)
+
+### INFRA/DEPLOY
+
+.PHONY: pkr
+pkr:
+	cd ./infra/packer && packer build .
+
+.PHONY: tf-plan
+tf-plan:
+	cd ./infra/terraform && terraform plan -out=tfplan
+
+.PHONY: tf-apply
+tf-apply: tf-plan
+	cd ./infra/terraform && terraform apply "tfplan"
+
+.PHONY: deploy
+deploy:
+	source ./infra/.envrc && kamal secrets print

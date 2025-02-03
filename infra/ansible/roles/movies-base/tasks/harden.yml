@@ -1,0 +1,112 @@
+- name: Linux Security Hardening
+  block:
+    - name: Ensure required repositories are available
+      apt_repository:
+        repo: '{{ item }}'
+        state: present
+        update_cache: no
+      with_items:
+        - 'deb http://archive.ubuntu.com/ubuntu {{ ansible_distribution_release }} main restricted universe multiverse'
+        - 'deb http://archive.ubuntu.com/ubuntu {{ ansible_distribution_release }}-updates main restricted universe multiverse'
+        - 'deb http://security.ubuntu.com/ubuntu {{ ansible_distribution_release }}-security main restricted universe multiverse'
+      when: ansible_os_family == "Debian"
+
+    # Update system packages
+    - name: Update package cache and upgrade all packages
+      apt:
+        update_cache: yes
+        upgrade: dist
+      when: ansible_os_family == "Debian"
+
+    # Set password policies
+    - name: Configure password policies
+      lineinfile:
+        path: /etc/login.defs
+        regexp: '{{ item.regexp }}'
+        line: '{{ item.line }}'
+      with_items:
+        - { regexp: '^PASS_MAX_DAYS', line: 'PASS_MAX_DAYS   90' }
+        - { regexp: '^PASS_MIN_DAYS', line: 'PASS_MIN_DAYS   7' }
+        - { regexp: '^PASS_WARN_AGE', line: 'PASS_WARN_AGE   14' }
+
+    # Configure SSH security
+    - name: Secure SSH configuration
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '{{ item.regexp }}'
+        line: '{{ item.line }}'
+        validate: '/usr/sbin/sshd -t -f %s'
+      with_items:
+        - {
+            regexp: '^PermitRootLogin',
+            line: 'PermitRootLogin prohibit-password',
+          }
+        - {
+            regexp: '^PasswordAuthentication',
+            line: 'PasswordAuthentication no',
+          }
+        - { regexp: '^X11Forwarding', line: 'X11Forwarding no' }
+        - { regexp: '^MaxAuthTries', line: 'MaxAuthTries 3' }
+
+    # Configure firewall (UFW)
+    - name: Install UFW
+      apt:
+        name: ufw
+        state: present
+      when: ansible_os_family == "Debian"
+
+    - name: Configure UFW defaults
+      ufw:
+        direction: '{{ item.direction }}'
+        policy: '{{ item.policy }}'
+      with_items:
+        - { direction: incoming, policy: deny }
+        - { direction: outgoing, policy: allow }
+
+    - name: Allow SSH through UFW
+      ufw:
+        rule: allow
+        port: ssh
+        proto: tcp
+
+    - name: Allow HTTP through UFW
+      ufw:
+        rule: allow
+        port: 80
+        proto: tcp
+
+    - name: Allow HTTPS through UFW
+      ufw:
+        rule: allow
+        port: 443
+        proto: tcp
+
+    - name: Enable UFW
+      ufw:
+        state: enabled
+
+    # Disable unused services
+    - name: Disable unused services
+      service:
+        name: '{{ item }}'
+        state: stopped
+        enabled: no
+      with_items:
+        - telnet
+        - rsh-server
+        - rlogin-server
+        - vsftpd
+      ignore_errors: true
+
+    # Configure system file permissions
+    - name: Set strict permissions on sensitive files
+      file:
+        path: '{{ item.path }}'
+        mode: '{{ item.mode }}'
+        owner: root
+        group: root
+      with_items:
+        - { path: '/etc/shadow', mode: '0400' }
+        - { path: '/etc/gshadow', mode: '0400' }
+        - { path: '/etc/passwd', mode: '0644' }
+        - { path: '/etc/group', mode: '0644' }

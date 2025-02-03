@@ -6,7 +6,7 @@ variable "region" {
 }
 
 data "digitalocean_image" "base_image" {
-  name = "packer-1730661392"
+  name = "packer-1738531229"
 }
 
 resource "digitalocean_droplet" "app" {
@@ -64,7 +64,7 @@ resource "digitalocean_volume_attachment" "app" {
 resource "digitalocean_container_registry" "registry" {
   name                   = "jmaguireregistry"
   subscription_tier_slug = "starter"
-  region                 = "nyc2"
+  region                 = "nyc3"
 }
 
 # Create a container registry docker credentials

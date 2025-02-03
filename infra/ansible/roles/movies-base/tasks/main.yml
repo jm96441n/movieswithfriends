@@ -1,3 +1,6 @@
 ---
+- name: harden server
+  include_tasks: 'harden.yml'
+
 - name: configure fail2ban
   include_tasks: 'fail2ban.yml'
