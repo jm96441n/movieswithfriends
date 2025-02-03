@@ -251,7 +251,7 @@ func createConnPool(host string, dbname string, creds DBCreds) (*pgxpool.Pool, e
 		return nil, ErrMissingDBDatabaseName
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*120)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
 	defer cancel()
 
 	connString := fmt.Sprintf("postgres://%s:%s@%s/%s", creds.Username, creds.Password, host, dbname)
@@ -274,6 +274,9 @@ func createConnPool(host string, dbname string, creds DBCreds) (*pgxpool.Pool, e
 }
 
 func runMigrations(logger *slog.Logger, host, dbname string, creds DBCreds) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
+	defer cancel()
+
 	goose.SetBaseFS(migrations.MigrationsFS)
 
 	if err := goose.SetDialect("postgres"); err != nil {
@@ -288,7 +291,7 @@ func runMigrations(logger *slog.Logger, host, dbname string, creds DBCreds) erro
 
 	logger.Info("opened db, starting ping")
 
-	err = db.Ping()
+	err = db.PingContext(ctx)
 	if err != nil {
 		return err
 	}
