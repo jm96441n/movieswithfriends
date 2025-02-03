@@ -341,12 +341,12 @@ func seedProfile(ctx context.Context, t *testing.T, connPool *pgxpool.Pool, firs
 	return profileID, accountID, createdAt
 }
 
-func getProfileCount(ctx context.Context, t *testing.T, connPool *pgxpool.Pool) int {
-	t.Helper()
-	var count int
-
-	err := connPool.QueryRow(ctx, "SELECT COUNT(*) FROM profiles").Scan(&count)
-	testhelpers.Ok(t, err, "failed to get profile count")
-
-	return count
-}
+// func getProfileCount(ctx context.Context, t *testing.T, connPool *pgxpool.Pool) int {
+// 	t.Helper()
+// 	var count int
+//
+// 	err := connPool.QueryRow(ctx, "SELECT COUNT(*) FROM profiles").Scan(&count)
+// 	testhelpers.Ok(t, err, "failed to get profile count")
+//
+// 	return count
+// }

@@ -42,10 +42,19 @@ type MoviesByStatus struct {
 	SelectedMovie   *PartyMovie
 }
 
+type PartyMember struct {
+	FirstName string
+	LastName  string
+	ID        int
+	Owner     bool
+	JoinedOn  time.Time
+}
+
 type Party struct {
 	ID           int
 	Name         string
 	ShortID      string
+	Members      []PartyMember
 	MemberCount  int
 	MovieCount   int
 	WatchedCount int
@@ -121,6 +130,12 @@ func (s *PartyService) GetPartyWithMovies(ctx context.Context, logger *slog.Logg
 	})
 	if err != nil {
 		s.logger.Error("failed to get party by id", slog.Any("error", err))
+		return Party{}, err
+	}
+
+	err = party.GetPartyMembers(ctx)
+	if err != nil {
+		s.logger.Error("failed to get party members", slog.Any("error", err))
 		return Party{}, err
 	}
 
@@ -217,6 +232,22 @@ func (p Party) HasMovieAdded(ctx context.Context, movieID int) (bool, error) {
 		return false, err
 	}
 	return exists, nil
+}
+
+func (p *Party) GetPartyMembers(ctx context.Context) error {
+	err := p.db.GetPartyMembers(ctx, p.ID, func(firstName, lastName string, id int, owner bool, joinedAt time.Time) {
+		p.Members = append(p.Members, PartyMember{
+			FirstName: firstName,
+			LastName:  lastName,
+			ID:        id,
+			Owner:     owner,
+			JoinedOn:  joinedAt,
+		})
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // generate a random 6 character string

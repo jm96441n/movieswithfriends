@@ -33,6 +33,7 @@ type AppConfig struct {
 	WatcherService           *partymgmt.WatcherService
 	ProfilesService          *identityaccess.ProfileService
 	ProfileAggregatorService *services.ProfileAggregatorService
+	InvitationsService       partymgmt.InvitationsService
 	Auth                     *identityaccess.Authenticator
 	AssetLoader              *Loader
 }
@@ -48,6 +49,7 @@ type Application struct {
 	WatcherService           *partymgmt.WatcherService
 	ProfilesService          *identityaccess.ProfileService
 	ProfileAggregatorService *services.ProfileAggregatorService
+	InvitationsService       partymgmt.InvitationsService
 	Auth                     *identityaccess.Authenticator
 	AssetLoader              *Loader
 }
@@ -63,6 +65,7 @@ func NewApplication(cfg AppConfig) *Application {
 		WatcherService:           cfg.WatcherService,
 		ProfilesService:          cfg.ProfilesService,
 		ProfileAggregatorService: cfg.ProfileAggregatorService,
+		InvitationsService:       cfg.InvitationsService,
 		Auth:                     cfg.Auth,
 		AssetLoader:              cfg.AssetLoader,
 	}

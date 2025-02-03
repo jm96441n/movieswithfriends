@@ -182,7 +182,7 @@ const getPartiesWithoutMovieQuery = `
 `
 
 func (p *WatcherRepository) GetWatcherPartiesWithoutMovie(ctx context.Context, logger *slog.Logger, idMovie int, idMember int, assignFn func(int, string)) error {
-	rows, err := p.db.Query(ctx, getPartiesWithMovieQuery, idMovie, idMember)
+	rows, err := p.db.Query(ctx, getPartiesWithoutMovieQuery, idMovie, idMember)
 	if err != nil {
 		return err
 	}
@@ -202,4 +202,19 @@ func (p *WatcherRepository) GetWatcherPartiesWithoutMovie(ctx context.Context, l
 		assignFn(partyID, partyName)
 	}
 	return nil
+}
+
+const isOwnerQuery = `
+  select pm.owner
+  from party_members pm
+  where pm.id_member = $1 and pm.id_party = $2;
+`
+
+func (p *WatcherRepository) WatcherOwnsParty(ctx context.Context, idWatcher, idParty int) (bool, error) {
+	var isOwner bool
+	err := p.db.QueryRow(ctx, isOwnerQuery, idWatcher, idParty).Scan(&isOwner)
+	if err != nil {
+		return false, err
+	}
+	return isOwner, nil
 }

@@ -18,11 +18,6 @@ import (
 	partymgmtstore "github.com/jm96441n/movieswithfriends/partymgmt/store"
 )
 
-type partyNav struct {
-	ID   int
-	Name string
-}
-
 const (
 	FlashErrorKey   = "error"
 	FlashInfoKey    = "info"
@@ -76,7 +71,10 @@ func (s *ProfilesTemplateData) InitHasErrorFields() {
 }
 
 type PartiesTemplateData struct {
-	Party partymgmt.Party
+	Party                 partymgmt.Party
+	CurrentWatcherIsOwner bool
+	Members               []partymgmt.PartyMember
+	ModalData             InviteModalTemplateData
 	BaseTemplateData
 }
 

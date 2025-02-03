@@ -176,6 +176,7 @@ func main() {
 	profileRepo := iamstore.NewProfileRepository(connPool)
 	watcherRepo := partymgmtstore.NewWatcherRepository(connPool)
 	partyRepo := partymgmtstore.NewPartyRepository(connPool)
+	invitationsRepo := partymgmtstore.NewInvitationsRepository(connPool)
 
 	app := web.NewApplication(
 		web.AppConfig{
@@ -195,7 +196,8 @@ func main() {
 				profileRepo,
 				watcherRepo,
 			),
-			AssetLoader: loader,
+			InvitationsService: partymgmt.NewInvitationsService(invitationsRepo),
+			AssetLoader:        loader,
 		},
 	)
 

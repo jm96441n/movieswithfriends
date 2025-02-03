@@ -96,19 +96,3 @@ func isAuthenticated(ctx context.Context) bool {
 	}
 	return isAuthenticated.(bool)
 }
-
-// TODO get rid of this
-func corsMiddleware() func(http.HandlerFunc) http.HandlerFunc {
-	return func(next http.HandlerFunc) http.HandlerFunc {
-		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			w.Header().Set("Access-Control-Allow-Origin", "http://localhost:4000")
-			w.Header().Set("Access-Control-Allow-Credentials", "true")
-			w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-			w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-
-			if req.Method != "OPTIONS" {
-				next.ServeHTTP(w, req)
-			}
-		})
-	}
-}

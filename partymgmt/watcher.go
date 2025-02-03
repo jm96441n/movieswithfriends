@@ -120,3 +120,11 @@ func (w *Watcher) GetPartiesToAddMovie(ctx context.Context, logger *slog.Logger,
 	}
 	return parties, nil
 }
+
+func (w *Watcher) IsOwnerOfParty(ctx context.Context, idParty int) (bool, error) {
+	isOwner, err := w.db.WatcherOwnsParty(ctx, w.ID, idParty)
+	if err != nil {
+		return false, err
+	}
+	return isOwner, nil
+}

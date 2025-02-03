@@ -15,7 +15,7 @@ build-assets:
 
 .PHONY: psql
 psql:
-	docker compose exec -it db psql -U user movieswithfriends
+	docker compose exec -it db psql -U postgres movieswithfriends
 
 .PHONY: run
 run:
@@ -28,6 +28,18 @@ headless ?= true
 e2e:
 	cd ./e2e && gotestsum -- ./... -count=1 -run="$(TEST)" -headless=$(headless)
 
+
+### LINT
+.PHONY: staticcheck
+staticcheck:
+	@staticcheck ./...
+
+.PHONY: vet
+vet:
+	@go vet ./...
+
+.PHONY: lint
+lint: vet staticcheck
 ### INFRA/DEPLOY
 
 .PHONY: pkr

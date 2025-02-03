@@ -20,16 +20,6 @@ func NewPartyRepository(db *pgxpool.Pool) *PartyRepository {
 	return &PartyRepository{db: db}
 }
 
-type Party struct {
-	ID              int
-	Name            string
-	ShortID         string
-	MovieAdded      bool
-	UnwatchedMovies []PartyMovie
-	SelectedMovie   *PartyMovie
-	WatchedMovies   []PartyMovie
-}
-
 type PartyMovie struct {
 	ID          pgtype.Int8
 	Title       pgtype.Text
@@ -350,4 +340,42 @@ func (p *PartyRepository) MovieAddedToParty(ctx context.Context, idParty, idMovi
 	}
 
 	return exists, nil
+}
+
+const getPartiesByMembersQuery = `
+select 
+    pm.id_member,
+    pm.created_at,
+    pm.owner,
+    p.first_name,
+    p.last_name
+from party_members pm
+join profiles p on p.id_profile = pm.id_member
+where pm.id_party = $1
+order by pm.owner desc, pm.created_at asc;
+`
+
+type getMembersAssignFn func(string, string, int, bool, time.Time)
+
+func (p *PartyRepository) GetPartyMembers(ctx context.Context, idParty int, assignFn getMembersAssignFn) error {
+	rows, err := p.db.Query(ctx, getPartiesByMembersQuery, idParty)
+	if err != nil {
+		return err
+	}
+
+	for rows.Next() {
+		var (
+			firstName string
+			lastName  string
+			id        int
+			joinDate  time.Time
+			owner     bool
+		)
+		err = rows.Scan(&id, &joinDate, &owner, &firstName, &lastName)
+		if err != nil {
+			return err
+		}
+		assignFn(firstName, lastName, id, owner, joinDate)
+	}
+	return nil
 }

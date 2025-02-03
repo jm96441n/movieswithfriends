@@ -14,6 +14,13 @@ func (a *Application) NewPartyHandler(w http.ResponseWriter, r *http.Request) {
 	a.render(w, r, http.StatusOK, "parties/new.gohtml", templateData)
 }
 
+func (a *Application) EditPartyHandler(w http.ResponseWriter, r *http.Request) {
+	logger := a.Logger.With("handler", "EditPartyHandler")
+	logger.Info("calling EditPartyHandler")
+	templateData := a.NewPartiesTemplateData(r, w, "/parties")
+	a.render(w, r, http.StatusOK, "parties/edit.gohtml", templateData)
+}
+
 func (a *Application) CreatePartyHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	profileID, err := a.getProfileIDFromSession(r)
@@ -60,6 +67,14 @@ func (a *Application) PartyShowHandler(w http.ResponseWriter, r *http.Request) {
 	logger := a.Logger.With("handler", "PartyShowHandler")
 	ctx := r.Context()
 
+	watcher, err := a.getWatcherFromSession(r)
+	if err != nil {
+		logger.Error("failed to get party ID from path", slog.Any("error", err))
+		a.setErrorFlashMessage(w, r, "There was an issue getting this party, try again.")
+		http.Redirect(w, r, "/parties", http.StatusInternalServerError)
+		return
+	}
+
 	idParam := r.PathValue("id")
 	id, err := strconv.Atoi(idParam)
 	if err != nil {
@@ -77,8 +92,26 @@ func (a *Application) PartyShowHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	currentWatcherIsOwner, err := watcher.IsOwnerOfParty(ctx, id)
+	if err != nil {
+		logger.Error("failed to get if current user is owner", slog.Any("error", err))
+		a.setErrorFlashMessage(w, r, "There was an issue getting this party, try again.")
+		http.Redirect(w, r, "/parties", http.StatusBadRequest)
+		return
+	}
+
+	invites, err := a.InvitationsService.GetInvitationsForParty(ctx, id)
+	if err != nil {
+		logger.Error("failed to get invitations", slog.Any("error", err))
+		a.setErrorFlashMessage(w, r, "There was an issue getting this party, try again.")
+		http.Redirect(w, r, "/parties", http.StatusBadRequest)
+		return
+	}
+
 	templateData := a.NewPartiesTemplateData(r, w, "/parties")
 	templateData.Party = party
+	templateData.ModalData.PendingInvites = invites
+	templateData.CurrentWatcherIsOwner = currentWatcherIsOwner
 
 	a.render(w, r, http.StatusOK, "parties/show.gohtml", templateData)
 }

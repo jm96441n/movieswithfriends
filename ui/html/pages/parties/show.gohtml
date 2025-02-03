@@ -117,6 +117,107 @@
         </div>
       </div>
 
+      <!-- Members Section -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white py-3">
+          <div class="d-flex justify-content-between align-items-center">
+            <h2 class="h5 mb-0">Members</h2>
+            {{ if $.CurrentWatcherIsOwner }}
+              <button
+                class="btn btn-outline-primary btn-sm"
+                data-bs-toggle="modal"
+                data-bs-target="#inviteModal"
+              >
+                <i class="fas fa-user-plus me-2"></i>Invite
+              </button>
+            {{ end }}
+          </div>
+        </div>
+        <div class="card-body p-0">
+          <div class="list-group list-group-flush">
+            {{ range $party.Members }}
+              {{ if .Owner }}
+                <!-- Party Owner -->
+                <div class="list-group-item">
+                  <div class="d-flex align-items-center">
+                    <img
+                      src="https://placehold.co/40x40?text="
+                      class="rounded-circle me-3"
+                      alt="{{ .FirstName }}"
+                    />
+                    <div class="flex-grow-1">
+                      <div class="d-flex align-items-center">
+                        <h6 class="mb-0">{{ .FirstName }} {{ .LastName }}</h6>
+                        <span class="badge bg-primary ms-2">Owner</span>
+                      </div>
+                      <small class="text-muted">Created the party</small>
+                    </div>
+                    <div class="dropdown">
+                      <button
+                        class="btn btn-link text-muted p-0"
+                        type="button"
+                        data-bs-toggle="dropdown"
+                      >
+                        <i class="fas fa-ellipsis-vertical"></i>
+                      </button>
+                      <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                          <a class="dropdown-item" href="#"
+                            ><i class="fas fa-user me-2"></i>View Profile</a
+                          >
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              {{ else }}
+                <!-- Regular Members -->
+                <div class="list-group-item">
+                  <div class="d-flex align-items-center">
+                    <img
+                      src="https://placehold.co/40x40?text="
+                      class="rounded-circle me-3"
+                      alt="{{ .FirstName }}"
+                    />
+                    <div class="flex-grow-1">
+                      <h6 class="mb-0">{{ .FirstName }} {{ .LastName }}</h6>
+                      <small class="text-muted"
+                        >Joined {{ formatFullDate .JoinedOn }}</small
+                      >
+                    </div>
+                    <div class="dropdown">
+                      <button
+                        class="btn btn-link text-muted p-0"
+                        type="button"
+                        data-bs-toggle="dropdown"
+                      >
+                        <i class="fas fa-ellipsis-vertical"></i>
+                      </button>
+                      <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                          <a class="dropdown-item" href="#"
+                            ><i class="fas fa-user me-2"></i>View Profile</a
+                          >
+                        </li>
+
+                        {{ if $.CurrentWatcherIsOwner }}
+                          <li>
+                            <a class="dropdown-item text-danger" href="#"
+                              ><i class="fas fa-user-minus me-2"></i>Remove from
+                              Party</a
+                            >
+                          </li>
+                        {{ end }}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              {{ end }}
+            {{ end }}
+          </div>
+        </div>
+      </div>
+
       <div class="row g-4">
         <!-- Unwatched Movies -->
         <div class="col-lg-6" id="unwatched-movies">
@@ -221,5 +322,7 @@
         </div>
       </div>
     </div>
+
+    {{ template "invite_modal" $.ModalData }}
   {{ end }}
 {{ end }}
