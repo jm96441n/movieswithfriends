@@ -100,7 +100,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = runMigrations(os.Getenv("DB_HOST"), os.Getenv("DB_DATABASE_NAME"), migrationCreds)
+	err = runMigrations(logger, os.Getenv("DB_HOST"), os.Getenv("DB_DATABASE_NAME"), migrationCreds)
 	if err != nil {
 		logger.Error(err.Error())
 		os.Exit(1)
@@ -273,7 +273,7 @@ func createConnPool(host string, dbname string, creds DBCreds) (*pgxpool.Pool, e
 	return db, nil
 }
 
-func runMigrations(host, dbname string, creds DBCreds) error {
+func runMigrations(logger *slog.Logger, host, dbname string, creds DBCreds) error {
 	goose.SetBaseFS(migrations.MigrationsFS)
 
 	if err := goose.SetDialect("postgres"); err != nil {
@@ -281,26 +281,31 @@ func runMigrations(host, dbname string, creds DBCreds) error {
 	}
 	connString := fmt.Sprintf("postgres://%s:%s@%s/%s", creds.Username, creds.Password, host, dbname)
 
-	fmt.Println(host, dbname, creds.Username)
 	db, err := sql.Open("pgx", connString)
 	if err != nil {
 		return err
 	}
 
+	logger.Info("opened db, starting ping")
+
 	err = db.Ping()
 	if err != nil {
 		return err
 	}
+	logger.Info("pinged db, running goose up")
 
 	err = goose.Up(db, "migrations")
 	if err != nil {
 		return err
 	}
 
+	logger.Info("ran goose up, closing db")
 	err = db.Close()
 	if err != nil {
 		return err
 	}
+
+	logger.Info("closed db for migrations")
 
 	return nil
 }
