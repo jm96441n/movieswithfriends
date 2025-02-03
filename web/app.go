@@ -204,10 +204,12 @@ func (a *Application) getProfileIDFromSession(r *http.Request) (int, error) {
 	return profileID, nil
 }
 
+var ErrPartyNotInSession = errors.New("party not in session")
+
 func (a *Application) getCurrentPartyFromSession(r *http.Request) (partymgmt.Party, error) {
 	currentPartyID, err := a.getCurrentPartyIDFromSession(r)
 	if err != nil {
-		return partymgmt.Party{}, err
+		return partymgmt.Party{}, fmt.Errorf("w: %s", ErrPartyNotInSession, err)
 	}
 
 	res, err := a.PartiesRepository.GetPartyByID(r.Context(), currentPartyID)

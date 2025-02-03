@@ -101,8 +101,10 @@ func (a *Application) MoviesShowHandler(w http.ResponseWriter, r *http.Request) 
 
 	currentParty, err := a.getCurrentPartyFromSession(r)
 	if err != nil {
-		a.serverError(w, r, err)
-		return
+		if !errors.Is(err, ErrPartyNotInSession) {
+			a.serverError(w, r, err)
+			return
+		}
 	}
 
 	id, err := strconv.Atoi(idParams)
@@ -126,10 +128,14 @@ func (a *Application) MoviesShowHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	movieAdded, err := currentParty.HasMovieAdded(ctx, movie.ID)
-	if err != nil {
-		a.serverError(w, r, err)
-		return
+	var movieAdded bool
+
+	if currentParty.ID > 0 {
+		movieAdded, err = currentParty.HasMovieAdded(ctx, movie.ID)
+		if err != nil {
+			a.serverError(w, r, err)
+			return
+		}
 	}
 
 	templateData := a.NewMoviesTemplateData(r, w, "/movie")

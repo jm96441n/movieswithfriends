@@ -44,4 +44,4 @@ tf-apply: tf-plan
 
 .PHONY: deploy
 deploy:
-	source ./infra/.envrc && kamal secrets print
+	source ./infra/.envrc && kamal deploy
