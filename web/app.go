@@ -30,7 +30,7 @@ type AppConfig struct {
 	MoviesRepository         *partymgmtstore.MoviesRepository
 	PartyService             *partymgmt.PartyService
 	PartiesRepository        *partymgmtstore.PartyRepository
-	WatcherService           *partymgmt.WatcherService
+	WatcherService           partymgmt.WatcherService
 	ProfilesService          *identityaccess.ProfileService
 	ProfileAggregatorService *services.ProfileAggregatorService
 	InvitationsService       partymgmt.InvitationsService
@@ -46,7 +46,7 @@ type Application struct {
 	MoviesRepository         *partymgmtstore.MoviesRepository
 	PartyService             *partymgmt.PartyService
 	PartiesRepository        *partymgmtstore.PartyRepository
-	WatcherService           *partymgmt.WatcherService
+	WatcherService           partymgmt.WatcherService
 	ProfilesService          *identityaccess.ProfileService
 	ProfileAggregatorService *services.ProfileAggregatorService
 	InvitationsService       partymgmt.InvitationsService
@@ -255,9 +255,9 @@ func (a *Application) setErrorFlashMessage(w http.ResponseWriter, r *http.Reques
 	a.setFlashMessage(w, r, FlashErrorKey, msg)
 }
 
-func (a *Application) setWarningFlashMessage(w http.ResponseWriter, r *http.Request, msg string) {
-	a.setFlashMessage(w, r, FlashWarningKey, msg)
-}
+// func (a *Application) setWarningFlashMessage(w http.ResponseWriter, r *http.Request, msg string) {
+// a.setFlashMessage(w, r, FlashWarningKey, msg)
+// }
 
 func (a *Application) setFlashMessage(w http.ResponseWriter, r *http.Request, key, msg string) {
 	session, err := a.SessionStore.Get(r, sessionName)

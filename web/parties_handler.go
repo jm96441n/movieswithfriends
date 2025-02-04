@@ -111,6 +111,7 @@ func (a *Application) PartyShowHandler(w http.ResponseWriter, r *http.Request) {
 	templateData := a.NewPartiesTemplateData(r, w, "/parties")
 	templateData.Party = party
 	templateData.ModalData.PendingInvites = invites
+	templateData.ModalData.PartyID = id
 	templateData.CurrentWatcherIsOwner = currentWatcherIsOwner
 
 	a.render(w, r, http.StatusOK, "parties/show.gohtml", templateData)

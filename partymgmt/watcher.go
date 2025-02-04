@@ -2,6 +2,8 @@ package partymgmt
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"log/slog"
 
 	"github.com/jm96441n/movieswithfriends/partymgmt/store"
@@ -12,22 +14,41 @@ type WatcherService struct {
 }
 
 type Watcher struct {
-	ID int
-	db *store.WatcherRepository
+	ID    int
+	Email string
+	db    *store.WatcherRepository
 }
 
-func NewWatcherService(db *store.WatcherRepository) *WatcherService {
-	return &WatcherService{db: db}
+var ErrWatcherNotFound = errors.New("watcher not found")
+
+func NewWatcherService(db *store.WatcherRepository) WatcherService {
+	return WatcherService{db: db}
 }
 
-func (s *WatcherService) GetWatcher(ctx context.Context, memberID int) (Watcher, error) {
+func (s WatcherService) GetWatcher(ctx context.Context, memberID int) (Watcher, error) {
 	return Watcher{
 		ID: memberID,
 		db: s.db,
 	}, nil
 }
 
-func (s *WatcherService) GetWatchHistory(ctx context.Context, logger *slog.Logger, memberID, offset int) ([]store.WatchedMoviesForWatcherResult, int, error) {
+func (s WatcherService) GetWatcherByEmail(ctx context.Context, email string) (Watcher, error) {
+	w := Watcher{db: s.db, Email: email}
+	err := s.db.GetWatcherByEmail(ctx, email, func(id int) {
+		w.ID = id
+	})
+	if err != nil {
+		if errors.Is(err, store.ErrNoRecord) {
+			return Watcher{}, fmt.Errorf("%w: %s", ErrWatcherNotFound, err)
+		}
+
+		return Watcher{}, err
+	}
+
+	return w, nil
+}
+
+func (s WatcherService) GetWatchHistory(ctx context.Context, logger *slog.Logger, memberID, offset int) ([]store.WatchedMoviesForWatcherResult, int, error) {
 	watchedMovies, err := s.db.GetWatchedMoviesForWatcher(ctx, memberID, offset)
 	if err != nil {
 		return nil, 0, err
@@ -41,7 +62,7 @@ func (s *WatcherService) GetWatchHistory(ctx context.Context, logger *slog.Logge
 	return watchedMovies, numRecords, nil
 }
 
-func (w *Watcher) GetWatchHistory(ctx context.Context, logger *slog.Logger, memberID, offset int) ([]store.WatchedMoviesForWatcherResult, int, error) {
+func (w Watcher) GetWatchHistory(ctx context.Context, logger *slog.Logger, memberID, offset int) ([]store.WatchedMoviesForWatcherResult, int, error) {
 	watchedMovies, err := w.db.GetWatchedMoviesForWatcher(ctx, memberID, offset)
 	if err != nil {
 		return nil, 0, err
@@ -55,7 +76,7 @@ func (w *Watcher) GetWatchHistory(ctx context.Context, logger *slog.Logger, memb
 	return watchedMovies, numRecords, nil
 }
 
-func (w *Watcher) GetParties(ctx context.Context) ([]Party, error) {
+func (w Watcher) GetParties(ctx context.Context) ([]Party, error) {
 	parties, err := w.db.GetPartiesForWatcher(ctx, w.ID, 50)
 	if err != nil {
 		return nil, err
@@ -74,7 +95,7 @@ func (w *Watcher) GetParties(ctx context.Context) ([]Party, error) {
 	return res, nil
 }
 
-func (w *Watcher) GetCurrentPartyID(ctx context.Context) (int, error) {
+func (w Watcher) GetCurrentPartyID(ctx context.Context) (int, error) {
 	parties, err := w.db.GetPartiesForWatcher(ctx, w.ID, 1)
 	if err != nil {
 		return 0, err
@@ -92,7 +113,7 @@ type PartiesForMovie struct {
 	WithoutMovie []Party
 }
 
-func (w *Watcher) GetPartiesToAddMovie(ctx context.Context, logger *slog.Logger, idMovie int) (PartiesForMovie, error) {
+func (w Watcher) GetPartiesToAddMovie(ctx context.Context, logger *slog.Logger, idMovie int) (PartiesForMovie, error) {
 	parties := PartiesForMovie{
 		WithMovie:    make([]Party, 0, 10),
 		WithoutMovie: make([]Party, 0, 10),
@@ -121,7 +142,7 @@ func (w *Watcher) GetPartiesToAddMovie(ctx context.Context, logger *slog.Logger,
 	return parties, nil
 }
 
-func (w *Watcher) IsOwnerOfParty(ctx context.Context, idParty int) (bool, error) {
+func (w Watcher) IsOwnerOfParty(ctx context.Context, idParty int) (bool, error) {
 	isOwner, err := w.db.WatcherOwnsParty(ctx, w.ID, idParty)
 	if err != nil {
 		return false, err

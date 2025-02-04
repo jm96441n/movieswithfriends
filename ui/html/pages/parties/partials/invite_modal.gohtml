@@ -1,86 +1,91 @@
 {{ define "invite_modal" }}
   <!-- Invite Modal -->
-  <div class="modal fade" id="inviteModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Invite to Friday Night Movies</h5>
+  <div id="invite-modal-body" class="modal-body">
+    {{ if gt (len .CreateErrorMsg) 0 }}
+      <div class="flex-grow-1">
+        <div
+          class="alert alert-danger alert-dismissible fade show"
+          role="alert"
+        >
+          {{ .CreateErrorMsg }}
           <button
             type="button"
             class="btn-close"
-            data-bs-dismiss="modal"
+            data-bs-dismiss="alert"
+            aria-label="Close"
           ></button>
         </div>
-        <div class="modal-body">
-          <!-- <div class="flex-grow-1"> -->
-          <!--   <div -->
-          <!--     class="alert alert-danger alert-dismissible fade show" -->
-          <!--     role="alert" -->
-          <!--   > -->
-          <!--     Danger Danger -->
-          <!--     <button -->
-          <!--       type="button" -->
-          <!--       class="btn-close" -->
-          <!--       data-bs-dismiss="alert" -->
-          <!--       aria-label="Close" -->
-          <!--     ></button> -->
-          <!--   </div> -->
-          <!-- </div> -->
-          <form>
-            <!-- Email Input -->
-            <div class="mb-4">
-              <label for="inviteEmail" class="form-label">Email Address</label>
-              <div class="input-group">
-                <input
-                  type="email"
-                  class="form-control"
-                  id="inviteEmail"
-                  placeholder="Enter email address"
-                  required
-                />
-                <button class="btn btn-primary" type="submit">
-                  <i class="fas fa-paper-plane me-2"></i>Send Invite
-                </button>
-              </div>
-              <div class="form-text">
-                They'll receive an email invitation to join your party
-              </div>
-            </div>
-          </form>
+      </div>
+    {{ end }}
+    <form>
+      <!-- Email Input -->
+      <div class="mb-4">
+        <input type="hidden" name="partyID" value="{{ .PartyID }}" />
+        <label for="inviteEmail" class="form-label">Email Address</label>
+        <div class="input-group">
+          <input
+            type="email"
+            name="email"
+            class="form-control"
+            id="inviteEmail"
+            placeholder="Enter email address"
+            required
+          />
+          <button
+            class="btn btn-primary"
+            type="submit"
+            hx-post="/invitations"
+            hx-swap="outerHTML"
+            hx-target="#invite-modal-body"
+          >
+            <i class="fas fa-paper-plane me-2"></i>Send Invite
+          </button>
+        </div>
+        <div class="form-text">
+          They'll receive an email invitation to join your party
+        </div>
+      </div>
+    </form>
 
-          {{ if gt (len .PendingInvites) 0 }}
-            <!-- Pending Invites -->
-            <div class="mb-3">
-              <h6 class="mb-3">Pending Invites</h6>
-              <div class="list-group list-group-flush">
-                {{ range .PendingInvites }}
-                  <div class="list-group-item px-0">
-                    <div
-                      class="d-flex justify-content-between align-items-center"
-                    >
-                      <div>
-                        <div>{{ .Email }}</div>
-                        <small class="text-muted"
-                          >Sent {{ formatFullDate .InviteDate }}</small
-                        >
-                      </div>
-                      <!-- <button class="btn btn-outline-secondary btn-sm"> -->
-                      <!--   <i class="fas fa-redo-alt me-2"></i>Resend -->
-                      <!-- </button> -->
-                    </div>
-                  </div>
-                {{ end }}
+    {{ if gt (len .FetchErrorMsg) 0 }}
+      <div class="flex-grow-1">
+        <div
+          class="alert alert-danger alert-dismissible fade show"
+          role="alert"
+        >
+          {{ .FetchErrorMsg }}
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="alert"
+            aria-label="Close"
+          ></button>
+        </div>
+      </div>
+    {{ end }}
+    {{ if gt (len .PendingInvites) 0 }}
+      <!-- Pending Invites -->
+      <div class="mb-3">
+        <h6 class="mb-3">Pending Invites</h6>
+        <div class="list-group list-group-flush">
+          {{ range .PendingInvites }}
+            <div class="list-group-item px-0">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <div>{{ .Email }}</div>
+                  <small class="text-muted"
+                    >Sent {{ formatFullDate .InviteDate }}</small
+                  >
+                </div>
+                <!-- <button class="btn btn-outline-secondary btn-sm"> -->
+                <!--   <i class="fas fa-redo-alt me-2"></i>Resend -->
+                <!-- </button> -->
               </div>
             </div>
           {{ end }}
         </div>
-        <div class="modal-footer">
-          <a href="#" class="text-muted text-decoration-none">
-            <i class="fas fa-link me-2"></i>Copy Invite Link
-          </a>
-        </div>
       </div>
-    </div>
+    {{ end }}
   </div>
 {{ end }}
 

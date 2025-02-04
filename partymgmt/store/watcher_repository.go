@@ -2,9 +2,11 @@ package store
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -217,4 +219,29 @@ func (p *WatcherRepository) WatcherOwnsParty(ctx context.Context, idWatcher, idP
 		return false, err
 	}
 	return isOwner, nil
+}
+
+const getWatcherByEmailQuery = `
+  SELECT p.id_profile
+  FROM profiles p
+  JOIN accounts a ON a.id_account = p.id_account
+  WHERE a.email = $1;
+`
+
+type assignIDFn func(int)
+
+func (p WatcherRepository) GetWatcherByEmail(ctx context.Context, email string, assignFn assignIDFn) error {
+	var id int
+	err := p.db.QueryRow(ctx, getWatcherByEmailQuery, email).Scan(&id)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrNoRecord
+		}
+
+		return err
+	}
+
+	assignFn(id)
+
+	return nil
 }
