@@ -26,9 +26,10 @@ COPY ./.git ./.git
 COPY ./go.mod ./go.sum ./
 COPY ./cmd ./cmd
 COPY ./tools ./tools
+COPY ./metrics ./metrics
 COPY ./web ./web
-COPY ./identityaccess/ ./identityaccess
-COPY ./partymgmt/ ./partymgmt
+COPY ./identityaccess ./identityaccess
+COPY ./partymgmt ./partymgmt
 COPY ./ui ./ui
 COPY ./migrations ./migrations
 
