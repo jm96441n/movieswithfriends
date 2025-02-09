@@ -66,7 +66,7 @@ func main() {
 	slog.Info("Got collector endpoint", slog.String("endpoint", collectorEndpoint))
 
 	telemetry, err := metrics.NewTelemetry(ctx, metrics.Config{
-		ServiceName:       "movieswithfriends-local",
+		ServiceName:       "movieswithfriends",
 		ServiceVersion:    version,
 		Enabled:           true,
 		CollectorEndpoint: collectorEndpoint,
