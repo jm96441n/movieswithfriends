@@ -14,6 +14,7 @@ services:
       - DB_HOST=db
       - DB_DATABASE_NAME=movieswithfriends
       - SESSION_KEY=${SESSION_KEY}
+      - COLLECTOR_ENDPOINT=collector:4317
     depends_on:
       db:
         condition: service_healthy
@@ -43,6 +44,19 @@ services:
     volumes:
       - ./${VOLUME_LOCATION}:/var/lib/postgresql/data
       - ./infra/postgres/setup.sh:/docker-entrypoint-initdb.d/10_setup.sh
+    networks:
+      - app-network
+
+  collector:
+    image: otel/opentelemetry-collector-contrib:0.118.0
+    environment:
+      - HONEYCOMB_API_KEY=${HONEYCOMB_API_KEY}
+    ports:
+      - '13133:13133' # health_check extension
+      - '4317:4317' # OTLP gRPC receiver
+      - '4318:4318' # OTLP http receiver
+    volumes:
+      - ./infra/otel/otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml
     networks:
       - app-network
 

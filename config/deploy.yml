@@ -38,6 +38,7 @@ env:
   clear:
     DB_HOST: movieswithfriends-db:5432
     DB_DATABASE_NAME: movieswithfriends
+    COLLECTOR_ENDPOINT: movieswithfriends-collector:4317
   secret:
     - DB_USERNAME
     - DB_PASSWORD
@@ -59,9 +60,6 @@ ssh:
   keys: ['~/.ssh/do']
 
 accessories:
-  dbtest:
-    image: postgres:17-bookworm
-    host: 162.243.234.100
   db:
     image: postgres:17-bookworm
     host: 162.243.234.100
@@ -80,6 +78,18 @@ accessories:
       - ./infra/postgres/setup.sh:/docker-entrypoint-initdb.d/10_setup.sh
     directories:
       - /var/lib/postgresql/data:/var/lib/postgresql/data
+  collector:
+    image: otel/opentelemetry-collector-contrib:0.118.0
+    host: 162.243.234.100
+    env:
+      secret:
+        - HONEYCOMB_API_KEY
+    ports:
+      - '127.0.0.1:13133:13133' # health_check extension
+      - '127.0.0.1:4317:4317' # OTLP gRPC receiver
+      - '127.0.0.1:4318:4318' # OTLP http receiver
+    files:
+      - ./infra/otel/otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml
 #   redis:
 #     image: valkey/valkey:8
 #     host: 192.168.0.2

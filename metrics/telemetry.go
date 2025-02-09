@@ -1,0 +1,80 @@
+package metrics
+
+import (
+	"context"
+	"fmt"
+	"log/slog"
+	"os"
+
+	slogmulti "github.com/samber/slog-multi"
+	"go.opentelemetry.io/contrib/bridges/otelslog"
+	otelmetric "go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/sdk/log"
+	"go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/trace"
+	oteltrace "go.opentelemetry.io/otel/trace"
+)
+
+// Config holds the configuration for the telemetry.
+type Config struct {
+	ServiceName       string
+	ServiceVersion    string
+	Enabled           bool
+	CollectorEndpoint string
+}
+
+// Telemetry is a wrapper around the OpenTelemetry logger, meter, and tracer.
+type Telemetry struct {
+	lp             *log.LoggerProvider
+	MeterProvider  *metric.MeterProvider
+	TracerProvider *trace.TracerProvider
+	Logger         *slog.Logger
+	meter          otelmetric.Meter
+	tracer         oteltrace.Tracer
+	cfg            Config
+}
+
+// NewTelemetry creates a new telemetry instance.
+func NewTelemetry(ctx context.Context, cfg Config) (*Telemetry, error) {
+	rp := newResource(cfg.ServiceName, cfg.ServiceVersion)
+
+	lp, err := newLoggerProvider(ctx, rp, cfg.CollectorEndpoint)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create logger: %w", err)
+	}
+
+	logger := slog.New(
+		slogmulti.Fanout(
+			slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+			otelslog.NewHandler("movieswithfriends", otelslog.WithLoggerProvider(lp)),
+		))
+
+	mp, err := newMeterProvider(ctx, rp, cfg.CollectorEndpoint)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create meter: %w", err)
+	}
+	meter := mp.Meter(cfg.ServiceName)
+
+	tp, err := newTracerProvider(ctx, rp, cfg.CollectorEndpoint)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create tracer: %w", err)
+	}
+	tracer := tp.Tracer(cfg.ServiceName)
+
+	return &Telemetry{
+		lp:             lp,
+		MeterProvider:  mp,
+		TracerProvider: tp,
+		Logger:         logger,
+		meter:          meter,
+		tracer:         tracer,
+		cfg:            cfg,
+	}, nil
+}
+
+// Shutdown shuts down the logger, meter, and tracer.
+func (t *Telemetry) Shutdown(ctx context.Context) {
+	t.lp.Shutdown(ctx)
+	t.MeterProvider.Shutdown(ctx)
+	t.TracerProvider.Shutdown(ctx)
+}

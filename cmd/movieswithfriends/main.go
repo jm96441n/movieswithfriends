@@ -13,24 +13,20 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"runtime/debug"
 	"time"
 
 	"github.com/exaring/otelpgx"
 	"github.com/gorilla/sessions"
-	"github.com/honeycombio/otel-config-go/otelconfig"
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
-	slogmulti "github.com/samber/slog-multi"
-	"go.opentelemetry.io/contrib/bridges/otelslog"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
-	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
-	"go.opentelemetry.io/otel/log/global"
-	"go.opentelemetry.io/otel/sdk/log"
 
 	"github.com/jm96441n/movieswithfriends/identityaccess"
 	"github.com/jm96441n/movieswithfriends/identityaccess/services"
 	iamstore "github.com/jm96441n/movieswithfriends/identityaccess/store"
+	"github.com/jm96441n/movieswithfriends/metrics"
 	"github.com/jm96441n/movieswithfriends/migrations"
 	"github.com/jm96441n/movieswithfriends/partymgmt"
 	partymgmtstore "github.com/jm96441n/movieswithfriends/partymgmt/store"
@@ -42,42 +38,47 @@ const length = 32
 
 func main() {
 	ctx := context.Background()
+	var version string
 
-	// Create the OTLP log exporter that sends logs to configured destination
-	logExporter, err := otlploghttp.New(ctx)
-	if err != nil {
-		panic("failed to initialize exporter")
-	}
-
-	// Create the logger provider
-	lp := log.NewLoggerProvider(
-		log.WithProcessor(
-			log.NewBatchProcessor(logExporter),
-		),
-	)
-
-	// Ensure the logger is shutdown before exiting so all pending logs are exported
-	defer lp.Shutdown(ctx)
-
-	// Set the logger provider globally
-	global.SetLoggerProvider(lp)
-
-	// Instantiate a new slog logger
-	logger := slog.New(
-		slogmulti.Fanout(
-			slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
-			otelslog.NewHandler("movieswithfriends"),
-		))
-
-	// use otelconfig to set up OpenTelemetry SDK
-	otelShutdown, err := otelconfig.ConfigureOpenTelemetry()
-	if err != nil {
-		logger.Error("error setting up OTel SDK", slog.Any("err", err))
+	buildInfo, ok := debug.ReadBuildInfo()
+	if !ok {
+		slog.Error("Error reading build info")
 		os.Exit(1)
 	}
 
-	defer otelShutdown()
+	for _, setting := range buildInfo.Settings {
+		if setting.Key == "vcs.revision" {
+			version = setting.Value
+			break
+		}
+	}
 
+	if version == "" {
+		slog.Error("Could not find version in buildinfo")
+	}
+
+	collectorEndpoint := os.Getenv("COLLECTOR_ENDPOINT")
+	if collectorEndpoint == "" {
+		slog.Error("COLLECTOR_ENDPOINT is not set")
+		os.Exit(1)
+	}
+
+	slog.Info("Got collector endpoint", slog.String("endpoint", collectorEndpoint))
+
+	telemetry, err := metrics.NewTelemetry(ctx, metrics.Config{
+		ServiceName:       "movieswithfriends-local",
+		ServiceVersion:    version,
+		Enabled:           true,
+		CollectorEndpoint: collectorEndpoint,
+	})
+	if err != nil {
+		slog.Error("Error building telemetry", slog.Any("err", err))
+		os.Exit(1)
+	}
+
+	defer telemetry.Shutdown(ctx)
+
+	logger := telemetry.Logger
 	logger.Info("successfully setup otel")
 
 	logger.Info("running migrations")
@@ -180,6 +181,7 @@ func main() {
 
 	app := web.NewApplication(
 		web.AppConfig{
+			Telemetry:         telemetry,
 			Logger:            logger,
 			SessionStore:      sessionStore,
 			MoviesService:     partymgmt.NewMovieService(tmdbClient, moviesRepo),
@@ -211,6 +213,8 @@ func main() {
 		Addr: addr,
 		Handler: otelhttp.NewHandler(app.Routes(), "movieswithfriends",
 			otelhttp.WithMessageEvents(otelhttp.ReadEvents, otelhttp.WriteEvents),
+			otelhttp.WithMeterProvider(telemetry.MeterProvider),
+			otelhttp.WithTracerProvider(telemetry.TracerProvider),
 		),
 		ErrorLog:     slog.NewLogLogger(logger.Handler(), slog.LevelError),
 		IdleTimeout:  time.Minute,

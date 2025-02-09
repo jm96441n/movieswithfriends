@@ -1,5 +1,5 @@
 ## DEV BUILD
-FROM golang:1.23-bookworm AS dev-base
+FROM golang:1.23.6-bookworm AS dev-base
 
 RUN go install github.com/air-verse/air@latest
 
@@ -18,10 +18,11 @@ WORKDIR /go/src/app
 CMD ["air"]
 
 ## PROD BUILD
-FROM golang:1.23-bookworm AS builder
+FROM golang:1.23.6-bookworm AS builder
 
 WORKDIR /go/src/app
 
+COPY ./.git ./.git
 COPY ./go.mod ./go.sum ./
 COPY ./cmd ./cmd
 COPY ./tools ./tools

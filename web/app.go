@@ -12,6 +12,7 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/jm96441n/movieswithfriends/identityaccess"
 	"github.com/jm96441n/movieswithfriends/identityaccess/services"
+	"github.com/jm96441n/movieswithfriends/metrics"
 	"github.com/jm96441n/movieswithfriends/partymgmt"
 	partymgmtstore "github.com/jm96441n/movieswithfriends/partymgmt/store"
 	"github.com/jm96441n/movieswithfriends/ui"
@@ -24,6 +25,7 @@ var (
 )
 
 type AppConfig struct {
+	Telemetry                *metrics.Telemetry
 	Logger                   *slog.Logger
 	SessionStore             *sessions.CookieStore
 	MoviesService            *partymgmt.MovieService
@@ -39,6 +41,7 @@ type AppConfig struct {
 }
 
 type Application struct {
+	Telemetry                *metrics.Telemetry
 	Logger                   *slog.Logger
 	templateCache            map[string]*template.Template
 	SessionStore             *sessions.CookieStore
@@ -56,6 +59,7 @@ type Application struct {
 
 func NewApplication(cfg AppConfig) *Application {
 	a := &Application{
+		Telemetry:                cfg.Telemetry,
 		Logger:                   cfg.Logger,
 		SessionStore:             cfg.SessionStore,
 		MoviesService:            cfg.MoviesService,
