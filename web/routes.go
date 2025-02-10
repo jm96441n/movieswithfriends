@@ -102,6 +102,11 @@ func (a *Application) movieRoutes() []Route {
 			handler:            a.MoviesCreateHandler,
 			authenticatedRoute: false,
 		},
+		{
+			path:               "GET /movies/{id}/modal",
+			handler:            a.GetAddMovieToPartyModal,
+			authenticatedRoute: true,
+		},
 	}
 }
 
@@ -201,16 +206,6 @@ func (a *Application) sessionRoutes() []Route {
 			path:               "POST /logout",
 			handler:            a.LogoutHandler,
 			authenticatedRoute: false,
-		},
-		{
-			path:               "POST /current_party/{party_id}",
-			handler:            a.SetCurrentPartyHandler,
-			authenticatedRoute: true,
-		},
-		{
-			path:               "GET /sidebar",
-			handler:            a.GetSidebarParties,
-			authenticatedRoute: true,
 		},
 	}
 }

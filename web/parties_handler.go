@@ -118,9 +118,6 @@ func (a *Application) PartyShowHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *Application) PartiesIndexHandler(w http.ResponseWriter, r *http.Request) {
-	// we set parties in the template creation
-	// this will need to change when we use htmx to just replace the body
-	// and not touch the sidebar
 	templateData := a.NewPartiesTemplateData(r, w, "/parties")
 
 	a.render(w, r, http.StatusOK, "parties/index.gohtml", templateData)

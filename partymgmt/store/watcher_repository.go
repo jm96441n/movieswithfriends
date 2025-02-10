@@ -176,14 +176,16 @@ func (p *WatcherRepository) GetWatcherPartiesWithMovie(ctx context.Context, logg
 }
 
 const getPartiesWithoutMovieQuery = `
-  select parties.id_party, parties.name
-  from parties
-  left join party_movies ON parties.id_party = party_movies.id_party AND party_movies.id_movie = $1
-  join party_members on party_members.id_party = parties.id_party
-  where pm.id_movie IS NULL AND party_members.id_member = $2;
+  SELECT parties.id_party, parties.name, COALESCE(COUNT(pm2.id_movie), 0)
+  FROM parties
+  LEFT JOIN party_movies ON parties.id_party = party_movies.id_party AND party_movies.id_movie = $1
+  LEFT JOIN party_movies pm2 ON parties.id_party = pm2.id_party
+  JOIN party_members ON party_members.id_party = parties.id_party
+  WHERE party_movies.id_movie IS NULL AND party_members.id_member = $2
+  GROUP BY parties.id_party, parties.name;
 `
 
-func (p *WatcherRepository) GetWatcherPartiesWithoutMovie(ctx context.Context, logger *slog.Logger, idMovie int, idMember int, assignFn func(int, string)) error {
+func (p *WatcherRepository) GetWatcherPartiesWithoutMovie(ctx context.Context, logger *slog.Logger, idMovie int, idMember int, assignFn func(int, string, int)) error {
 	rows, err := p.db.Query(ctx, getPartiesWithoutMovieQuery, idMovie, idMember)
 	if err != nil {
 		return err
@@ -193,15 +195,16 @@ func (p *WatcherRepository) GetWatcherPartiesWithoutMovie(ctx context.Context, l
 
 	for rows.Next() {
 		var (
-			partyID   int
-			partyName string
+			partyID    int
+			partyName  string
+			movieCount int
 		)
-		err := rows.Scan(&partyID, &partyName)
+		err := rows.Scan(&partyID, &partyName, &movieCount)
 		if err != nil {
 			return err
 		}
 
-		assignFn(partyID, partyName)
+		assignFn(partyID, partyName, movieCount)
 	}
 	return nil
 }

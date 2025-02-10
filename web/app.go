@@ -211,46 +211,6 @@ func (a *Application) getProfileIDFromSession(r *http.Request) (int, error) {
 	return profileID, nil
 }
 
-var ErrPartyNotInSession = errors.New("party not in session")
-
-func (a *Application) getCurrentPartyFromSession(r *http.Request) (partymgmt.Party, error) {
-	currentPartyID, err := a.getCurrentPartyIDFromSession(r)
-	if err != nil {
-		return partymgmt.Party{}, fmt.Errorf("%w: %s", ErrPartyNotInSession, err)
-	}
-
-	res, err := a.PartiesRepository.GetPartyByID(r.Context(), currentPartyID)
-	if err != nil {
-		return partymgmt.Party{}, err
-	}
-
-	party := a.PartyService.NewParty()
-	party.ID = currentPartyID
-	party.Name = res.Name
-	party.ShortID = res.ShortID
-
-	return party, nil
-}
-
-func (a *Application) getCurrentPartyIDFromSession(r *http.Request) (int, error) {
-	session, err := a.SessionStore.Get(r, sessionName)
-	if err != nil {
-		session, err = a.SessionStore.New(r, sessionName)
-		if err != nil {
-			a.Logger.Debug("failed to create new session")
-			return 0, nil
-		}
-	}
-
-	sessionPartyID := session.Values["currentPartyID"]
-	partyID, ok := sessionPartyID.(int)
-	if !ok {
-		return 0, ErrFailedToGetPartyIDFromSession
-	}
-
-	return partyID, nil
-}
-
 func (a *Application) setInfoFlashMessage(w http.ResponseWriter, r *http.Request, msg string) {
 	a.setFlashMessage(w, r, FlashInfoKey, msg)
 }

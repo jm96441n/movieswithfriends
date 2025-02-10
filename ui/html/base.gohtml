@@ -34,9 +34,6 @@
     <body class="bg-light">
       {{ template "nav" . }}
       <main class="d-flex">
-        {{ if and (.IsAuthenticated) (showSidebar .CurrentPagePath) }}
-          {{ template "sidebar" . }}
-        {{ end }}
         <div class="flex-grow-1">
           {{ range .ErrorFlashes }}
             <div
@@ -88,24 +85,19 @@
           class="navbar fixed-bottom navbar-light bg-white border-top d-lg-none"
         >
           <div class="container-fluid justify-content-around p-0">
-            <a class="nav-link text-center p-2" href="#">
+            <a class="nav-link text-center p-2" href="/">
               <i class="fas fa-home d-block mb-1"></i>
               <small>Home</small>
             </a>
-            <a class="nav-link text-center p-2" href="#">
+            <a class="nav-link text-center p-2" href="/movies">
               <i class="fas fa-search d-block mb-1"></i>
               <small>Search</small>
             </a>
-            <a
-              class="nav-link text-center p-2"
-              href="#"
-              data-bs-toggle="offcanvas"
-              data-bs-target="#partiesSidebar"
-            >
+            <a class="nav-link text-center p-2" href="/parties">
               <i class="fas fa-users d-block mb-1"></i>
               <small>Parties</small>
             </a>
-            <a class="nav-link text-center p-2" href="#">
+            <a class="nav-link text-center p-2" href="/profile">
               <i class="fas fa-user d-block mb-1"></i>
               <small>Profile</small>
             </a>

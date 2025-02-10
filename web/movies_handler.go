@@ -32,28 +32,7 @@ func (a *Application) MoviesIndexHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	currentPartyID, err := a.getCurrentPartyIDFromSession(r)
-	if err != nil {
-		if !errors.Is(err, ErrFailedToGetPartyIDFromSession) {
-			logger.ErrorContext(ctx, "failed to search movies", slog.Any("error", err))
-			a.serverError(w, r, err)
-			return
-		}
-		logger.ErrorContext(ctx, "failed to get currentPartyID", slog.Any("error", err))
-	}
-
-	var currentPartyMovieTMDBIDs map[int]struct{}
-	if currentPartyID > 0 {
-		currentPartyMovieTMDBIDs, err = a.MoviesService.GetMovieTMDBIDsFromCurrentParty(r.Context(), logger, currentPartyID, movies)
-		if err != nil {
-			logger.ErrorContext(ctx, "failed to search movies", slog.Any("error", err))
-			a.serverError(w, r, err)
-			return
-		}
-	}
-
 	templateData.Movies = movies
-	templateData.CurrentPartyMovieTMDBIDs = currentPartyMovieTMDBIDs
 
 	if r.Header.Get("HX-Request") != "" {
 		a.renderPartial(w, r, http.StatusOK, "movies/partials/search_results.gohtml", templateData)
@@ -99,14 +78,6 @@ func (a *Application) MoviesShowHandler(w http.ResponseWriter, r *http.Request) 
 	ctx := r.Context()
 	idParams := r.PathValue("id")
 
-	currentParty, err := a.getCurrentPartyFromSession(r)
-	if err != nil {
-		if !errors.Is(err, ErrPartyNotInSession) {
-			a.serverError(w, r, err)
-			return
-		}
-	}
-
 	id, err := strconv.Atoi(idParams)
 	if err != nil {
 		a.clientError(w, r, http.StatusBadRequest, "Please try again")
@@ -128,22 +99,7 @@ func (a *Application) MoviesShowHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	var movieAdded bool
-
-	if currentParty.ID > 0 {
-		movieAdded, err = currentParty.HasMovieAdded(ctx, movie.ID)
-		if err != nil {
-			a.serverError(w, r, err)
-			return
-		}
-	}
-
 	templateData := a.NewMoviesTemplateData(r, w, "/movie")
 	templateData.Movie = movie
-	templateData.MovieAddedToCurrentParty = movieAdded
-	if r.Header.Get("HX-Request") != "" {
-		a.renderPartial(w, r, http.StatusOK, "movies/partials/movie_header.gohtml", templateData)
-		return
-	}
 	a.render(w, r, http.StatusOK, "movies/show.gohtml", templateData)
 }

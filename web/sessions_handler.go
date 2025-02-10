@@ -4,7 +4,6 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
-	"strconv"
 
 	"github.com/jm96441n/movieswithfriends/identityaccess"
 )
@@ -44,20 +43,10 @@ func (a *Application) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: use ACL to translate betwwen profile and watcher
-	watcher, _ := a.WatcherService.GetWatcher(r.Context(), profile.ID)
-	currentPartyID, err := watcher.GetCurrentPartyID(r.Context())
-	if err != nil {
-		a.Logger.Error("error getting session from store success path", slog.Any("error", err))
-		a.serverError(w, r, err)
-		return
-	}
-
 	session.Values["accountID"] = profile.Account.ID
 	session.Values["profileID"] = profile.ID
 	session.Values["fullName"] = profile.FirstName + " " + profile.LastName
 	session.Values["email"] = profile.Account.Email
-	a.setCurrentPartyInSession(r, w, currentPartyID)
 
 	err = session.Save(r, w)
 	if err != nil {
@@ -88,61 +77,5 @@ func (a *Application) logout(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	return nil
-}
-
-func (a *Application) SetCurrentPartyHandler(w http.ResponseWriter, r *http.Request) {
-	idPartyParam := r.PathValue("party_id")
-	// TODO: make sure party is a valid party id for the given user
-	idParty, err := strconv.Atoi(idPartyParam)
-	if err != nil {
-		a.clientError(w, r, http.StatusBadRequest, "uh oh")
-		return
-	}
-
-	currentPartyID, err := a.getCurrentPartyIDFromSession(r)
-	if err != nil {
-		a.serverError(w, r, err)
-		return
-	}
-
-	err = a.setCurrentPartyInSession(r, w, idParty)
-	if err != nil {
-		a.clientError(w, r, http.StatusBadRequest, "uh oh")
-		return
-	}
-
-	if idParty != currentPartyID {
-		w.Header().Set("HX-Trigger", "changeCurrentParty")
-	}
-
-	data := a.NewSidebarTemplateData(r, w, idParty)
-	a.renderPartial(w, r, http.StatusOK, "partials/sidebar_parties.gohtml", data)
-}
-
-func (a *Application) GetSidebarParties(w http.ResponseWriter, r *http.Request) {
-	currentPartyID, err := a.getCurrentPartyIDFromSession(r)
-	if err != nil {
-		a.serverError(w, r, err)
-		return
-	}
-
-	data := a.NewSidebarTemplateData(r, w, currentPartyID)
-	a.renderPartial(w, r, http.StatusOK, "partials/sidebar_parties.gohtml", data)
-}
-
-func (a *Application) setCurrentPartyInSession(r *http.Request, w http.ResponseWriter, idParty int) error {
-	session, err := a.SessionStore.Get(r, sessionName)
-	if err != nil {
-		return err
-	}
-
-	session.Values["currentPartyID"] = idParty
-
-	err = session.Save(r, w)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }

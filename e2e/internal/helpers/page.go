@@ -37,11 +37,10 @@ func LoginAs(t *testing.T, page playwright.Page, info TestAccountInfo) {
 	sessionKey := os.Getenv("SESSION_KEY")
 	codecs := securecookie.CodecsFromPairs([]byte(sessionKey))
 	value, err := securecookie.EncodeMulti("moviesWithFriendsCookie", map[interface{}]interface{}{
-		"accountID":      info.AccountID,
-		"profileID":      info.ProfileID,
-		"fullName":       info.FirstName + " " + info.LastName,
-		"email":          info.Email,
-		"currentPartyID": info.CurrentPartyID,
+		"accountID": info.AccountID,
+		"profileID": info.ProfileID,
+		"fullName":  info.FirstName + " " + info.LastName,
+		"email":     info.Email,
 	}, codecs...)
 
 	Ok(t, err, "could not encode cookie")

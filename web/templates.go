@@ -15,7 +15,6 @@ import (
 
 	"github.com/jm96441n/movieswithfriends/identityaccess"
 	"github.com/jm96441n/movieswithfriends/partymgmt"
-	partymgmtstore "github.com/jm96441n/movieswithfriends/partymgmt/store"
 )
 
 const (
@@ -37,9 +36,13 @@ type BaseTemplateData struct {
 	CurrentParty    partymgmt.Party
 }
 
+type AddMovieToPartiesModalTemplateData struct {
+	AddedParties    []partymgmt.Party
+	NotAddedParties []partymgmt.Party
+}
+
 type MoviesTemplateData struct {
 	Movies                   []partymgmt.TMDBMovie
-	CurrentPartyMovieTMDBIDs map[int]struct{}
 	Movie                    partymgmt.Movie
 	MovieAddedToCurrentParty bool
 	SearchValue              string
@@ -86,11 +89,6 @@ type SignupTemplateData struct {
 	BaseTemplateData
 }
 
-type SidebarTemplateData struct {
-	Parties      []partymgmt.Party
-	CurrentParty partymgmt.Party
-}
-
 func (s *SignupTemplateData) InitHasErrorFields() {
 	s.HasEmailError = new(bool)
 	s.HasPasswordError = new(bool)
@@ -126,55 +124,17 @@ func (a *Application) NewSignupTemplateData(r *http.Request, w http.ResponseWrit
 	}
 }
 
-func (a *Application) NewSidebarTemplateData(r *http.Request, w http.ResponseWriter, currentPartyID int) SidebarTemplateData {
-	watcher, err := a.getWatcherFromSession(r)
-
-	if errors.Is(err, ErrFailedToGetProfileIDFromSession) {
-		a.Logger.DebugContext(r.Context(), "profileID is not in session")
-		return SidebarTemplateData{}
-	} else if err != nil {
-		a.Logger.Error("failed to get watcher from session", slog.Any("error", err))
-	}
-
-	parties, err := watcher.GetParties(r.Context())
-	if err != nil {
-		// handle later
-		a.Logger.Error("failed to get watcher from session", slog.Any("error", err))
-	}
-
-	currentParty := parties[0]
-
-	if currentPartyID > 0 {
-		res, err := a.PartiesRepository.GetPartyByID(r.Context(), currentPartyID)
-		if errors.Is(err, partymgmtstore.ErrNoRecord) {
-			a.Logger.Error("party not found", slog.Any("error", err))
-		}
-		currentParty = partymgmt.Party{
-			ID:   res.ID,
-			Name: res.Name,
-		}
-	}
-	return SidebarTemplateData{
-		Parties:      parties,
-		CurrentParty: currentParty,
-	}
-}
-
 func (a *Application) newBaseTemplateData(r *http.Request, w http.ResponseWriter, path string) BaseTemplateData {
 	authed := isAuthenticated(r.Context())
 
 	var (
-		fullName       string
-		email          string
-		currentPartyID int
+		fullName string
+		email    string
 	)
 
 	if authed {
 		fullName = r.Context().Value(fullNameContextKey).(string)
 		email = r.Context().Value(emailContextKey).(string)
-		if id, ok := r.Context().Value(currentPartyIDContextKey).(int); ok {
-			currentPartyID = id
-		}
 	}
 
 	var (
@@ -207,17 +167,6 @@ func (a *Application) newBaseTemplateData(r *http.Request, w http.ResponseWriter
 		a.Logger.Error("failed to get watcher from session", slog.Any("error", err))
 	}
 
-	var currentParty partymgmt.Party
-
-	if currentPartyID > 0 {
-		res, err := a.PartiesRepository.GetPartyByID(r.Context(), currentPartyID)
-		if errors.Is(err, partymgmtstore.ErrNoRecord) {
-			a.Logger.Error("party not found", slog.Any("error", err))
-		}
-		currentParty.ID = res.ID
-		currentParty.Name = res.Name
-	}
-
 	parties, err := watcher.GetParties(r.Context())
 	if err != nil {
 		// handle later
@@ -233,7 +182,6 @@ func (a *Application) newBaseTemplateData(r *http.Request, w http.ResponseWriter
 		IsAuthenticated: authed,
 		FullName:        fullName,
 		UserEmail:       email,
-		CurrentParty:    currentParty,
 		Parties:         parties,
 	}
 }

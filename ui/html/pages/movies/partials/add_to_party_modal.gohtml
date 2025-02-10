@@ -1,0 +1,79 @@
+{{ define "add_to_party_modal" }}
+  <div class="modal fade" id="addToPartiesModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Add to Party</h5>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="modal"
+          ></button>
+        </div>
+        <form>
+          <div class="modal-body p-0">
+            <!-- Party List -->
+            <div class="list-group list-group-flush">
+              <!-- Already Added Party -->
+              {{ range .AddedParties }}
+                <label class="list-group-item py-3">
+                  <div class="d-flex align-items-center">
+                    <div class="form-check flex-grow-1">
+                      <input
+                        class="form-check-input"
+                        type="checkbox"
+                        checked
+                        disabled
+                      />
+                      <div class="ms-3">
+                        <div class="fw-semibold mb-1">{{ .Name }}</div>
+                        <small class="text-muted">Already added</small>
+                      </div>
+                    </div>
+                    <span class="badge bg-success">Added</span>
+                  </div>
+                </label>
+              {{ end }}
+
+              {{ range .NotAddedParties }}
+                <!-- Available Party -->
+                <label class="list-group-item py-3">
+                  <div class="d-flex align-items-center">
+                    <div class="form-check flex-grow-1">
+                      <input
+                        class="form-check-input"
+                        type="checkbox"
+                        name="parties[]"
+                        value="{{ .ID }}"
+                      />
+                      <div class="ms-3">
+                        <div class="fw-semibold mb-1">{{ .Name }}</div>
+                        <small class="text-muted"
+                          >{{ .MovieCount }} movies</small
+                        >
+                      </div>
+                    </div>
+                  </div>
+                </label>
+              {{ end }}
+            </div>
+          </div>
+          <div class="modal-footer justify-content-between">
+            <!-- Create New Party Button -->
+            <a href="/parties/new" class="btn btn-outline-primary">
+              <i class="fas fa-plus me-2"></i>Create New Party
+            </a>
+
+            <!-- Done Button -->
+            <!-- TODO: make this submit the form -->
+            <button class="btn btn-primary" data-bs-dismiss="modal">
+              Done
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+{{ end }}
+
+{{ template "add_to_party_modal" . }}

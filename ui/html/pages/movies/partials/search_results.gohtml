@@ -1,5 +1,4 @@
 {{ define "search_results" }}
-  {{ $partyTMDBIDs := .CurrentPartyMovieTMDBIDs }}
   {{ $currentParty := .CurrentParty }}
   {{- range .Movies }}
     <!-- Movie Card -->
@@ -24,23 +23,19 @@
           <p class="card-text small mb-3">{{ .Tagline }}</p>
           <div class="d-flex gap-2">
             {{ if not (eq $currentParty.Name "") }}
-              {{ if movieWatched .TMDBID $partyTMDBIDs }}
-                {{ template "added_movie_button_search" $currentParty }}
-              {{ else }}
-                <div id="add-to-{{ sanitizeToID .Title }}">
-                  <form>
-                    <input type="hidden" name="tmdb_id" value="{{ .TMDBID }}" />
-                    <button
-                      class="btn btn-outline-primary btn-sm"
-                      hx-post="/party_movies"
-                      hx-target="#add-to-{{ sanitizeToID .Title }}"
-                    >
-                      <i class="fas fa-plus me-2"></i>Add to
-                      {{ $currentParty.Name }}
-                    </button>
-                  </form>
-                </div>
-              {{ end }}
+              <div id="add-to-{{ sanitizeToID .Title }}">
+                <form>
+                  <input type="hidden" name="tmdb_id" value="{{ .TMDBID }}" />
+                  <button
+                    class="btn btn-outline-primary btn-sm"
+                    hx-post="/party_movies"
+                    hx-target="#add-to-{{ sanitizeToID .Title }}"
+                  >
+                    <i class="fas fa-plus me-2"></i>Add to
+                    {{ $currentParty.Name }}
+                  </button>
+                </form>
+              </div>
             {{ end }}
             <form method="POST" action="/movies/create">
               <input type="hidden" name="tmdb_id" value="{{ .TMDBID }}" />

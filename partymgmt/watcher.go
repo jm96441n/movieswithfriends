@@ -95,19 +95,6 @@ func (w Watcher) GetParties(ctx context.Context) ([]Party, error) {
 	return res, nil
 }
 
-func (w Watcher) GetCurrentPartyID(ctx context.Context) (int, error) {
-	parties, err := w.db.GetPartiesForWatcher(ctx, w.ID, 1)
-	if err != nil {
-		return 0, err
-	}
-
-	if len(parties) == 0 {
-		return 0, nil
-	}
-
-	return parties[0].ID, nil
-}
-
 type PartiesForMovie struct {
 	WithMovie    []Party
 	WithoutMovie []Party
@@ -129,10 +116,11 @@ func (w Watcher) GetPartiesToAddMovie(ctx context.Context, logger *slog.Logger, 
 		return PartiesForMovie{}, err
 	}
 
-	err = w.db.GetWatcherPartiesWithoutMovie(ctx, logger, w.ID, idMovie, func(partyID int, partyName string) {
+	err = w.db.GetWatcherPartiesWithoutMovie(ctx, logger, w.ID, idMovie, func(partyID int, partyName string, movieCount int) {
 		p := Party{
-			Name: partyName,
-			ID:   partyID,
+			Name:       partyName,
+			ID:         partyID,
+			MovieCount: movieCount,
 		}
 		parties.WithoutMovie = append(parties.WithoutMovie, p)
 	})
