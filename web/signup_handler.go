@@ -75,6 +75,8 @@ func (a *Application) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 	a.Logger.Debug("seeting flash message")
 	a.setInfoFlashMessage(w, r, "Successfully signed up! Please log in.")
 
+	a.Telemetry.IncreaseUserRegisteredCounter(ctx, logger)
+
 	a.Logger.Debug("successfully signed up user", "userName", req.FirstName, "userEmail", req.Email)
 	http.Redirect(w, r, "/login", http.StatusSeeOther)
 }

@@ -15,6 +15,13 @@ import (
 	oteltrace "go.opentelemetry.io/otel/trace"
 )
 
+// Metric represents a metric that can be collected by the server.
+type Metric struct {
+	Name        string
+	Unit        string
+	Description string
+}
+
 // Config holds the configuration for the telemetry.
 type Config struct {
 	ServiceName       string
@@ -70,6 +77,20 @@ func NewTelemetry(ctx context.Context, cfg Config) (*Telemetry, error) {
 		tracer:         tracer,
 		cfg:            cfg,
 	}, nil
+}
+
+// MeterInt64UpDownCounter creates a new int64 up down counter metric.
+func (t *Telemetry) MeterInt64Counter(metric Metric) (otelmetric.Int64Counter, error) { //nolint:ireturn
+	counter, err := t.meter.Int64Counter(
+		metric.Name,
+		otelmetric.WithDescription(metric.Description),
+		otelmetric.WithUnit(metric.Unit),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create counter: %w", err)
+	}
+
+	return counter, nil
 }
 
 // Shutdown shuts down the logger, meter, and tracer.
