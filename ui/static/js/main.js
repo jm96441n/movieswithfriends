@@ -2,7 +2,32 @@ document.addEventListener('DOMContentLoaded', () => {
   addFormValidationEventListener()
   addEventListenerForPasswordVisibilityToggle()
   addEventListenerForPasswordEditFields()
+  addAddPartyModalAfterSwapListener()
+  addListenerForMovieAddedToPartiesEvent()
 })
+
+function addAddPartyModalAfterSwapListener() {
+  htmx.on('htmx:afterSwap', function (evt) {
+    if (evt.detail.target.id === 'addToPartyModalContainer') {
+      const modalElement = document.getElementById('addToPartiesModal')
+      if (modalElement) {
+        const modal = new bootstrap.Modal(modalElement)
+        modal.show()
+      }
+    }
+  })
+}
+
+function addListenerForMovieAddedToPartiesEvent() {
+  document.body.addEventListener('MovieAddedToParties', function (evt) {
+    const modal = bootstrap.Modal.getInstance(
+      document.getElementById('addToPartiesModal')
+    )
+    if (modal) {
+      modal.hide()
+    }
+  })
+}
 
 function addFormValidationEventListener() {
   'use strict'

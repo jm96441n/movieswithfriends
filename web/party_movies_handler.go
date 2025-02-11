@@ -8,22 +8,33 @@ import (
 	"github.com/jm96441n/movieswithfriends/partymgmt"
 )
 
-func (a *Application) AddMovietoPartyHandler(w http.ResponseWriter, r *http.Request) {
+func (a *Application) AddMovieToPartiesHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	logger := a.Logger.With("handler", "AddMovieToPartyHandler")
+	logger := a.Logger.With("handler", "AddMovieToPartiesHandler")
 	err := r.ParseForm()
 	if err != nil {
 		a.serverError(w, r, err)
 		return
 	}
 
-	formMovieID := r.FormValue("id_movie")
+	watcher, err := a.getWatcherFromSession(r)
+	if err != nil {
+		logger.Error("failed to get watcher from session", slog.Any("error", err))
+		a.clientError(w, r, http.StatusInternalServerError, "failed to get watcher from session")
+		return
+	}
+
+	formMovieID := r.FormValue("movie_id")
 	formTMDBID := r.FormValue("tmdb_id")
 	if formMovieID == "" && formTMDBID == "" {
 		logger.Error("no movie id or tmdb id")
 		a.clientError(w, r, http.StatusBadRequest, "no movie id or tmdb id")
 		return
 	}
+
+	partyIDs := r.Form["party_ids[]"]
+
+	logger.Info("party ids", slog.Any("party_ids", partyIDs))
 
 	var mgmtMovieID partymgmt.MovieID
 
@@ -47,27 +58,29 @@ func (a *Application) AddMovietoPartyHandler(w http.ResponseWriter, r *http.Requ
 		mgmtMovieID.TMDBID = &id
 	}
 
-	_, err = a.MoviesService.GetOrCreateMovie(ctx, logger, mgmtMovieID)
+	movieID, err := a.MoviesService.GetOrCreateMovie(ctx, logger, mgmtMovieID)
 	if err != nil {
 		logger.Error("failed to get or create movie", slog.Any("error", err))
 		a.clientError(w, r, http.StatusBadRequest, "error creating movie")
 		return
 	}
 
-	// err = currentParty.AddMovie(ctx, watcher.ID, id)
-	// if err != nil {
-	// logger.Error("failed to add movie to party", slog.Any("error", err))
-	// a.clientError(w, r, http.StatusBadRequest, "error creating movie")
-	// return
-	// }
+	for _, partyID := range partyIDs {
+		id, err := strconv.Atoi(partyID)
+		if err != nil {
+			logger.Error("failed to convert party id to int", slog.Any("error", err))
+			a.clientError(w, r, http.StatusBadRequest, "error creating movie")
+			return
+		}
 
-	partial := "movies/partials/added_movie_button_search.gohtml"
-	if formMovieID != "" {
-		partial = "movies/partials/added_movie_button_show.gohtml"
+		party := a.PartyService.NewParty(ctx)
+		party.ID = id
+		party.AddMovie(ctx, watcher.ID, movieID)
 	}
 
-	logger.Info("successfully added movie to party")
-	a.renderPartial(w, r, http.StatusOK, partial, nil)
+	w.Header().Set("HX-Trigger", "MovieAddedToParties")
+
+	logger.Info("successfully added movie to parties")
 }
 
 func (a *Application) GetAddMovieToPartyModal(w http.ResponseWriter, r *http.Request) {
@@ -81,6 +94,21 @@ func (a *Application) GetAddMovieToPartyModal(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	queryParams := r.URL.Query()
+	typeParam := queryParams.Get("type")
+
+	var mgmtID partymgmt.MovieID
+	var tmplData AddMovieToPartiesModalTemplateData
+	switch typeParam {
+	case "tmdb":
+		mgmtID.TMDBID = &movieID
+		tmplData.TMDBID = movieID
+	case "id":
+		mgmtID.MovieID = &movieID
+		tmplData.MovieID = movieID
+	default:
+	}
+
 	watcher, err := a.getWatcherFromSession(r)
 	if err != nil {
 		logger.ErrorContext(ctx, "failed to get watcher from session", slog.Any("error", err))
@@ -89,17 +117,16 @@ func (a *Application) GetAddMovieToPartyModal(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	parties, err := watcher.GetPartiesToAddMovie(ctx, logger, movieID)
+	parties, err := watcher.GetPartiesToAddMovie(ctx, logger, mgmtID)
 	if err != nil {
 		logger.ErrorContext(ctx, "failed to get parties to add movie", slog.Any("error", err))
 		a.setErrorFlashMessage(w, r, "There was an issue getting this movie, try again.")
 		http.Redirect(w, r, "/movies", http.StatusInternalServerError)
+		return
 	}
 
-	tmplData := AddMovieToPartiesModalTemplateData{
-		AddedParties:    parties.WithMovie,
-		NotAddedParties: parties.WithoutMovie,
-	}
+	tmplData.AddedParties = parties.WithMovie
+	tmplData.NotAddedParties = parties.WithoutMovie
 
 	a.renderPartial(w, r, http.StatusOK, "movies/partials/add_to_party_modal.gohtml", tmplData)
 }

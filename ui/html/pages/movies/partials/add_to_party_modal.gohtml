@@ -11,6 +11,11 @@
           ></button>
         </div>
         <form>
+          {{ if gt .MovieID 0 }}
+            <input type="hidden" name="movie_id" value="{{ .MovieID }}" />
+          {{ else if gt .TMDBID  0 }}
+            <input type="hidden" name="tmdb_id" value="{{ .TMDBID }}" />
+          {{ end }}
           <div class="modal-body p-0">
             <!-- Party List -->
             <div class="list-group list-group-flush">
@@ -43,7 +48,7 @@
                       <input
                         class="form-check-input"
                         type="checkbox"
-                        name="parties[]"
+                        name="party_ids[]"
                         value="{{ .ID }}"
                       />
                       <div class="ms-3">
@@ -66,7 +71,7 @@
 
             <!-- Done Button -->
             <!-- TODO: make this submit the form -->
-            <button class="btn btn-primary" data-bs-dismiss="modal">
+            <button class="btn btn-primary" hx-post="/party_movies">
               Done
             </button>
           </div>

@@ -114,7 +114,7 @@ func (a *Application) partyMovieRoutes() []Route {
 	return []Route{
 		{
 			path:               "POST /party_movies",
-			handler:            a.AddMovietoPartyHandler,
+			handler:            a.AddMovieToPartiesHandler,
 			authenticatedRoute: true,
 		},
 	}

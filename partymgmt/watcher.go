@@ -100,7 +100,49 @@ type PartiesForMovie struct {
 	WithoutMovie []Party
 }
 
-func (w Watcher) GetPartiesToAddMovie(ctx context.Context, logger *slog.Logger, idMovie int) (PartiesForMovie, error) {
+func (w Watcher) GetPartiesToAddMovie(ctx context.Context, logger *slog.Logger, idMovie MovieID) (PartiesForMovie, error) {
+	switch {
+	case idMovie.TMDBID != nil:
+		return w.getPartiesForMovieByTMDBID(ctx, logger, *idMovie.TMDBID)
+	case idMovie.MovieID != nil:
+		return w.getPartiesForMovieByMovieID(ctx, logger, *idMovie.MovieID)
+	default:
+		return PartiesForMovie{}, errors.New("TMDBID or MovieID must be set")
+	}
+}
+
+func (w Watcher) getPartiesForMovieByTMDBID(ctx context.Context, logger *slog.Logger, tmdbID int) (PartiesForMovie, error) {
+	parties := PartiesForMovie{
+		WithMovie:    make([]Party, 0, 10),
+		WithoutMovie: make([]Party, 0, 10),
+	}
+	err := w.db.GetWatcherPartiesWithMovieByTMDBID(ctx, logger, w.ID, tmdbID, func(partyID int, partyName string) {
+		p := Party{
+			Name: partyName,
+			ID:   partyID,
+		}
+		parties.WithMovie = append(parties.WithMovie, p)
+	})
+	if err != nil {
+		return PartiesForMovie{}, err
+	}
+
+	err = w.db.GetWatcherPartiesWithoutMovieByTMDBID(ctx, logger, w.ID, tmdbID, func(partyID int, partyName string, movieCount int) {
+		p := Party{
+			Name:       partyName,
+			ID:         partyID,
+			MovieCount: movieCount,
+		}
+		parties.WithoutMovie = append(parties.WithoutMovie, p)
+	})
+	if err != nil {
+		return PartiesForMovie{}, err
+	}
+
+	return parties, nil
+}
+
+func (w Watcher) getPartiesForMovieByMovieID(ctx context.Context, logger *slog.Logger, idMovie int) (PartiesForMovie, error) {
 	parties := PartiesForMovie{
 		WithMovie:    make([]Party, 0, 10),
 		WithoutMovie: make([]Party, 0, 10),

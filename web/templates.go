@@ -37,6 +37,8 @@ type BaseTemplateData struct {
 }
 
 type AddMovieToPartiesModalTemplateData struct {
+	MovieID         int
+	TMDBID          int
 	AddedParties    []partymgmt.Party
 	NotAddedParties []partymgmt.Party
 }

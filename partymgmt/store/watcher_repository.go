@@ -152,7 +152,7 @@ const getPartiesWithMovieQuery = `
   where party_movies.id_movie = $1 AND party_members.id_member = $2;
 `
 
-func (p *WatcherRepository) GetWatcherPartiesWithMovie(ctx context.Context, logger *slog.Logger, idMovie int, idMember int, assignFn func(int, string)) error {
+func (p *WatcherRepository) GetWatcherPartiesWithMovie(ctx context.Context, logger *slog.Logger, idMember int, idMovie int, assignFn func(int, string)) error {
 	rows, err := p.db.Query(ctx, getPartiesWithMovieQuery, idMovie, idMember)
 	if err != nil {
 		return err
@@ -185,8 +185,80 @@ const getPartiesWithoutMovieQuery = `
   GROUP BY parties.id_party, parties.name;
 `
 
-func (p *WatcherRepository) GetWatcherPartiesWithoutMovie(ctx context.Context, logger *slog.Logger, idMovie int, idMember int, assignFn func(int, string, int)) error {
+func (p *WatcherRepository) GetWatcherPartiesWithoutMovie(ctx context.Context, logger *slog.Logger, idMember int, idMovie int, assignFn func(int, string, int)) error {
 	rows, err := p.db.Query(ctx, getPartiesWithoutMovieQuery, idMovie, idMember)
+	if err != nil {
+		return err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var (
+			partyID    int
+			partyName  string
+			movieCount int
+		)
+		err := rows.Scan(&partyID, &partyName, &movieCount)
+		if err != nil {
+			return err
+		}
+
+		assignFn(partyID, partyName, movieCount)
+	}
+	return nil
+}
+
+const getPartiesWithMovieQueryByTMDBID = `
+  select parties.id_party, parties.name
+  from parties
+  join party_members on party_members.id_party = parties.id_party
+  join party_movies on party_movies.id_party = parties.id_party 
+  join movies on party_movies.id_movie = movies.id_movie
+  where movies.tmdb_id = $1 AND party_members.id_member = $2;
+`
+
+func (p *WatcherRepository) GetWatcherPartiesWithMovieByTMDBID(ctx context.Context, logger *slog.Logger, idMember int, tmdbID int, assignFn func(int, string)) error {
+	logger.Info("args", slog.Any("tmdbID", tmdbID), slog.Any("idMember", idMember))
+	rows, err := p.db.Query(ctx, getPartiesWithMovieQueryByTMDBID, tmdbID, idMember)
+	if err != nil {
+		return err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var (
+			partyID   int
+			partyName string
+		)
+		err := rows.Scan(&partyID, &partyName)
+		if err != nil {
+			return err
+		}
+
+		assignFn(partyID, partyName)
+	}
+
+	if rows.Err() != nil {
+		return rows.Err()
+	}
+	return nil
+}
+
+const getPartiesWithoutMovieQueryByTMDBID = `
+SELECT parties.id_party, parties.name, COALESCE(COUNT(pm2.id_movie), 0)
+FROM parties
+LEFT JOIN party_movies ON parties.id_party = party_movies.id_party
+LEFT JOIN movies ON party_movies.id_movie = movies.id_movie AND movies.tmdb_id = $1
+LEFT JOIN party_movies pm2 ON parties.id_party = pm2.id_party
+JOIN party_members ON party_members.id_party = parties.id_party
+WHERE movies.id_movie IS NULL AND party_members.id_member = $2
+GROUP BY parties.id_party, parties.name;
+`
+
+func (p *WatcherRepository) GetWatcherPartiesWithoutMovieByTMDBID(ctx context.Context, logger *slog.Logger, idMember int, tmdbID int, assignFn func(int, string, int)) error {
+	rows, err := p.db.Query(ctx, getPartiesWithoutMovieQueryByTMDBID, tmdbID, idMember)
 	if err != nil {
 		return err
 	}

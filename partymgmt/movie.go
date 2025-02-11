@@ -7,6 +7,7 @@ import (
 	"log/slog"
 
 	"github.com/jm96441n/movieswithfriends/partymgmt/store"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type FullName struct {
@@ -113,6 +114,8 @@ func (m MovieID) validate() error {
 var ErrMovieDoesNotExist = errors.New("Movie cannot be found")
 
 func (m *MovieService) GetMovie(ctx context.Context, logger *slog.Logger, movieID MovieID) (Movie, error) {
+	ctx, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("MovieService").Start(ctx, "GetMovie")
+	defer span.End()
 	movie := Movie{}
 	err := movieID.validate()
 	if err != nil {
@@ -138,6 +141,8 @@ func (m *MovieService) GetMovie(ctx context.Context, logger *slog.Logger, movieI
 }
 
 func (m *MovieService) GetOrCreateMovie(ctx context.Context, logger *slog.Logger, movieID MovieID) (int, error) {
+	ctx, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("MovieService").Start(ctx, "GetOrCreateMovie")
+	defer span.End()
 	err := movieID.validate()
 	if err != nil {
 		return 0, err
@@ -191,6 +196,9 @@ func convertGetResultToMovie(movie *Movie) store.GetAssignFn {
 }
 
 func (m *MovieService) CreateMovie(ctx context.Context, logger *slog.Logger, tmdbID int) (int, error) {
+	// TODO: refactor to use upserts
+	ctx, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("MovieService").Start(ctx, "CreateMovie")
+	defer span.End()
 	movie := Movie{}
 	err := m.db.GetMovieByTMDBID(ctx, tmdbID, convertGetResultToMovie(&movie))
 	// zero value means it's been set so movie exists
@@ -211,8 +219,6 @@ func (m *MovieService) CreateMovie(ctx context.Context, logger *slog.Logger, tmd
 		logger.ErrorContext(ctx, "Failed to get movie from tmdb", slog.Any("err", err), slog.Any("tmdbID", tmdbID))
 		return 0, err
 	}
-
-	fmt.Printf("%#v\n", tmdbMovie)
 
 	movieID, err := m.db.CreateMovie(ctx, tmdbMovie.ToStoreMovie())
 	if err != nil {

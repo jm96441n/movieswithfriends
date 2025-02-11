@@ -8,6 +8,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type MoviesRepository struct {
@@ -59,6 +60,8 @@ type GetAssignFn func(*GetMovieResult)
 
 // GetMovieByTMDBID returns a movie from the database by its TMDB ID
 func (p *MoviesRepository) GetMovieByTMDBID(ctx context.Context, id int, assignFn GetAssignFn) error {
+	ctx, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("MoviesRepository").Start(ctx, "GetMovieByTMDBID")
+	defer span.End()
 	query := fmt.Sprintf(findMovieByIDQuery, "tmdb_id")
 	return p.getMovieBySomeID(ctx, id, assignFn, query)
 }
@@ -121,9 +124,16 @@ type CreateMovieParams struct {
 
 // CreateMovie creates a movie in the database
 func (p *MoviesRepository) CreateMovie(ctx context.Context, createParams CreateMovieParams) (int, error) {
-	releaseDate, err := time.Parse("2006-01-02", createParams.ReleaseDate)
-	if err != nil {
-		return 0, err
+	var (
+		releaseDate time.Time
+		err         error
+	)
+
+	if createParams.ReleaseDate != "" {
+		releaseDate, err = time.Parse("2006-01-02", createParams.ReleaseDate)
+		if err != nil {
+			return 0, err
+		}
 	}
 
 	var movieID int

@@ -69,7 +69,7 @@
                 <div id="add-to-{{ sanitizeToID .Movie.Title }}">
                   <button
                     class="btn btn-success btn-lg"
-                    hx-get="/movies/{{ .Movie.ID }}/modal"
+                    hx-get="/movies/{{ .Movie.ID }}/modal?type=id"
                     hx-target="#addToPartyModalContainer"
                     hx-trigger="click"
                   >
@@ -194,15 +194,4 @@
     </div>
   </div>
   <div id="addToPartyModalContainer"></div>
-  <script>
-    htmx.on('htmx:afterSwap', function (evt) {
-      if (evt.detail.target.id === 'addToPartyModalContainer') {
-        const modalElement = document.getElementById('addToPartiesModal')
-        if (modalElement) {
-          const modal = new bootstrap.Modal(modalElement)
-          modal.show()
-        }
-      }
-    })
-  </script>
 {{ end }}

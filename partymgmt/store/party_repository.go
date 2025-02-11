@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type PartyRepository struct {
@@ -322,6 +323,8 @@ const createPartyMovieQuery = `insert into party_movies (id_party, id_movie, id_
 
 // CreatePartMovie creates a movie within a party
 func (p *PartyRepository) CreatePartyMovie(ctx context.Context, idParty, idMovie, idAddedBy int) error {
+	ctx, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("PartiesRepository").Start(ctx, "CreatePartyMovie")
+	defer span.End()
 	_, err := p.db.Exec(ctx, createPartyMovieQuery, idParty, idMovie, idAddedBy)
 	if err != nil {
 		return err

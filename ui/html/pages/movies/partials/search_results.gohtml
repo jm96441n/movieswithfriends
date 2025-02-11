@@ -1,5 +1,5 @@
 {{ define "search_results" }}
-  {{ $currentParty := .CurrentParty }}
+  {{ $isAuthenticated := .IsAuthenticated }}
   {{- range .Movies }}
     <!-- Movie Card -->
     <div id="{{ sanitizeToID .Title }}" class="col-md-6 col-lg-4">
@@ -22,19 +22,16 @@
           {{- end }}
           <p class="card-text small mb-3">{{ .Tagline }}</p>
           <div class="d-flex gap-2">
-            {{ if not (eq $currentParty.Name "") }}
+            {{ if $isAuthenticated }}
               <div id="add-to-{{ sanitizeToID .Title }}">
-                <form>
-                  <input type="hidden" name="tmdb_id" value="{{ .TMDBID }}" />
-                  <button
-                    class="btn btn-outline-primary btn-sm"
-                    hx-post="/party_movies"
-                    hx-target="#add-to-{{ sanitizeToID .Title }}"
-                  >
-                    <i class="fas fa-plus me-2"></i>Add to
-                    {{ $currentParty.Name }}
-                  </button>
-                </form>
+                <button
+                  class="btn btn-success btn-sm"
+                  hx-get="/movies/{{ .TMDBID }}/modal?type=tmdb"
+                  hx-target="#addToPartyModalContainer"
+                  hx-trigger="click"
+                >
+                  <i class="fas fa-plus me-2"></i> Add to Party
+                </button>
               </div>
             {{ end }}
             <form method="POST" action="/movies/create">
@@ -48,6 +45,9 @@
       </div>
     </div>
   {{- end }}
+
+
+  <div id="addToPartyModalContainer"></div>
 {{ end }}
 
 {{ template "search_results" . }}

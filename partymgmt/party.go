@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/jm96441n/movieswithfriends/partymgmt/store"
+	"go.opentelemetry.io/otel/trace"
 )
 
 var ErrMemberExistsInParty = errors.New("member already exists in party")
@@ -70,7 +71,9 @@ func NewPartyService(logger *slog.Logger, db *store.PartyRepository) *PartyServi
 	}
 }
 
-func (s *PartyService) NewParty() Party {
+func (s *PartyService) NewParty(ctx context.Context) Party {
+	_, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("PartyService").Start(ctx, "NewParty")
+	defer span.End()
 	return Party{db: s.db}
 }
 
@@ -119,7 +122,7 @@ func (s *PartyService) CreateParty(ctx context.Context, idMember int, name strin
 }
 
 func (s *PartyService) GetPartyWithMovies(ctx context.Context, logger *slog.Logger, id int) (Party, error) {
-	party := s.NewParty()
+	party := s.NewParty(ctx)
 	err := s.db.GetPartyByIDWithStats(ctx, id, func(res store.GetPartyByIDWithStatsResult) {
 		party.ID = res.ID
 		party.Name = res.Name
@@ -219,6 +222,8 @@ func (p Party) GetMoviesByStatus(ctx context.Context, logger *slog.Logger) (Movi
 }
 
 func (p Party) AddMovie(ctx context.Context, watcherID, idMovie int) error {
+	ctx, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("Party").Start(ctx, "AddMovie")
+	defer span.End()
 	err := p.db.CreatePartyMovie(ctx, p.ID, idMovie, watcherID)
 	if err != nil {
 		return err
