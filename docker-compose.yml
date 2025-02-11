@@ -18,6 +18,7 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    # TODO: use app user not root
     volumes:
       - .:/go/src/app
     networks:

@@ -48,6 +48,7 @@ func main() {
 
 	for _, setting := range buildInfo.Settings {
 		if setting.Key == "vcs.revision" {
+			slog.Info("Git version", slog.Any("vcs.revision", setting.Value))
 			version = setting.Value
 			break
 		}
