@@ -114,7 +114,7 @@ func (m MovieID) validate() error {
 var ErrMovieDoesNotExist = errors.New("Movie cannot be found")
 
 func (m *MovieService) GetMovie(ctx context.Context, logger *slog.Logger, movieID MovieID) (Movie, error) {
-	ctx, span, labeler := metrics.SpanFromContext(ctx, "MovieService", "GetMovie")
+	ctx, span, labeler := metrics.SpanFromContext(ctx, "MovieService.GetMovie")
 	defer span.End()
 	movie := Movie{}
 	err := movieID.validate()
@@ -145,7 +145,7 @@ func (m *MovieService) GetMovie(ctx context.Context, logger *slog.Logger, movieI
 }
 
 func (m *MovieService) GetOrCreateMovie(ctx context.Context, logger *slog.Logger, movieID MovieID) (int, error) {
-	ctx, span, labeler := metrics.SpanFromContext(ctx, "MovieService", "GetOrCreateMovie")
+	ctx, span, labeler := metrics.SpanFromContext(ctx, "MovieService.GetOrCreateMovie")
 	defer span.End()
 	err := movieID.validate()
 	if err != nil {
@@ -187,7 +187,7 @@ func (m *MovieService) GetOrCreateMovie(ctx context.Context, logger *slog.Logger
 
 func convertGetResultToMovie(ctx context.Context, movie *Movie) store.GetAssignFn {
 	return func(res *store.GetMovieResult) {
-		_, span, _ := metrics.SpanFromContext(ctx, "", "convertGetResultToMovie")
+		_, span, _ := metrics.SpanFromContext(ctx, "convertGetResultToMovie")
 		defer span.End()
 		budget := 0
 		if res.Budget != nil {
@@ -210,7 +210,7 @@ func convertGetResultToMovie(ctx context.Context, movie *Movie) store.GetAssignF
 
 func (m *MovieService) CreateMovie(ctx context.Context, logger *slog.Logger, tmdbID int) (int, error) {
 	// TODO: refactor to use upserts
-	ctx, span, _ := metrics.SpanFromContext(ctx, "", "convertGetResultToMovie")
+	ctx, span, _ := metrics.SpanFromContext(ctx, "MovieService.CreateMovie")
 	defer span.End()
 	movie := Movie{}
 	err := m.db.GetMovieByTMDBID(ctx, tmdbID, convertGetResultToMovie(ctx, &movie))

@@ -72,7 +72,7 @@ func NewPartyService(logger *slog.Logger, db *store.PartyRepository) *PartyServi
 }
 
 func (s *PartyService) NewParty(ctx context.Context) Party {
-	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyService", "PartyService.NewParty")
+	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyService.NewParty")
 	defer span.End()
 	return Party{db: s.db}
 }
@@ -95,7 +95,7 @@ func (s *PartyService) AddNewMemberToParty(ctx context.Context, idMember int, sh
 }
 
 func (s *PartyService) CreateParty(ctx context.Context, idMember int, name string) (int, error) {
-	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyService", "PartyService.CreateParty")
+	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyService.CreateParty")
 	defer span.End()
 	successFullyCreated := false
 	var (
@@ -124,7 +124,7 @@ func (s *PartyService) CreateParty(ctx context.Context, idMember int, name strin
 }
 
 func (s *PartyService) GetPartyWithMovies(ctx context.Context, logger *slog.Logger, id int) (Party, error) {
-	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyService", "PartyService.GetPartyWithMovies")
+	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyService.GetPartyWithMovies")
 	defer span.End()
 	party := s.NewParty(ctx)
 	err := s.db.GetPartyByIDWithStats(ctx, id, func(res store.GetPartyByIDWithStatsResult) {
@@ -158,7 +158,7 @@ func (s *PartyService) GetPartyWithMovies(ctx context.Context, logger *slog.Logg
 }
 
 func (s *PartyService) GetPartyByShortID(ctx context.Context, shortID string) (Party, error) {
-	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyService", "PartyService.GetPartyByShortID")
+	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyService.GetPartyByShortID")
 	defer span.End()
 	res, err := s.db.GetPartyByShortID(ctx, shortID)
 	if err != nil {
@@ -187,7 +187,7 @@ func (p Party) AddMember(ctx context.Context, idMember int) error {
 }
 
 func (p Party) GetMoviesByStatus(ctx context.Context, logger *slog.Logger) (MoviesByStatus, error) {
-	ctx, span, _ := metrics.SpanFromContext(ctx, "Party", "Party.GetMoviesByStatus")
+	ctx, span, _ := metrics.SpanFromContext(ctx, "Party.GetMoviesByStatus")
 	defer span.End()
 	moviesByStatus := MoviesByStatus{
 		WatchedMovies:   make([]PartyMovie, 0, 10),
@@ -230,7 +230,7 @@ func (p Party) GetMoviesByStatus(ctx context.Context, logger *slog.Logger) (Movi
 }
 
 func (p Party) AddMovie(ctx context.Context, watcherID, idMovie int) error {
-	ctx, span, _ := metrics.SpanFromContext(ctx, "Party", "Party.AddMovie")
+	ctx, span, _ := metrics.SpanFromContext(ctx, "Party.AddMovie")
 	defer span.End()
 	err := p.db.CreatePartyMovie(ctx, p.ID, idMovie, watcherID)
 	if err != nil {
@@ -240,7 +240,7 @@ func (p Party) AddMovie(ctx context.Context, watcherID, idMovie int) error {
 }
 
 func (p Party) HasMovieAdded(ctx context.Context, movieID int) (bool, error) {
-	ctx, span, _ := metrics.SpanFromContext(ctx, "Party", "Party.HasMovieAdded")
+	ctx, span, _ := metrics.SpanFromContext(ctx, "Party.HasMovieAdded")
 	defer span.End()
 	exists, err := p.db.MovieAddedToParty(ctx, p.ID, movieID)
 	if err != nil {
@@ -250,7 +250,7 @@ func (p Party) HasMovieAdded(ctx context.Context, movieID int) (bool, error) {
 }
 
 func (p *Party) GetPartyMembers(ctx context.Context) error {
-	ctx, span, _ := metrics.SpanFromContext(ctx, "Party", "Party.GetPartyMembers")
+	ctx, span, _ := metrics.SpanFromContext(ctx, "Party.GetPartyMembers")
 	defer span.End()
 	err := p.db.GetPartyMembers(ctx, p.ID, func(firstName, lastName string, id int, owner bool, joinedAt time.Time) {
 		p.Members = append(p.Members, PartyMember{

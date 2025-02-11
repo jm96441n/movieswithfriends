@@ -37,7 +37,7 @@ type GetPartyResult struct {
 }
 
 func (p *PartyRepository) GetPartyByID(ctx context.Context, id int) (GetPartyResult, error) {
-	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyRepository", "PartyRepository.GetPartyByID")
+	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyRepository.GetPartyByID")
 	defer span.End()
 	res := GetPartyResult{}
 	err := p.db.QueryRow(ctx, getPartyByIDQuery, id).Scan(&res.ID, &res.Name, &res.ShortID)
@@ -53,7 +53,7 @@ func (p *PartyRepository) GetPartyByID(ctx context.Context, id int) (GetPartyRes
 const getPartyByShortIDQuery = `select id_party, name, short_id from parties where short_id = $1`
 
 func (p *PartyRepository) GetPartyByShortID(ctx context.Context, shortID string) (GetPartyResult, error) {
-	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyRepository", "PartyRepository.GetPartyByShortID")
+	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyRepository.GetPartyByShortID")
 	defer span.End()
 	party := GetPartyResult{}
 
@@ -92,7 +92,7 @@ select
 type getAssignFn func(GetPartyByIDWithStatsResult)
 
 func (p *PartyRepository) GetPartyByIDWithStats(ctx context.Context, id int, assignFn getAssignFn) error {
-	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyRepository", "PartyRepository.GetPartyByIDWithStats")
+	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyRepository.GetPartyByIDWithStats")
 	defer span.End()
 	// logger.Info("GetPartyByIDWithStats", "id", id)
 	result := GetPartyByIDWithStatsResult{}
@@ -119,7 +119,7 @@ const (
 )
 
 func (p *PartyRepository) CreateParty(ctx context.Context, idMember int, name, shortID string) (int, error) {
-	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyRepository", "PartyRepository.CreateParty")
+	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyRepository.CreateParty")
 	defer span.End()
 	txn, err := p.db.Begin(ctx)
 	if err != nil {
@@ -158,7 +158,7 @@ func (p *PartyRepository) CreateParty(ctx context.Context, idMember int, name, s
 const AddMovietoPartyQuery = `insert into party_movies (id_party, id_movie, id_added_by) values ($1, $2, $3)`
 
 func (p *PartyRepository) AddMovieToParty(ctx context.Context, idParty, idMovie, id_added_by int) error {
-	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyRepository", "PartyRepository.AddMovieToParty")
+	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyRepository.AddMovieToParty")
 	defer span.End()
 	_, err := p.db.Exec(ctx, AddMovietoPartyQuery, idParty, idMovie, id_added_by)
 	if err != nil {
@@ -168,7 +168,7 @@ func (p *PartyRepository) AddMovieToParty(ctx context.Context, idParty, idMovie,
 }
 
 func (p *PartyRepository) MarkPartyMovieAsWatched(ctx context.Context, idParty, idMovie int) error {
-	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyRepository", "PartyRepository.MarkPartyMovieAsWatched")
+	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyRepository.MarkPartyMovieAsWatched")
 	defer span.End()
 	curTime := time.Now().UTC()
 	return p.updatePartyMovieStatus(ctx, idParty, idMovie, WatchStatusWatched, &curTime)
@@ -207,7 +207,7 @@ RETURNING id_movie;
 `
 
 func (p *PartyRepository) SelectMovieForParty(ctx context.Context, idParty int) error {
-	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyRepository", "PartyRepository.SelectMovieForParty")
+	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyRepository.SelectMovieForParty")
 	defer span.End()
 	tx, err := p.db.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
@@ -237,7 +237,7 @@ const updateWatchStatusQuery = `
 `
 
 func (p *PartyRepository) updatePartyMovieStatus(ctx context.Context, idParty, idMovie int, status WatchStatusEnum, watchDate *time.Time) error {
-	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyRepository", "PartyRepository.updatePartyMovieStatus")
+	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyRepository.updatePartyMovieStatus")
 	defer span.End()
 	_, err := p.db.Exec(ctx, updateWatchStatusQuery, status, idParty, idMovie, watchDate)
 	if err != nil {
@@ -249,7 +249,7 @@ func (p *PartyRepository) updatePartyMovieStatus(ctx context.Context, idParty, i
 const AddFriendToPartyQuery = `insert into party_members (id_member, id_party) values($1, $2)`
 
 func (p *PartyRepository) CreatePartyMember(ctx context.Context, idMember, idParty int) error {
-	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyRepository", "PartyRepository.CreatePartyMember")
+	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyRepository.CreatePartyMember")
 	defer span.End()
 	_, err := p.db.Exec(ctx, AddFriendToPartyQuery, idMember, idParty)
 	if err != nil {
@@ -305,7 +305,7 @@ GROUP BY watch_status;
 
 // GetMoviesForParty returns a paginated list of movies for a party grouped by watchStatus
 func (p *PartyRepository) GetMoviesForParty(ctx context.Context, logger *slog.Logger, idParty, offset int, assignFn func(WatchStatusEnum, []byte) error) error {
-	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyRepository", "PartyRepository.GetMoviesForParty")
+	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyRepository.GetMoviesForParty")
 	defer span.End()
 	rows, err := p.db.Query(ctx, getMoviesForPartyQuery, idParty)
 	if err != nil {
@@ -343,7 +343,7 @@ const createPartyMovieQuery = `insert into party_movies (id_party, id_movie, id_
 
 // CreatePartMovie creates a movie within a party
 func (p *PartyRepository) CreatePartyMovie(ctx context.Context, idParty, idMovie, idAddedBy int) error {
-	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyRepository", "PartyRepository.CreatePartyMovie")
+	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyRepository.CreatePartyMovie")
 	defer span.End()
 	_, err := p.db.Exec(ctx, createPartyMovieQuery, idParty, idMovie, idAddedBy)
 	if err != nil {
@@ -355,7 +355,7 @@ func (p *PartyRepository) CreatePartyMovie(ctx context.Context, idParty, idMovie
 const movieInPartyQuery = `SELECT EXISTS(select 1 from party_movies where id_movie = $1 and id_party = $2)`
 
 func (p *PartyRepository) MovieAddedToParty(ctx context.Context, idParty, idMovie int) (bool, error) {
-	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyRepository", "PartyRepository.MovieAddedToParty")
+	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyRepository.MovieAddedToParty")
 	defer span.End()
 	var exists bool
 
@@ -383,7 +383,7 @@ order by pm.owner desc, pm.created_at asc;
 type getMembersAssignFn func(string, string, int, bool, time.Time)
 
 func (p *PartyRepository) GetPartyMembers(ctx context.Context, idParty int, assignFn getMembersAssignFn) error {
-	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyRepository", "PartyRepository.GetPartyMembers")
+	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyRepository.GetPartyMembers")
 	defer span.End()
 	rows, err := p.db.Query(ctx, getPartiesByMembersQuery, idParty)
 	if err != nil {

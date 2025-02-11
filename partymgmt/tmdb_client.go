@@ -141,7 +141,7 @@ func (t *TMDBClient) Search(ctx context.Context, term string, page int) (SearchR
 }
 
 func (t *TMDBClient) GetMovie(ctx context.Context, id int) (*TMDBMovie, error) {
-	ctx, span, _ := metrics.SpanFromContext(ctx, "TMDBClient", "TMDBClient.GetMovie")
+	ctx, span, _ := metrics.SpanFromContext(ctx, "TMDBClient.GetMovie")
 	defer span.End()
 	req, err := t.newRequest(ctx, http.MethodGet, fmt.Sprintf("%s/movie/%d?append_to_response=credits", t.baseURL, id))
 	if err != nil {

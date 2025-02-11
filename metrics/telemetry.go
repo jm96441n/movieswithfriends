@@ -81,8 +81,8 @@ func NewTelemetry(ctx context.Context, cfg Config) (*Telemetry, error) {
 	}, nil
 }
 
-func SpanFromContext(ctx context.Context, tracerName string, spanName string) (context.Context, oteltrace.Span, *otelhttp.Labeler) {
-	ctx, span := oteltrace.SpanFromContext(ctx).TracerProvider().Tracer(tracerName).Start(ctx, spanName)
+func SpanFromContext(ctx context.Context, spanName string) (context.Context, oteltrace.Span, *otelhttp.Labeler) {
+	ctx, span := oteltrace.SpanFromContext(ctx).TracerProvider().Tracer("metrics").Start(ctx, spanName)
 	labeler, _ := otelhttp.LabelerFromContext(ctx)
 	return ctx, span, labeler
 }
