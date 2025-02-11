@@ -9,6 +9,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/tdewolff/minify/v2"
+	"github.com/tdewolff/minify/v2/js"
 )
 
 // AssetManifest stores the mapping between original and fingerprinted filenames
@@ -57,13 +60,13 @@ func main() {
 		// Get relative path
 		relPath, err := filepath.Rel(sourceDir, path)
 		if err != nil {
-			return fmt.Errorf("failed to get relative path: %v", err)
+			return fmt.Errorf("failed to get relative path: %w", err)
 		}
 
 		// Calculate file hash
 		hash, err := calculateFileHash(path)
 		if err != nil {
-			return fmt.Errorf("failed to calculate hash for %s: %v", path, err)
+			return fmt.Errorf("failed to calculate hash for %s: %w", path, err)
 		}
 
 		// Create fingerprinted filename
@@ -77,12 +80,17 @@ func main() {
 
 		// Ensure output directory exists
 		if err := os.MkdirAll(outputDir, 0755); err != nil {
-			return fmt.Errorf("failed to create directory %s: %v", outputDir, err)
+			return fmt.Errorf("failed to create directory %s: %w", outputDir, err)
+		}
+
+		minified, err := minifySource(path)
+		if err != nil {
+			return fmt.Errorf("failed to minify source: %w", err)
 		}
 
 		// Copy file to output directory
-		if err := copyFile(path, outputPath); err != nil {
-			return fmt.Errorf("failed to copy file %s: %v", path, err)
+		if err := writeMinifiedFile(minified, outputPath); err != nil {
+			return fmt.Errorf("failed to write minified file: %w", err)
 		}
 
 		// Add to manifest
@@ -126,21 +134,41 @@ func calculateFileHash(filePath string) (string, error) {
 	return fmt.Sprintf("%x", hash.Sum(nil)), nil
 }
 
-func copyFile(src, dst string) error {
+func minifySource(src string) ([]byte, error) {
+	m := minify.New()
+	m.AddFunc("text/javascript", js.Minify)
+
 	source, err := os.Open(src)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer source.Close()
 
+	sourceCode, err := io.ReadAll(source)
+	if err != nil {
+		return nil, err
+	}
+
+	minified, err := m.Bytes("text/javascript", sourceCode)
+	if err != nil {
+		return nil, err
+	}
+
+	return minified, nil
+}
+
+func writeMinifiedFile(src []byte, dst string) error {
 	destination, err := os.Create(dst)
 	if err != nil {
 		return err
 	}
 	defer destination.Close()
 
-	_, err = io.Copy(destination, source)
-	return err
+	err = os.WriteFile(dst, src, 0755)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // recurse up the current path until you hit the root of the module which is where the migrations are stored
