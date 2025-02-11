@@ -8,6 +8,8 @@ import (
 
 	slogmulti "github.com/samber/slog-multi"
 	"go.opentelemetry.io/contrib/bridges/otelslog"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/attribute"
 	otelmetric "go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/sdk/log"
 	"go.opentelemetry.io/otel/sdk/metric"
@@ -77,6 +79,20 @@ func NewTelemetry(ctx context.Context, cfg Config) (*Telemetry, error) {
 		tracer:         tracer,
 		cfg:            cfg,
 	}, nil
+}
+
+func SpanFromContext(ctx context.Context, tracerName string, spanName string) (context.Context, oteltrace.Span, *otelhttp.Labeler) {
+	ctx, span := oteltrace.SpanFromContext(ctx).TracerProvider().Tracer(tracerName).Start(ctx, spanName)
+	labeler, _ := otelhttp.LabelerFromContext(ctx)
+	return ctx, span, labeler
+}
+
+func ErrorOccurredAttribute() attribute.KeyValue {
+	return attribute.Bool("error", true)
+}
+
+func ErrorTypeAttribute(errType string) attribute.KeyValue {
+	return attribute.String("errorType", errType)
 }
 
 // MeterInt64UpDownCounter creates a new int64 up down counter metric.

@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/jm96441n/movieswithfriends/metrics"
 	"github.com/jm96441n/movieswithfriends/partymgmt/store"
-	"go.opentelemetry.io/otel/trace"
 )
 
 type FullName struct {
@@ -114,7 +114,7 @@ func (m MovieID) validate() error {
 var ErrMovieDoesNotExist = errors.New("Movie cannot be found")
 
 func (m *MovieService) GetMovie(ctx context.Context, logger *slog.Logger, movieID MovieID) (Movie, error) {
-	ctx, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("MovieService").Start(ctx, "GetMovie")
+	ctx, span, labeler := metrics.SpanFromContext(ctx, "MovieService", "GetMovie")
 	defer span.End()
 	movie := Movie{}
 	err := movieID.validate()
@@ -124,16 +124,20 @@ func (m *MovieService) GetMovie(ctx context.Context, logger *slog.Logger, movieI
 
 	switch {
 	case movieID.TMDBID != nil:
-		err = m.db.GetMovieByTMDBID(ctx, *movieID.TMDBID, convertGetResultToMovie(&movie))
+		err = m.db.GetMovieByTMDBID(ctx, *movieID.TMDBID, convertGetResultToMovie(ctx, &movie))
 	case movieID.MovieID != nil:
-		err = m.db.GetMovieByID(ctx, *movieID.MovieID, convertGetResultToMovie(&movie))
+		err = m.db.GetMovieByID(ctx, *movieID.MovieID, convertGetResultToMovie(ctx, &movie))
 	}
 
 	if errors.Is(err, store.ErrNoRecord) {
+		labeler.Add(metrics.ErrorTypeAttribute("ErrMovieDoesNotExist"))
+		labeler.Add(metrics.ErrorOccurredAttribute())
 		return Movie{}, fmt.Errorf("%w: %s", ErrMovieDoesNotExist, err)
 	}
 
 	if err != nil {
+		logger.ErrorContext(ctx, "Failed to get movie", slog.Any("err", err))
+		labeler.Add(metrics.ErrorOccurredAttribute())
 		return Movie{}, err
 	}
 
@@ -141,15 +145,18 @@ func (m *MovieService) GetMovie(ctx context.Context, logger *slog.Logger, movieI
 }
 
 func (m *MovieService) GetOrCreateMovie(ctx context.Context, logger *slog.Logger, movieID MovieID) (int, error) {
-	ctx, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("MovieService").Start(ctx, "GetOrCreateMovie")
+	ctx, span, labeler := metrics.SpanFromContext(ctx, "MovieService", "GetOrCreateMovie")
 	defer span.End()
 	err := movieID.validate()
 	if err != nil {
+		logger.ErrorContext(ctx, "Invalid movie id", slog.Any("err", err))
+		labeler.Add(metrics.ErrorOccurredAttribute())
 		return 0, err
 	}
 
 	// if we have the actual id of the movie then we know it exists
 	if movieID.MovieID != nil {
+		logger.Info("Movie exists")
 		return *movieID.MovieID, nil
 	}
 
@@ -160,6 +167,8 @@ func (m *MovieService) GetOrCreateMovie(ctx context.Context, logger *slog.Logger
 		// we know tmdbid is set from the validate call earlier
 		id, err := m.CreateMovie(ctx, logger, *movieID.TMDBID)
 		if err != nil {
+			logger.ErrorContext(ctx, "Failed to create movie", slog.Any("err", err))
+			labeler.Add(metrics.ErrorOccurredAttribute())
 			return 0, err
 		}
 
@@ -167,6 +176,8 @@ func (m *MovieService) GetOrCreateMovie(ctx context.Context, logger *slog.Logger
 	}
 
 	if err != nil {
+		logger.ErrorContext(ctx, "Failed to get movie", slog.Any("err", err))
+		labeler.Add(metrics.ErrorOccurredAttribute())
 		return 0, err
 	}
 
@@ -174,8 +185,10 @@ func (m *MovieService) GetOrCreateMovie(ctx context.Context, logger *slog.Logger
 	return movie.ID, nil
 }
 
-func convertGetResultToMovie(movie *Movie) store.GetAssignFn {
+func convertGetResultToMovie(ctx context.Context, movie *Movie) store.GetAssignFn {
 	return func(res *store.GetMovieResult) {
+		_, span, _ := metrics.SpanFromContext(ctx, "", "convertGetResultToMovie")
+		defer span.End()
 		budget := 0
 		if res.Budget != nil {
 			budget = *res.Budget
@@ -197,10 +210,10 @@ func convertGetResultToMovie(movie *Movie) store.GetAssignFn {
 
 func (m *MovieService) CreateMovie(ctx context.Context, logger *slog.Logger, tmdbID int) (int, error) {
 	// TODO: refactor to use upserts
-	ctx, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("MovieService").Start(ctx, "CreateMovie")
+	ctx, span, _ := metrics.SpanFromContext(ctx, "", "convertGetResultToMovie")
 	defer span.End()
 	movie := Movie{}
-	err := m.db.GetMovieByTMDBID(ctx, tmdbID, convertGetResultToMovie(&movie))
+	err := m.db.GetMovieByTMDBID(ctx, tmdbID, convertGetResultToMovie(ctx, &movie))
 	// zero value means it's been set so movie exists
 	if movie.ID > 0 {
 		logger.InfoContext(ctx, "movie found in db", slog.Any("movie", movie.Title))

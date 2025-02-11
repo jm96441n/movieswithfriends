@@ -8,7 +8,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"go.opentelemetry.io/otel/trace"
+	"github.com/jm96441n/movieswithfriends/metrics"
 )
 
 type MoviesRepository struct {
@@ -60,7 +60,7 @@ type GetAssignFn func(*GetMovieResult)
 
 // GetMovieByTMDBID returns a movie from the database by its TMDB ID
 func (p *MoviesRepository) GetMovieByTMDBID(ctx context.Context, id int, assignFn GetAssignFn) error {
-	ctx, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("MoviesRepository").Start(ctx, "GetMovieByTMDBID")
+	ctx, span, _ := metrics.SpanFromContext(ctx, "MoviesRepository", "MoviesRepository.GetMovieByTMDBID")
 	defer span.End()
 	query := fmt.Sprintf(findMovieByIDQuery, "tmdb_id")
 	return p.getMovieBySomeID(ctx, id, assignFn, query)
@@ -68,11 +68,15 @@ func (p *MoviesRepository) GetMovieByTMDBID(ctx context.Context, id int, assignF
 
 // GetMovieByID returns a movie from the database by its ID
 func (p *MoviesRepository) GetMovieByID(ctx context.Context, id int, assignFn GetAssignFn) error {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "MoviesRepository", "MoviesRepository.GetMovieByID")
+	defer span.End()
 	query := fmt.Sprintf(findMovieByIDQuery, "id_movie")
 	return p.getMovieBySomeID(ctx, id, assignFn, query)
 }
 
 func (p *MoviesRepository) getMovieBySomeID(ctx context.Context, id int, assignFn GetAssignFn, query string) error {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "MoviesRepository", "MoviesRepository.getMovieBySomeID")
+	defer span.End()
 	row := p.db.QueryRow(ctx, query, id)
 
 	res := &GetMovieResult{}
@@ -124,6 +128,8 @@ type CreateMovieParams struct {
 
 // CreateMovie creates a movie in the database
 func (p *MoviesRepository) CreateMovie(ctx context.Context, createParams CreateMovieParams) (int, error) {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "MoviesRepository", "MoviesRepository.CreateMovie")
+	defer span.End()
 	var (
 		releaseDate time.Time
 		err         error
@@ -163,6 +169,8 @@ join party_movies on movies.id_movie = party_movies.id_movie
 where party_movies.id_party = $1 AND movies.tmdb_id = any($2);`
 
 func (p *MoviesRepository) GetMovieTMDBIDsFromParty(ctx context.Context, partyID int, tmdbIDs []int, assignFn func(int)) error {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "MoviesRepository", "MoviesRepository.GetMovieTMDBIDsFromParty")
+	defer span.End()
 	rows, err := p.db.Query(ctx, getMovieTMDBIDsFromPartyQuery, partyID, tmdbIDs)
 	if err != nil {
 		return err
