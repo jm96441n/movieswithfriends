@@ -11,11 +11,8 @@
 !Makefile
 !Caddyfile
 
-otelconfig.yaml
-
 /_data/
 
-tls/**
 tmp/**
 .envrc
 .git
