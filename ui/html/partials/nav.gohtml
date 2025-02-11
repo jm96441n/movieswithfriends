@@ -21,6 +21,28 @@
               <i class="fas fa-search me-1"></i>Search
             </a>
           </li>
+          <li class="nav-item dropdown">
+            <a
+              class="nav-link dropdown-toggle {{ navClasses "/parties" .CurrentPagePath }}"
+              href="#"
+              data-bs-toggle="dropdown"
+            >
+              <i class="fas fa-users me-1"></i>Parties
+            </a>
+            <ul class="dropdown-menu">
+              <li>
+                <a class="dropdown-item" href="/parties">
+                  <i class="fas fa-calendar-alt me-2"></i>My Parties
+                </a>
+              </li>
+              <li><hr class="dropdown-divider" /></li>
+              <li>
+                <a class="dropdown-item" href="/parties/new">
+                  <i class="fas fa-plus me-2"></i>Create New Party
+                </a>
+              </li>
+            </ul>
+          </li>
         </ul>
 
         <!-- User Menu (right side) -->
