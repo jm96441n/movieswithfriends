@@ -26,6 +26,12 @@ func main() {
 	sourceDir := filepath.Join(uiPath, "/static")
 	outputDir := filepath.Join(uiPath, "/dist")
 
+	// remove dist directory to ensure the only fingerprinted files are the one we need
+	err = os.RemoveAll(outputDir)
+	if err != nil {
+		log.Fatalf("Failed to remove dist directory: %v", err)
+	}
+
 	manifestPath := filepath.Join(uiPath, "/dist/manifest.json")
 
 	manifest := AssetManifest{

@@ -20,7 +20,7 @@ services:
         condition: service_healthy
     # TODO: use app user not root
     volumes:
-      - .:/go/src/app
+      - .:/home/myuser/app
     networks:
       - app-network
 
