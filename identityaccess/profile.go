@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/jm96441n/movieswithfriends/identityaccess/store"
+	"github.com/jm96441n/movieswithfriends/metrics"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -51,6 +52,8 @@ func NewProfileService(db *store.ProfileRepository) *ProfileService {
 }
 
 func (p *ProfileService) GetProfileByID(ctx context.Context, profileID int) (*Profile, error) {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "profileService.GetProfileByID")
+	defer span.End()
 	profile, err := p.db.GetProfileByID(ctx, profileID)
 	if err != nil {
 		if errors.Is(err, store.ErrNoRecord) {
@@ -58,31 +61,33 @@ func (p *ProfileService) GetProfileByID(ctx context.Context, profileID int) (*Pr
 		}
 		return &Profile{}, err
 	}
-	prof := convertGetProfileResultToProfile(profile)
+	prof := convertGetProfileResultToProfile(ctx, profile)
 	prof.db = p.db
 
 	return prof, nil
 }
 
 func (p *ProfileService) CreateProfile(ctx context.Context, logger *slog.Logger, req SignupReq) (Profile, error) {
-	err := req.Validate()
+	ctx, span, _ := metrics.SpanFromContext(ctx, "profileService.CreateProfile")
+	defer span.End()
+	err := req.Validate(ctx)
 	if err != nil {
 		return Profile{}, err
 	}
 
 	hashedPassword, err := hashPassword(req.Password)
 	if err != nil {
-		logger.Error("error hashing password", slog.Any("error", err))
+		logger.ErrorContext(ctx, "error hashing password", slog.Any("error", err))
 		return Profile{}, err
 	}
 
 	res, err := p.db.CreateProfile(ctx, req.Email, req.FirstName, req.LastName, hashedPassword)
 	if err != nil {
 		if errors.Is(err, store.ErrDuplicateEmailAddress) {
-			logger.Debug("email exists for account")
+			logger.DebugContext(ctx, "email exists for account")
 			return Profile{}, ErrAccountExists
 		}
-		logger.Error("error creating account", slog.Any("error", err))
+		logger.ErrorContext(ctx, "error creating account", slog.Any("error", err))
 		return Profile{}, err
 	}
 	return Profile{
@@ -101,7 +106,9 @@ func hashPassword(password string) ([]byte, error) {
 }
 
 func (p *Profile) Update(ctx context.Context, logger *slog.Logger, req ProfileUpdateReq) error {
-	err := validateUpdateRequest(req)
+	ctx, span, _ := metrics.SpanFromContext(ctx, "profile.Update")
+	defer span.End()
+	err := validateUpdateRequest(ctx, req)
 	if err != nil {
 		return err
 	}
@@ -120,16 +127,16 @@ func (p *Profile) Update(ctx context.Context, logger *slog.Logger, req ProfileUp
 	if req.NewPassword != "" {
 		pw, err := hashPassword(req.NewPassword)
 		if err != nil {
-			logger.Error("error hashing password", slog.Any("error", err))
+			logger.ErrorContext(ctx, "error hashing password", slog.Any("error", err))
 			return err
 		}
-		logger.Debug("setting new password")
+		logger.DebugContext(ctx, "setting new password")
 		updateAccountAttrs.Password = pw
 	}
 
 	err = p.db.UpdateProfile(ctx, updateAccountAttrs, updateProfileAttrs)
 	if err != nil {
-		logger.Error("error updating profile and account", slog.Any("error", err))
+		logger.ErrorContext(ctx, "error updating profile and account", slog.Any("error", err))
 		return err
 	}
 
@@ -137,7 +144,7 @@ func (p *Profile) Update(ctx context.Context, logger *slog.Logger, req ProfileUp
 	p.LastName = req.LastName
 	p.Account.Email = req.Email
 
-	logger.Info("updated profile")
+	logger.InfoContext(ctx, "updated profile")
 
 	return nil
 }
@@ -165,7 +172,9 @@ func (s *ProfileEditValidationError) IsNil() bool {
 	return s.EmailError == nil && s.PasswordError == nil && s.NewPasswordMatchError == nil && s.FirstNameError == nil && s.LastNameError == nil
 }
 
-func validateUpdateRequest(req ProfileUpdateReq) error {
+func validateUpdateRequest(ctx context.Context, req ProfileUpdateReq) error {
+	_, span, _ := metrics.SpanFromContext(ctx, "validateUpdateRequest")
+	defer span.End()
 	var err ProfileEditValidationError
 	if req.FirstName == "" {
 		err.FirstNameError = ErrFirstNameIsRequired
@@ -186,7 +195,9 @@ func validateUpdateRequest(req ProfileUpdateReq) error {
 	return nil
 }
 
-func convertGetProfileResultToProfile(res store.GetProfileResult) *Profile {
+func convertGetProfileResultToProfile(ctx context.Context, res store.GetProfileResult) *Profile {
+	_, span, _ := metrics.SpanFromContext(ctx, "convertGetProfileResultToProfile")
+	defer span.End()
 	return &Profile{
 		ID:        res.ID,
 		FirstName: res.FirstName,

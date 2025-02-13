@@ -87,7 +87,7 @@ func TestSignupReq_Validate(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(tt *testing.T) {
 			tt.Parallel()
-			err := tc.req.Validate()
+			err := tc.req.Validate(context.Background())
 
 			testhelpers.Assert(t, errors.Is(err, tc.want), "expected %v, got %v", tc.want, err)
 
@@ -123,7 +123,6 @@ func TestAuthenticator_Authenticate(t *testing.T) {
 
 	authenticator := &identityaccess.Authenticator{
 		ProfileRepository: store.NewProfileRepository(connPool),
-		Logger:            slog.New(slog.NewJSONHandler(io.Discard, nil)),
 	}
 
 	testCases := map[string]struct {
@@ -148,9 +147,10 @@ func TestAuthenticator_Authenticate(t *testing.T) {
 		},
 	}
 
+	logger := slog.New(slog.NewJSONHandler(io.Discard, nil))
 	for name, tc := range testCases {
 		t.Run(name, func(tt *testing.T) {
-			_, err := authenticator.Authenticate(ctx, tc.email, tc.password)
+			_, err := authenticator.Authenticate(ctx, logger, tc.email, tc.password)
 			testhelpers.Assert(t, errors.Is(err, tc.expectedErr), "expected %v, got %v", tc.expectedErr, err)
 		})
 	}
@@ -173,7 +173,6 @@ func TestAccountExists(t *testing.T) {
 
 	authenticator := &identityaccess.Authenticator{
 		ProfileRepository: store.NewProfileRepository(connPool),
-		Logger:            slog.New(slog.NewJSONHandler(io.Discard, nil)),
 	}
 
 	testCases := map[string]struct {

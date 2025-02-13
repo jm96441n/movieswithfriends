@@ -10,7 +10,7 @@ import (
 
 func (a *Application) AddMovieToPartiesHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	logger := a.Logger.With("handler", "AddMovieToPartiesHandler")
+	logger := a.GetLogger(ctx).With("handler", "AddMovieToPartiesHandler")
 	err := r.ParseForm()
 	if err != nil {
 		a.serverError(w, r, err)
@@ -19,7 +19,7 @@ func (a *Application) AddMovieToPartiesHandler(w http.ResponseWriter, r *http.Re
 
 	watcher, err := a.getWatcherFromSession(r)
 	if err != nil {
-		logger.Error("failed to get watcher from session", slog.Any("error", err))
+		logger.ErrorContext(ctx, "failed to get watcher from session", slog.Any("error", err))
 		a.clientError(w, r, http.StatusInternalServerError, "failed to get watcher from session")
 		return
 	}
@@ -27,21 +27,21 @@ func (a *Application) AddMovieToPartiesHandler(w http.ResponseWriter, r *http.Re
 	formMovieID := r.FormValue("movie_id")
 	formTMDBID := r.FormValue("tmdb_id")
 	if formMovieID == "" && formTMDBID == "" {
-		logger.Error("no movie id or tmdb id")
+		logger.ErrorContext(ctx, "no movie id or tmdb id")
 		a.clientError(w, r, http.StatusBadRequest, "no movie id or tmdb id")
 		return
 	}
 
 	partyIDs := r.Form["party_ids[]"]
 
-	logger.Info("party ids", slog.Any("party_ids", partyIDs))
+	logger.InfoContext(ctx, "party ids", slog.Any("party_ids", partyIDs))
 
 	var mgmtMovieID partymgmt.MovieID
 
 	if formMovieID != "" {
 		id, err := strconv.Atoi(formMovieID)
 		if err != nil {
-			logger.Error("failed to convert movie id to int", slog.Any("error", err))
+			logger.ErrorContext(ctx, "failed to convert movie id to int", slog.Any("error", err))
 			a.clientError(w, r, http.StatusBadRequest, "no movie id or tmdb id")
 			return
 		}
@@ -51,7 +51,7 @@ func (a *Application) AddMovieToPartiesHandler(w http.ResponseWriter, r *http.Re
 	if formTMDBID != "" {
 		id, err := strconv.Atoi(formTMDBID)
 		if err != nil {
-			logger.Error("failed to convert tmdb id to int", slog.Any("error", err))
+			logger.ErrorContext(ctx, "failed to convert tmdb id to int", slog.Any("error", err))
 			a.clientError(w, r, http.StatusBadRequest, "no movie id or tmdb id")
 			return
 		}
@@ -60,7 +60,7 @@ func (a *Application) AddMovieToPartiesHandler(w http.ResponseWriter, r *http.Re
 
 	movieID, err := a.MoviesService.GetOrCreateMovie(ctx, logger, mgmtMovieID)
 	if err != nil {
-		logger.Error("failed to get or create movie", slog.Any("error", err))
+		logger.ErrorContext(ctx, "failed to get or create movie", slog.Any("error", err))
 		a.clientError(w, r, http.StatusBadRequest, "error creating movie")
 		return
 	}
@@ -68,7 +68,7 @@ func (a *Application) AddMovieToPartiesHandler(w http.ResponseWriter, r *http.Re
 	for _, partyID := range partyIDs {
 		id, err := strconv.Atoi(partyID)
 		if err != nil {
-			logger.Error("failed to convert party id to int", slog.Any("error", err))
+			logger.ErrorContext(ctx, "failed to convert party id to int", slog.Any("error", err))
 			a.clientError(w, r, http.StatusBadRequest, "error creating movie")
 			return
 		}
@@ -80,12 +80,12 @@ func (a *Application) AddMovieToPartiesHandler(w http.ResponseWriter, r *http.Re
 
 	w.Header().Set("HX-Trigger", "MovieAddedToParties")
 
-	logger.Info("successfully added movie to parties")
+	logger.InfoContext(ctx, "successfully added movie to parties")
 }
 
 func (a *Application) GetAddMovieToPartyModal(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	logger := a.Logger.With("handler", "GetAddMovieToMovieModal")
+	logger := a.GetLogger(ctx).With("handler", "GetAddMovieToMovieModal")
 	idParams := r.PathValue("id")
 
 	movieID, err := strconv.Atoi(idParams)

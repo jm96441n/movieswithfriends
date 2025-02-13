@@ -8,6 +8,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jm96441n/movieswithfriends/metrics"
 )
 
 type WatcherRepository struct {
@@ -42,6 +43,8 @@ const getWatchedMoviesForWatcher = `
 `
 
 func (p *WatcherRepository) GetWatchedMoviesForWatcher(ctx context.Context, idWatcher int, offset int) ([]WatchedMoviesForWatcherResult, error) {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "WatcherRepository.GetWatchedMoviesForWatcher")
+	defer span.End()
 	rows, err := p.db.Query(ctx, getWatchedMoviesForWatcher, idWatcher, offset)
 	if err != nil {
 		return nil, err
@@ -75,10 +78,12 @@ const getWatchedMoviesCountForWatcher = `
 `
 
 func (p *WatcherRepository) GetWatchedMoviesCountForMember(ctx context.Context, logger *slog.Logger, idMember int) (int, error) {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "WatcherRepository.GetWatchedMoviesCountForMember")
+	defer span.End()
 	var count int
 	err := p.db.QueryRow(ctx, getWatchedMoviesCountForWatcher, idMember).Scan(&count)
 	if err != nil {
-		logger.Error("failed to get watched movies count", "error", err)
+		logger.ErrorContext(ctx, "failed to get watched movies count", "error", err)
 		return 0, err
 	}
 
@@ -121,6 +126,8 @@ type PartiesForWatcherResult struct {
 }
 
 func (p *WatcherRepository) GetPartiesForWatcher(ctx context.Context, watcherID, limit int) ([]PartiesForWatcherResult, error) {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "WatcherRepository.GetPartiesForWatcher")
+	defer span.End()
 	rows, err := p.db.Query(ctx, getPartiesForWatcherQuery, watcherID, limit)
 	if err != nil {
 		return nil, err
@@ -153,6 +160,8 @@ const getPartiesWithMovieQuery = `
 `
 
 func (p *WatcherRepository) GetWatcherPartiesWithMovie(ctx context.Context, logger *slog.Logger, idMember int, idMovie int, assignFn func(int, string)) error {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "WatcherRepository.GetWatcherPartiesWithMovie")
+	defer span.End()
 	rows, err := p.db.Query(ctx, getPartiesWithMovieQuery, idMovie, idMember)
 	if err != nil {
 		return err
@@ -186,6 +195,8 @@ const getPartiesWithoutMovieQuery = `
 `
 
 func (p *WatcherRepository) GetWatcherPartiesWithoutMovie(ctx context.Context, logger *slog.Logger, idMember int, idMovie int, assignFn func(int, string, int)) error {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "WatcherRepository.GetWatcherPartiesWithoutMovie")
+	defer span.End()
 	rows, err := p.db.Query(ctx, getPartiesWithoutMovieQuery, idMovie, idMember)
 	if err != nil {
 		return err
@@ -219,7 +230,9 @@ const getPartiesWithMovieQueryByTMDBID = `
 `
 
 func (p *WatcherRepository) GetWatcherPartiesWithMovieByTMDBID(ctx context.Context, logger *slog.Logger, idMember int, tmdbID int, assignFn func(int, string)) error {
-	logger.Info("args", slog.Any("tmdbID", tmdbID), slog.Any("idMember", idMember))
+	ctx, span, _ := metrics.SpanFromContext(ctx, "WatcherRepository.GetWatcherPartiesWithMovieByTMDBID")
+	defer span.End()
+	logger.InfoContext(ctx, "args", slog.Any("tmdbID", tmdbID), slog.Any("idMember", idMember))
 	rows, err := p.db.Query(ctx, getPartiesWithMovieQueryByTMDBID, tmdbID, idMember)
 	if err != nil {
 		return err
@@ -258,6 +271,8 @@ GROUP BY parties.id_party, parties.name;
 `
 
 func (p *WatcherRepository) GetWatcherPartiesWithoutMovieByTMDBID(ctx context.Context, logger *slog.Logger, idMember int, tmdbID int, assignFn func(int, string, int)) error {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "WatcherRepository.GetWatcherPartiesWithoutMovieByTMDBID")
+	defer span.End()
 	rows, err := p.db.Query(ctx, getPartiesWithoutMovieQueryByTMDBID, tmdbID, idMember)
 	if err != nil {
 		return err
@@ -288,6 +303,8 @@ const isOwnerQuery = `
 `
 
 func (p *WatcherRepository) WatcherOwnsParty(ctx context.Context, idWatcher, idParty int) (bool, error) {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "WatcherRepository.WatcherOwnsParty")
+	defer span.End()
 	var isOwner bool
 	err := p.db.QueryRow(ctx, isOwnerQuery, idWatcher, idParty).Scan(&isOwner)
 	if err != nil {
@@ -306,6 +323,8 @@ const getWatcherByEmailQuery = `
 type assignIDFn func(int)
 
 func (p WatcherRepository) GetWatcherByEmail(ctx context.Context, email string, assignFn assignIDFn) error {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "WatcherRepository.GetWatcherByEmail")
+	defer span.End()
 	var id int
 	err := p.db.QueryRow(ctx, getWatcherByEmailQuery, email).Scan(&id)
 	if err != nil {

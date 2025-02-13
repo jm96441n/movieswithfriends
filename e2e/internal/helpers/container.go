@@ -63,6 +63,7 @@ func SetupAppContainer(ctx context.Context, t *testing.T, pgCtr *postgres.Postgr
 			"DB_DATABASE_NAME":      "movieswithfriends",
 			"TMDB_API_KEY":          tmdbKey,
 			"SESSION_KEY":           sessionKey,
+			"COLLECTOR_ENDPOINT":    "0.0.0.0:1500", // special signal to use no-op telemetry collector in test
 		},
 		LogConsumerCfg: &testcontainers.LogConsumerConfig{
 			Opts:      []testcontainers.LogProductionOption{testcontainers.WithLogProductionTimeout(10 * time.Second)},

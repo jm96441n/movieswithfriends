@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/jm96441n/movieswithfriends/metrics"
 	"github.com/jm96441n/movieswithfriends/partymgmt"
 )
 
@@ -17,12 +18,13 @@ type InviteModalTemplateData struct {
 }
 
 func (a *Application) CreateInviteHandler(w http.ResponseWriter, r *http.Request) {
-	logger := a.Logger.With("handler", "InvitationsHandler")
-	ctx := r.Context()
+	ctx, span, _ := metrics.SpanFromContext(r.Context(), "CreateInviteHandler")
+	defer span.End()
+	logger := a.GetLogger(ctx).With("handler", "InvitationsHandler")
 
 	partyID, email, err := parseInviteForm(r)
 	if err != nil {
-		logger.Error("Failed to parse form", slog.Any("error", err))
+		logger.ErrorContext(ctx, "Failed to parse form", slog.Any("error", err))
 		a.setErrorFlashMessage(w, r, "There was an error inviting this user, try again.")
 		w.Header().Set("HX-Redirect", "/parties")
 		return
@@ -34,19 +36,19 @@ func (a *Application) CreateInviteHandler(w http.ResponseWriter, r *http.Request
 	}
 	err = a.InvitationsService.CreateInvite(ctx, a.WatcherService, partyID, email)
 	if err != nil {
-		logger.Error("Failed to create invite", slog.Any("error", err))
+		logger.ErrorContext(ctx, "Failed to create invite", slog.Any("error", err))
 		templateData.CreateErrorMsg = "There was an error inviting this member, try again."
 	}
 
 	invited, err := a.InvitationsService.GetInvitationsForParty(ctx, partyID)
 	if err != nil {
-		logger.Error("Failed to get invitations", slog.Any("error", err))
+		logger.ErrorContext(ctx, "Failed to get invitations", slog.Any("error", err))
 		templateData.FetchErrorMsg = "There was an error loading pending invites."
 	} else {
 		templateData.PendingInvites = invited
 	}
 
-	logger.Info("successfully invited user")
+	logger.InfoContext(ctx, "successfully invited user")
 
 	a.renderPartial(w, r, http.StatusOK, "parties/partials/invite_modal.gohtml", templateData)
 }

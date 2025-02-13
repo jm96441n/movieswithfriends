@@ -6,6 +6,7 @@ import (
 
 	"github.com/jm96441n/movieswithfriends/identityaccess"
 	iamstore "github.com/jm96441n/movieswithfriends/identityaccess/store"
+	"github.com/jm96441n/movieswithfriends/metrics"
 	"github.com/jm96441n/movieswithfriends/partymgmt"
 	partymgmtstore "github.com/jm96441n/movieswithfriends/partymgmt/store"
 )
@@ -58,6 +59,8 @@ type watchHistoryResult struct {
 }
 
 func (p *ProfileAggregatorService) GetProfilePageData(ctx context.Context, logger *slog.Logger, profileID int) (ProfilePageData, error) {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "profileAggregatorService.GetProfilePageData")
+	defer span.End()
 	profResultCh := make(chan profileResult)
 	statsResultCh := make(chan statsResult)
 	partiesResultCh := make(chan partiesResult)
@@ -116,6 +119,8 @@ func (p *ProfileAggregatorService) GetProfilePageData(ctx context.Context, logge
 }
 
 func (p *ProfileAggregatorService) getProfile(ctx context.Context, profileID int) (*identityaccess.Profile, error) {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "profileAggregatorService.getProfile")
+	defer span.End()
 	getProfResult, err := p.profileRepository.GetProfileByID(ctx, profileID)
 	if err != nil {
 		return nil, err
@@ -134,6 +139,8 @@ func (p *ProfileAggregatorService) getProfile(ctx context.Context, profileID int
 }
 
 func (p *ProfileAggregatorService) getProfileStats(ctx context.Context, logger *slog.Logger, profileID int) (identityaccess.ProfileStats, error) {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "profileAggregatorService.getProfileStats")
+	defer span.End()
 	stats, err := p.profileRepository.GetProfileStats(ctx, logger, profileID)
 	if err != nil {
 		return identityaccess.ProfileStats{}, err
@@ -147,6 +154,8 @@ func (p *ProfileAggregatorService) getProfileStats(ctx context.Context, logger *
 }
 
 func (p *ProfileAggregatorService) getParties(ctx context.Context, profileID int) ([]partymgmt.Party, error) {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "profileAggregatorService.getParties")
+	defer span.End()
 	partyRes, err := p.watcherRepository.GetPartiesForWatcher(ctx, profileID, 50)
 	if err != nil {
 		return nil, err
@@ -173,6 +182,8 @@ type PageInfo struct {
 const defaultPageSize = 5
 
 func (p *ProfileAggregatorService) GetWatchPaginatedHistory(ctx context.Context, logger *slog.Logger, profileID int, pageInfo PageInfo) (MovieData, error) {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "profileAggregatorService.GetWatchPaginatedHistory")
+	defer span.End()
 	pageNum := pageInfo.PageNum
 	pageSize := max(defaultPageSize, pageInfo.PageSize)
 

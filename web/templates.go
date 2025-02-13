@@ -2,11 +2,9 @@ package web
 
 import (
 	"embed"
-	"errors"
 	"fmt"
 	"html/template"
 	"io/fs"
-	"log/slog"
 	"net/http"
 	"regexp"
 	"strings"
@@ -33,7 +31,6 @@ type BaseTemplateData struct {
 	FullName        string
 	UserEmail       string
 	Parties         []partymgmt.Party
-	CurrentParty    partymgmt.Party
 }
 
 type AddMovieToPartiesModalTemplateData struct {
@@ -61,11 +58,6 @@ type ProfilesTemplateData struct {
 	HasFirstNameError *bool
 	HasLastNameError  *bool
 	BaseTemplateData
-}
-
-type PartyMovieButtonTemplate struct {
-	CurrentParty partymgmt.Party
-	ButtonSize   string
 }
 
 func (s *ProfilesTemplateData) InitHasErrorFields() {
@@ -152,29 +144,6 @@ func (a *Application) newBaseTemplateData(r *http.Request, w http.ResponseWriter
 		session.Save(r, w)
 	}
 
-	watcher, err := a.getWatcherFromSession(r)
-
-	if errors.Is(err, ErrFailedToGetProfileIDFromSession) {
-		return BaseTemplateData{
-			ErrorFlashes:    errorFlashes,
-			InfoFlashes:     infoFlashes,
-			WarningFlashes:  warningFlashes,
-			CurrentPagePath: path,
-			CurrentYear:     2024,
-			IsAuthenticated: authed,
-			FullName:        fullName,
-			UserEmail:       email,
-		}
-	} else if err != nil {
-		a.Logger.Error("failed to get watcher from session", slog.Any("error", err))
-	}
-
-	parties, err := watcher.GetParties(r.Context())
-	if err != nil {
-		// handle later
-		a.Logger.Error("failed to get watcher from session", slog.Any("error", err))
-	}
-
 	return BaseTemplateData{
 		ErrorFlashes:    errorFlashes,
 		InfoFlashes:     infoFlashes,
@@ -184,7 +153,6 @@ func (a *Application) newBaseTemplateData(r *http.Request, w http.ResponseWriter
 		IsAuthenticated: authed,
 		FullName:        fullName,
 		UserEmail:       email,
-		Parties:         parties,
 	}
 }
 

@@ -79,7 +79,7 @@ func main() {
 
 	defer telemetry.Shutdown(ctx)
 
-	logger := telemetry.Logger
+	logger := telemetry.Logger()
 	logger.Info("successfully setup otel")
 
 	logger.Info("running migrations")
@@ -192,7 +192,6 @@ func main() {
 			ProfilesService:   identityaccess.NewProfileService(profileRepo),
 			WatcherService:    partymgmt.NewWatcherService(watcherRepo),
 			Auth: &identityaccess.Authenticator{
-				Logger:            logger,
 				ProfileRepository: profileRepo,
 			},
 			ProfileAggregatorService: services.NewProfileAggregatorService(
@@ -214,8 +213,8 @@ func main() {
 		Addr: addr,
 		Handler: otelhttp.NewHandler(app.Routes(), "movieswithfriends",
 			otelhttp.WithMessageEvents(otelhttp.ReadEvents, otelhttp.WriteEvents),
-			otelhttp.WithMeterProvider(telemetry.MeterProvider),
-			otelhttp.WithTracerProvider(telemetry.TracerProvider),
+			otelhttp.WithMeterProvider(telemetry.MeterProvider()),
+			otelhttp.WithTracerProvider(telemetry.TracerProvider()),
 		),
 		ErrorLog:     slog.NewLogLogger(logger.Handler(), slog.LevelError),
 		IdleTimeout:  time.Minute,

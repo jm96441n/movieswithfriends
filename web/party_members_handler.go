@@ -7,10 +7,11 @@ import (
 
 func (a *Application) AddMemberToPartyHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	logger := a.GetLogger(ctx).With("handler", "AddMemberToPartyHandler")
 
 	err := r.ParseForm()
 	if err != nil {
-		a.Logger.Error("failed to parse form", slog.Any("error", err))
+		logger.ErrorContext(ctx, "failed to parse form", slog.Any("error", err))
 		a.serverError(w, r, err)
 		return
 	}
@@ -19,14 +20,14 @@ func (a *Application) AddMemberToPartyHandler(w http.ResponseWriter, r *http.Req
 
 	watcher, err := a.getWatcherFromSession(r)
 	if err != nil {
-		a.Logger.Error("failed to get profile id from session", slog.Any("error", err))
+		logger.ErrorContext(ctx, "failed to get profile id from session", slog.Any("error", err))
 		a.serverError(w, r, err)
 		return
 	}
 
 	party, err := a.PartyService.GetPartyByShortID(ctx, partyShortID)
 	if err != nil {
-		a.Logger.Error("failed to get profile id from session", slog.Any("error", err))
+		logger.ErrorContext(ctx, "failed to get profile id from session", slog.Any("error", err))
 		a.serverError(w, r, err)
 		return
 	}
@@ -34,7 +35,7 @@ func (a *Application) AddMemberToPartyHandler(w http.ResponseWriter, r *http.Req
 	// Add the friend to the party
 	err = party.AddMember(ctx, watcher.ID)
 	if err != nil {
-		a.Logger.Error("failed to add friend to party", slog.Any("error", err))
+		logger.ErrorContext(ctx, "failed to add friend to party", slog.Any("error", err))
 		a.serverError(w, r, err)
 		return
 	}

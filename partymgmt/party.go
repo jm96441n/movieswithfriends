@@ -72,7 +72,7 @@ func NewPartyService(logger *slog.Logger, db *store.PartyRepository) *PartyServi
 }
 
 func (s *PartyService) NewParty(ctx context.Context) Party {
-	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyService.NewParty")
+	_, span, _ := metrics.SpanFromContext(ctx, "PartyService.NewParty")
 	defer span.End()
 	return Party{db: s.db}
 }
@@ -136,19 +136,19 @@ func (s *PartyService) GetPartyWithMovies(ctx context.Context, logger *slog.Logg
 		party.WatchedCount = res.WatchedCount
 	})
 	if err != nil {
-		s.logger.Error("failed to get party by id", slog.Any("error", err))
+		logger.ErrorContext(ctx, "failed to get party by id", slog.Any("error", err))
 		return Party{}, err
 	}
 
 	err = party.GetPartyMembers(ctx)
 	if err != nil {
-		s.logger.Error("failed to get party members", slog.Any("error", err))
+		logger.ErrorContext(ctx, "failed to get party members", slog.Any("error", err))
 		return Party{}, err
 	}
 
 	moviesByStatus, err := party.GetMoviesByStatus(ctx, logger)
 	if err != nil {
-		s.logger.Error("failed to get movies for party", slog.Any("error", err))
+		logger.ErrorContext(ctx, "failed to get movies for party", slog.Any("error", err))
 		return Party{}, err
 	}
 
@@ -160,6 +160,7 @@ func (s *PartyService) GetPartyWithMovies(ctx context.Context, logger *slog.Logg
 func (s *PartyService) GetPartyByShortID(ctx context.Context, shortID string) (Party, error) {
 	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyService.GetPartyByShortID")
 	defer span.End()
+
 	res, err := s.db.GetPartyByShortID(ctx, shortID)
 	if err != nil {
 		return Party{}, err
@@ -189,6 +190,7 @@ func (p Party) AddMember(ctx context.Context, idMember int) error {
 func (p Party) GetMoviesByStatus(ctx context.Context, logger *slog.Logger) (MoviesByStatus, error) {
 	ctx, span, _ := metrics.SpanFromContext(ctx, "Party.GetMoviesByStatus")
 	defer span.End()
+
 	moviesByStatus := MoviesByStatus{
 		WatchedMovies:   make([]PartyMovie, 0, 10),
 		UnwatchedMovies: make([]PartyMovie, 0, 10),
@@ -199,7 +201,7 @@ func (p Party) GetMoviesByStatus(ctx context.Context, logger *slog.Logger) (Movi
 		case store.WatchStatusUnwatched:
 			err := json.Unmarshal(movieJSON, &moviesByStatus.UnwatchedMovies)
 			if err != nil {
-				logger.Error(err.Error(), slog.String("marshalType", "unwatchedMovies"))
+				logger.ErrorContext(ctx, err.Error(), slog.String("marshalType", "unwatchedMovies"))
 				return err
 			}
 		case store.WatchStatusSelected:
@@ -207,7 +209,7 @@ func (p Party) GetMoviesByStatus(ctx context.Context, logger *slog.Logger) (Movi
 			selectedMovies := []*PartyMovie{}
 			err := json.Unmarshal(movieJSON, &selectedMovies)
 			if err != nil {
-				logger.Error(err.Error(), slog.String("marshalType", "selectedMovie"))
+				logger.ErrorContext(ctx, err.Error(), slog.String("marshalType", "selectedMovie"))
 				return err
 			}
 			if len(selectedMovies) > 0 {
@@ -216,7 +218,7 @@ func (p Party) GetMoviesByStatus(ctx context.Context, logger *slog.Logger) (Movi
 		case store.WatchStatusWatched:
 			err := json.Unmarshal(movieJSON, &moviesByStatus.WatchedMovies)
 			if err != nil {
-				logger.Error(err.Error(), slog.String("marshalType", "watchedMovies"))
+				logger.ErrorContext(ctx, err.Error(), slog.String("marshalType", "watchedMovies"))
 				return err
 			}
 		}
@@ -232,6 +234,7 @@ func (p Party) GetMoviesByStatus(ctx context.Context, logger *slog.Logger) (Movi
 func (p Party) AddMovie(ctx context.Context, watcherID, idMovie int) error {
 	ctx, span, _ := metrics.SpanFromContext(ctx, "Party.AddMovie")
 	defer span.End()
+
 	err := p.db.CreatePartyMovie(ctx, p.ID, idMovie, watcherID)
 	if err != nil {
 		return err
@@ -242,6 +245,7 @@ func (p Party) AddMovie(ctx context.Context, watcherID, idMovie int) error {
 func (p Party) HasMovieAdded(ctx context.Context, movieID int) (bool, error) {
 	ctx, span, _ := metrics.SpanFromContext(ctx, "Party.HasMovieAdded")
 	defer span.End()
+
 	exists, err := p.db.MovieAddedToParty(ctx, p.ID, movieID)
 	if err != nil {
 		return false, err
@@ -252,6 +256,7 @@ func (p Party) HasMovieAdded(ctx context.Context, movieID int) (bool, error) {
 func (p *Party) GetPartyMembers(ctx context.Context) error {
 	ctx, span, _ := metrics.SpanFromContext(ctx, "Party.GetPartyMembers")
 	defer span.End()
+
 	err := p.db.GetPartyMembers(ctx, p.ID, func(firstName, lastName string, id int, owner bool, joinedAt time.Time) {
 		p.Members = append(p.Members, PartyMember{
 			FirstName: firstName,

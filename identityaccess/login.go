@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/jm96441n/movieswithfriends/identityaccess/store"
+	"github.com/jm96441n/movieswithfriends/metrics"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -53,7 +54,9 @@ var (
 
 var numRegex = regexp.MustCompile("[0-9]+")
 
-func (s SignupReq) Validate() error {
+func (s SignupReq) Validate(ctx context.Context) error {
+	_, span, _ := metrics.SpanFromContext(ctx, "signupReq.Validate")
+	defer span.End()
 	var err SignupValidationError
 	if s.Email == "" {
 		err.EmailError = ErrEmptyEmail
@@ -97,31 +100,32 @@ func validatePassword(password string) error {
 }
 
 type Authenticator struct {
-	Logger            *slog.Logger
 	ProfileRepository *store.ProfileRepository
 }
 
-func (a *Authenticator) Authenticate(ctx context.Context, email, password string) (*Profile, error) {
+func (a *Authenticator) Authenticate(ctx context.Context, logger *slog.Logger, email, password string) (*Profile, error) {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "authenticator.Authenticate")
+	defer span.End()
 	res, err := a.ProfileRepository.GetProfileByEmail(ctx, email)
 	if err != nil {
 		if errors.Is(err, store.ErrNoRecord) {
-			a.Logger.Error("account not found", slog.String("email", email))
+			logger.ErrorContext(ctx, "account not found", slog.String("email", email))
 			return nil, ErrInvalidCredentials
 		}
-		a.Logger.Error("error finding profile by email", slog.Any("error", err), slog.String("email", email))
+		logger.ErrorContext(ctx, "error finding profile by email", slog.Any("error", err), slog.String("email", email))
 		return nil, err
 	}
 
-	profile := convertGetProfileResultToProfile(res)
+	profile := convertGetProfileResultToProfile(ctx, res)
 	profile.db = a.ProfileRepository
 
 	err = bcrypt.CompareHashAndPassword(profile.Account.Password, []byte(password))
 	if err != nil {
 		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
-			a.Logger.Error("incorrect password", slog.Any("error", err))
+			logger.ErrorContext(ctx, "incorrect password", slog.Any("error", err))
 			return nil, fmt.Errorf("%w: %s", ErrInvalidCredentials, err)
 		}
-		a.Logger.Error("error comparing password", slog.Any("error", err))
+		logger.ErrorContext(ctx, "error comparing password", slog.Any("error", err))
 		return nil, err
 	}
 
@@ -129,6 +133,8 @@ func (a *Authenticator) Authenticate(ctx context.Context, email, password string
 }
 
 func (a *Authenticator) AccountExists(ctx context.Context, accountID int) (bool, error) {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "authenticator.AccountExists")
+	defer span.End()
 	found, err := a.ProfileRepository.AccountExists(ctx, accountID)
 	if err != nil {
 		return false, err

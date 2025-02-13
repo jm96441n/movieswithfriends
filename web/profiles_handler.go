@@ -13,12 +13,12 @@ import (
 
 func (a *Application) ProfileShowHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	logger := a.Logger.With("handler", "ProfileShowHandler")
-	logger.Debug("getting profile info")
+	logger := a.GetLogger(ctx).With("handler", "ProfileShowHandler")
+	logger.DebugContext(ctx, "getting profile info")
 
 	profileID, err := a.getProfileIDFromSession(r)
 	if err != nil {
-		logger.Error("failed to get profile id from session", "error", err)
+		logger.ErrorContext(ctx, "failed to get profile id from session", "error", err)
 		a.setErrorFlashMessage(w, r, "There was an error loading your profile, please try logging in again")
 		a.logout(w, r)
 		http.Redirect(w, r, "/login", http.StatusInternalServerError)
@@ -29,10 +29,10 @@ func (a *Application) ProfileShowHandler(w http.ResponseWriter, r *http.Request)
 	if err != nil {
 		status := http.StatusInternalServerError
 		if errors.Is(err, store.ErrNoRecord) {
-			logger.Error("did not find profile in db", "profileID", profileID)
+			logger.ErrorContext(ctx, "did not find profile in db", "profileID", profileID)
 			status = http.StatusNotFound
 		} else {
-			logger.Error("failed to retrieve profile from db", "error", err)
+			logger.ErrorContext(ctx, "failed to retrieve profile from db", "error", err)
 		}
 
 		a.setErrorFlashMessage(w, r, "There was an error loading your profile, please try logging in again")
@@ -46,18 +46,20 @@ func (a *Application) ProfileShowHandler(w http.ResponseWriter, r *http.Request)
 	templateData.WatchedMovies = pageData.WatchedMovies
 	templateData.CurPage = pageData.CurPage
 	templateData.NumPages = pageData.NumPages
-	logger.Info("successfully loaded profile info")
+
+	logger.InfoContext(ctx, "successfully loaded profile info")
 	a.render(w, r, http.StatusOK, "profiles/show.gohtml", templateData)
 }
 
 func (a *Application) ProfileEditPageHandler(w http.ResponseWriter, r *http.Request) {
-	// logger := a.Logger.With("handler", "ProfileEditPageHandler")
+	ctx := r.Context()
+	logger := a.GetLogger(ctx).With("handler", "ProfileEditPageHandler")
 
 	profile, err := a.getProfileFromSession(r)
 	if err != nil {
 		status := http.StatusInternalServerError
 		if errors.Is(err, store.ErrNoRecord) {
-			a.Logger.Error("did not find profile in db", "profileID", profile.ID)
+			logger.ErrorContext(ctx, "did not find profile in db", "profileID", profile.ID)
 			status = http.StatusNotFound
 		}
 
@@ -73,14 +75,14 @@ func (a *Application) ProfileEditPageHandler(w http.ResponseWriter, r *http.Requ
 }
 
 func (a *Application) ProfileEditHandler(w http.ResponseWriter, r *http.Request) {
-	logger := a.Logger.With("handler", "ProfileEditHandler")
 	ctx := r.Context()
+	logger := a.GetLogger(ctx).With("handler", "ProfileEditHandler")
 
 	profile, err := a.getProfileFromSession(r)
 	if err != nil {
 		status := http.StatusInternalServerError
 		if errors.Is(err, store.ErrNoRecord) {
-			logger.Error("did not find profile in db", slog.Any("error", err))
+			logger.ErrorContext(ctx, "did not find profile in db", slog.Any("error", err))
 			status = http.StatusNotFound
 		}
 
@@ -100,7 +102,7 @@ func (a *Application) ProfileEditHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	logger.Info("req to update profile", "req", req)
+	logger.InfoContext(ctx, "req to update profile", "req", req)
 
 	err = profile.Update(ctx, logger, req)
 	if err != nil {
@@ -154,8 +156,8 @@ func parseEditProfileForm(r *http.Request) (identityaccess.ProfileUpdateReq, err
 
 func (a *Application) GetPaginatedWatchHistoryHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	logger := a.Logger.With("handler", "GetPaginatedWatchHistoryHandler")
-	logger.Debug("getting paginated movies list")
+	logger := a.GetLogger(ctx).With("handler", "GetPaginatedWatchHistoryHandler")
+	logger.DebugContext(ctx, "getting paginated movies list")
 
 	profileID, err := a.getProfileIDFromSession(r)
 	if err != nil {

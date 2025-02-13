@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jm96441n/movieswithfriends/metrics"
 )
 
 type ProfileRepository struct {
@@ -50,6 +51,8 @@ const getProfileByIDQuery = `
   where profiles.id_profile = $1`
 
 func (p *ProfileRepository) GetProfileByID(ctx context.Context, profileID int) (GetProfileResult, error) {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "profileRepository.GetProfileByID")
+	defer span.End()
 	res := GetProfileResult{}
 
 	err := p.db.QueryRow(ctx, getProfileByIDQuery, profileID).
@@ -79,6 +82,8 @@ const getProfileByEmailQuery = `
   where accounts.email = $1`
 
 func (p *ProfileRepository) GetProfileByEmail(ctx context.Context, email string) (GetProfileResult, error) {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "profileRepository.GetProfileByEmail")
+	defer span.End()
 	res := GetProfileResult{}
 	err := p.db.QueryRow(ctx, getProfileByEmailQuery, email).
 		Scan(&res.ID, &res.FirstName, &res.LastName, &res.CreatedAt, &res.AccountID, &res.AccountEmail, &res.AccountPassword)
@@ -107,15 +112,17 @@ const getTotalWatchTimeQuery = `
 `
 
 func (p *ProfileRepository) GetProfileStats(ctx context.Context, logger *slog.Logger, profileID int) (GetProfileStatsResult, error) {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "profileRepository.GetProfileStats")
+	defer span.End()
 	res := GetProfileStatsResult{}
 	err := p.db.QueryRow(ctx, getNumPartiesForProfileQuery, profileID).Scan(&res.NumParties)
 	if err != nil {
-		logger.Debug("failed to get num parties for profile", slog.Any("error", err))
+		logger.DebugContext(ctx, "failed to get num parties for profile", slog.Any("error", err))
 		return GetProfileStatsResult{}, err
 	}
 	err = p.db.QueryRow(ctx, getTotalWatchTimeQuery, profileID).Scan(&res.WatchTime, &res.MoviesWatched)
 	if err != nil {
-		logger.Debug("failed to get total watch time", slog.Any("error", err))
+		logger.DebugContext(ctx, "failed to get total watch time", slog.Any("error", err))
 		return GetProfileStatsResult{}, err
 	}
 	return res, nil
@@ -127,6 +134,8 @@ type CreateProfileResult struct {
 }
 
 func (p *ProfileRepository) CreateProfile(ctx context.Context, email, firstName, lastName string, password []byte) (CreateProfileResult, error) {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "profileRepository.CreateProfile")
+	defer span.End()
 	txn, err := p.db.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		return CreateProfileResult{}, err
@@ -157,6 +166,8 @@ func (p *ProfileRepository) CreateProfile(ctx context.Context, email, firstName,
 const insertProfileQuery = `insert into profiles (first_name, last_name, id_account) values ($1, $2, $3) returning id_profile`
 
 func (p *ProfileRepository) createProfileWithTxn(ctx context.Context, txn pgx.Tx, firstName, lastName string, accountID int) (int, error) {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "profileRepository.createAccountWithTxn")
+	defer span.End()
 	var profileID int
 
 	err := txn.QueryRow(ctx, insertProfileQuery, firstName, lastName, accountID).Scan(&profileID)
@@ -169,6 +180,8 @@ func (p *ProfileRepository) createProfileWithTxn(ctx context.Context, txn pgx.Tx
 const insertAccountQuery = `insert into accounts (email, password) values ($1, $2) returning id_account`
 
 func (p *ProfileRepository) createAccountWithTxn(ctx context.Context, txn pgx.Tx, email string, password []byte) (int, error) {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "profileRepository.createAccountWithTxn")
+	defer span.End()
 	var accountID int
 
 	err := txn.QueryRow(ctx, insertAccountQuery, email, password).Scan(&accountID)
@@ -182,6 +195,8 @@ func (p *ProfileRepository) createAccountWithTxn(ctx context.Context, txn pgx.Tx
 const accountExistsQuery = `SELECT EXISTS(select 1 from accounts where id_account = $1)`
 
 func (p *ProfileRepository) AccountExists(ctx context.Context, id int) (bool, error) {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "profileRepository.AccountExists")
+	defer span.End()
 	var exists bool
 
 	err := p.db.QueryRow(ctx, accountExistsQuery, id).Scan(&exists)
@@ -202,6 +217,8 @@ type ProfileUpdateAttrs struct {
 }
 
 func (p *ProfileRepository) UpdateProfile(ctx context.Context, accountAttrs AccountUpdateAttrs, profileAttrs ProfileUpdateAttrs) error {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "profileRepository.UpdateProfile")
+	defer span.End()
 	txn, err := p.db.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		return err
@@ -228,6 +245,8 @@ func (p *ProfileRepository) UpdateProfile(ctx context.Context, accountAttrs Acco
 }
 
 func updateAccount(ctx context.Context, txn pgx.Tx, attrs AccountUpdateAttrs) error {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "profileRepository.updateAccount")
+	defer span.End()
 	if len(attrs.Password) == 0 {
 		_, err := txn.Exec(ctx, `update accounts set email = $1 where id_account = $2`, attrs.Email, attrs.ID)
 		if err != nil {
@@ -258,6 +277,8 @@ func handleUniqueConstraintForEmail(err error) error {
 }
 
 func updateProfile(ctx context.Context, txn pgx.Tx, attrs ProfileUpdateAttrs) error {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "profileRepository.updateProfile")
+	defer span.End()
 	_, err := txn.Exec(ctx, `update profiles set first_name = $1, last_name = $2 where id_profile = $3`, attrs.FirstName, attrs.LastName, attrs.ID)
 	if err != nil {
 		return err

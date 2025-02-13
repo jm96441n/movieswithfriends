@@ -94,7 +94,7 @@ type getAssignFn func(GetPartyByIDWithStatsResult)
 func (p *PartyRepository) GetPartyByIDWithStats(ctx context.Context, id int, assignFn getAssignFn) error {
 	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyRepository.GetPartyByIDWithStats")
 	defer span.End()
-	// logger.Info("GetPartyByIDWithStats", "id", id)
+
 	result := GetPartyByIDWithStatsResult{}
 	err := p.db.QueryRow(ctx, getPartyByIDWithStatsQuery, id).
 		Scan(
@@ -320,7 +320,7 @@ func (p *PartyRepository) GetMoviesForParty(ctx context.Context, logger *slog.Lo
 		)
 		err := rows.Scan(&status, &movieJSON)
 		if err != nil {
-			logger.Error(err.Error(), "query", getMoviesForPartyQuery)
+			logger.ErrorContext(ctx, err.Error(), "query", getMoviesForPartyQuery)
 			return err
 		}
 
@@ -332,7 +332,7 @@ func (p *PartyRepository) GetMoviesForParty(ctx context.Context, logger *slog.Lo
 	}
 
 	if err := rows.Err(); err != nil {
-		logger.Error(err.Error(), "query", getMoviesForPartyQuery)
+		logger.ErrorContext(ctx, err.Error(), "query", getMoviesForPartyQuery)
 		return err
 	}
 

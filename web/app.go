@@ -2,6 +2,7 @@ package web
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"html/template"
@@ -25,7 +26,7 @@ var (
 )
 
 type AppConfig struct {
-	Telemetry                *metrics.Telemetry
+	Telemetry                metrics.TelemetryProvider
 	Logger                   *slog.Logger
 	SessionStore             *sessions.CookieStore
 	MoviesService            *partymgmt.MovieService
@@ -41,7 +42,7 @@ type AppConfig struct {
 }
 
 type Application struct {
-	Telemetry                *metrics.Telemetry
+	Telemetry                metrics.TelemetryProvider
 	Logger                   *slog.Logger
 	templateCache            map[string]*template.Template
 	SessionStore             *sessions.CookieStore
@@ -83,7 +84,10 @@ func (a *Application) serverError(w http.ResponseWriter, r *http.Request, err er
 	method := r.Method
 	uri := r.URL.RequestURI()
 
-	a.Logger.Error(err.Error(), slog.String("method", method), slog.String("uri", uri))
+	ctx, span, _ := metrics.SpanFromContext(r.Context(), "serverError")
+	defer span.End()
+
+	a.GetLogger(ctx).ErrorContext(ctx, err.Error(), slog.String("method", method), slog.String("uri", uri))
 	http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 }
 
@@ -122,8 +126,11 @@ func (a *Application) render(w http.ResponseWriter, r *http.Request, status int,
 func (a *Application) renderPartial(w http.ResponseWriter, r *http.Request, status int, page string, data interface{}) {
 	ts, ok := a.templateCache[page]
 
+	ctx, span, _ := metrics.SpanFromContext(r.Context(), "serverError")
+	defer span.End()
+
 	if !ok {
-		a.Logger.Error("template does not exist for page", slog.Any("page", page))
+		a.GetLogger(ctx).ErrorContext(ctx, "template does not exist for page", slog.Any("page", page))
 		a.serverError(w, r, fmt.Errorf("template does not exist for page %q", page))
 		return
 	}
@@ -138,19 +145,22 @@ func (a *Application) renderPartial(w http.ResponseWriter, r *http.Request, stat
 		return
 	}
 
-	a.Logger.Info("rendering template", slog.Any("template", page))
+	a.GetLogger(ctx).InfoContext(ctx, "rendering template", slog.Any("template", page))
 
 	w.WriteHeader(status)
 
 	buf.WriteTo(w)
 }
 
-func (a *Application) getAccountIDFromSession(r *http.Request) (int, error) {
+func (a *Application) getAccountIDFromSession(ctx context.Context, r *http.Request) (int, error) {
+	_, span, _ := metrics.SpanFromContext(ctx, "getAccountIDFromSession")
+	defer span.End()
+
 	session, err := a.SessionStore.Get(r, sessionName)
 	if err != nil {
 		session, err = a.SessionStore.New(r, sessionName)
 		if err != nil {
-			a.Logger.Debug("failed to create new session")
+			a.GetLogger(ctx).DebugContext(ctx, "failed to create new session")
 			return 0, nil
 		}
 	}
@@ -165,6 +175,8 @@ func (a *Application) getAccountIDFromSession(r *http.Request) (int, error) {
 }
 
 func (a *Application) getProfileFromSession(r *http.Request) (*identityaccess.Profile, error) {
+	_, span, _ := metrics.SpanFromContext(r.Context(), "Application.getProfileFromSession")
+	defer span.End()
 	profileID, err := a.getProfileIDFromSession(r)
 	if err != nil {
 		return nil, err
@@ -179,6 +191,8 @@ func (a *Application) getProfileFromSession(r *http.Request) (*identityaccess.Pr
 }
 
 func (a *Application) getWatcherFromSession(r *http.Request) (partymgmt.Watcher, error) {
+	_, span, _ := metrics.SpanFromContext(r.Context(), "Application.getWatcherFromSession")
+	defer span.End()
 	watcherID, err := a.getProfileIDFromSession(r)
 	if err != nil {
 		return partymgmt.Watcher{}, err
@@ -193,11 +207,14 @@ func (a *Application) getWatcherFromSession(r *http.Request) (partymgmt.Watcher,
 }
 
 func (a *Application) getProfileIDFromSession(r *http.Request) (int, error) {
+	ctx, span, _ := metrics.SpanFromContext(r.Context(), "Application.getProfileIDFromSession")
+	defer span.End()
+
 	session, err := a.SessionStore.Get(r, sessionName)
 	if err != nil {
 		session, err = a.SessionStore.New(r, sessionName)
 		if err != nil {
-			a.Logger.Debug("failed to create new session")
+			a.GetLogger(ctx).DebugContext(ctx, "failed to create new session")
 			return 0, nil
 		}
 	}
@@ -212,10 +229,15 @@ func (a *Application) getProfileIDFromSession(r *http.Request) (int, error) {
 }
 
 func (a *Application) setInfoFlashMessage(w http.ResponseWriter, r *http.Request, msg string) {
+	_, span, _ := metrics.SpanFromContext(r.Context(), "Application.setInfoFlashMessage")
+	defer span.End()
+
 	a.setFlashMessage(w, r, FlashInfoKey, msg)
 }
 
 func (a *Application) setErrorFlashMessage(w http.ResponseWriter, r *http.Request, msg string) {
+	_, span, _ := metrics.SpanFromContext(r.Context(), "Application.setErrorFlashMessage")
+	defer span.End()
 	a.setFlashMessage(w, r, FlashErrorKey, msg)
 }
 
@@ -224,13 +246,16 @@ func (a *Application) setErrorFlashMessage(w http.ResponseWriter, r *http.Reques
 // }
 
 func (a *Application) setFlashMessage(w http.ResponseWriter, r *http.Request, key, msg string) {
+	ctx, span, _ := metrics.SpanFromContext(r.Context(), "Application.setFlashMessage")
+	defer span.End()
+
 	session, err := a.SessionStore.Get(r, sessionName)
 	if err != nil {
-		a.Logger.Error("failed to get session", slog.Any("error", err))
+		a.GetLogger(ctx).ErrorContext(ctx, "failed to get session", slog.Any("error", err))
 		return
 	}
 
-	a.Logger.Debug("adding flash message")
+	a.GetLogger(ctx).DebugContext(ctx, "adding flash message")
 	session.AddFlash(msg, key)
 	session.Save(r, w)
 }

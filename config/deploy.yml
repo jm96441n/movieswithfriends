@@ -52,6 +52,8 @@ env:
 #
 # aliases:
 #   shell: app exec --interactive --reuse "bash"
+# aliases:
+# psql: accessory exec db -i "export PGPASSWORD=\"$APP_PASSWORD\" psql -h movieswithfriends-db -U $APP_USER movieswithfriends"
 
 # Use a different ssh user than root
 #

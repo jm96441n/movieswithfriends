@@ -156,7 +156,7 @@ func (m *MovieService) GetOrCreateMovie(ctx context.Context, logger *slog.Logger
 
 	// if we have the actual id of the movie then we know it exists
 	if movieID.MovieID != nil {
-		logger.Info("Movie exists")
+		logger.InfoContext(ctx, "Movie exists")
 		return *movieID.MovieID, nil
 	}
 

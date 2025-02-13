@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/jm96441n/movieswithfriends/identityaccess"
+	"github.com/jm96441n/movieswithfriends/metrics"
 )
 
 func (a *Application) LoginShowHandler(w http.ResponseWriter, r *http.Request) {
@@ -14,31 +15,33 @@ func (a *Application) LoginShowHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *Application) LoginHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	logger := a.GetLogger(ctx).With("handler", "LoginHandler")
 	err := r.ParseForm()
 	if err != nil {
-		a.Logger.Error("error parsing form", slog.Any("error", err))
+		logger.ErrorContext(ctx, "error parsing form", slog.Any("error", err))
 		a.serverError(w, r, err)
 		return
 	}
 
-	profile, err := a.Auth.Authenticate(r.Context(), r.FormValue("email"), r.FormValue("password"))
+	profile, err := a.Auth.Authenticate(r.Context(), logger, r.FormValue("email"), r.FormValue("password"))
 	if err != nil {
 		if errors.Is(err, identityaccess.ErrInvalidCredentials) {
 			a.setErrorFlashMessage(w, r, "Email/Password combination is incorrect")
-			a.Logger.Error("Email/Password combo wrong")
+			logger.ErrorContext(ctx, "Email/Password combo wrong")
 
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
 
-		a.Logger.Error("error authenticating", slog.Any("error", err))
+		logger.ErrorContext(ctx, "error authenticating", slog.Any("error", err))
 		a.serverError(w, r, err)
 		return
 	}
 
 	session, err := a.SessionStore.Get(r, sessionName)
 	if err != nil {
-		a.Logger.Error("error getting session from store success path", slog.Any("error", err))
+		logger.ErrorContext(ctx, "error getting session from store success path", slog.Any("error", err))
 		a.serverError(w, r, err)
 		return
 	}
@@ -50,7 +53,7 @@ func (a *Application) LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	err = session.Save(r, w)
 	if err != nil {
-		a.Logger.Error("error saving session", slog.Any("error", err))
+		logger.ErrorContext(ctx, "error saving session", slog.Any("error", err))
 		a.serverError(w, r, err)
 		return
 	}
@@ -68,13 +71,18 @@ func (a *Application) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *Application) logout(w http.ResponseWriter, r *http.Request) error {
+	_, span, labeler := metrics.SpanFromContext(r.Context(), "web.Application.logout")
+	defer span.End()
+
 	session, err := a.SessionStore.Get(r, sessionName)
 	if err != nil {
+		labeler.Add(metrics.ErrorOccurredAttribute())
 		return err
 	}
 	session.Options.MaxAge = -1
 	err = session.Save(r, w)
 	if err != nil {
+		labeler.Add(metrics.ErrorOccurredAttribute())
 		return err
 	}
 	return nil

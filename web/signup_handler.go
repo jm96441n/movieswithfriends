@@ -23,14 +23,14 @@ func (a *Application) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
 	ctx, cancel := context.WithTimeout(r.Context(), time.Millisecond*500)
 	r = r.WithContext(ctx)
-	logger := a.Logger.With("handler", "SignUpHandler")
+	logger := a.GetLogger(ctx).With("handler", "SignUpHandler")
 
 	defer cancel()
 	defer r.Body.Close()
 
 	req, err := parseSignUpForm(r)
 	if err != nil {
-		a.Logger.Error("error parsing signup form", slog.Any("error", err))
+		logger.ErrorContext(ctx, "error parsing signup form", slog.Any("error", err))
 		a.serverError(w, r, err)
 		return
 	}
@@ -72,12 +72,12 @@ func (a *Application) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.Logger.Debug("seeting flash message")
+	logger.DebugContext(ctx, "seeting flash message")
 	a.setInfoFlashMessage(w, r, "Successfully signed up! Please log in.")
 
 	a.Telemetry.IncreaseUserRegisteredCounter(ctx, logger)
 
-	a.Logger.Debug("successfully signed up user", "userName", req.FirstName, "userEmail", req.Email)
+	logger.DebugContext(ctx, "successfully signed up user", "userName", req.FirstName, "userEmail", req.Email)
 	http.Redirect(w, r, "/login", http.StatusSeeOther)
 }
 

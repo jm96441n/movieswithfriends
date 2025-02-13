@@ -32,19 +32,28 @@ type Config struct {
 	CollectorEndpoint string
 }
 
-// Telemetry is a wrapper around the OpenTelemetry logger, meter, and tracer.
-type Telemetry struct {
+type TelemetryProvider interface {
+	IncreaseUserRegisteredCounter(context.Context, *slog.Logger)
+	MeterInt64Counter(metric Metric) (otelmetric.Int64Counter, error)
+	Shutdown(ctx context.Context)
+	MeterProvider() otelmetric.MeterProvider
+	TracerProvider() *trace.TracerProvider
+	Logger() *slog.Logger
+}
+
+// telemetry is a wrapper around the OpenTelemetry logger, meter, and tracer.
+type telemetry struct {
 	lp             *log.LoggerProvider
-	MeterProvider  *metric.MeterProvider
-	TracerProvider *trace.TracerProvider
-	Logger         *slog.Logger
+	meterProvider  *metric.MeterProvider
+	tracerProvider *trace.TracerProvider
+	logger         *slog.Logger
 	meter          otelmetric.Meter
 	tracer         oteltrace.Tracer
 	cfg            Config
 }
 
 // NewTelemetry creates a new telemetry instance.
-func NewTelemetry(ctx context.Context, cfg Config) (*Telemetry, error) {
+func NewTelemetry(ctx context.Context, cfg Config) (TelemetryProvider, error) {
 	rp := newResource(cfg.ServiceName, cfg.ServiceVersion)
 
 	lp, err := newLoggerProvider(ctx, rp, cfg.CollectorEndpoint)
@@ -70,15 +79,48 @@ func NewTelemetry(ctx context.Context, cfg Config) (*Telemetry, error) {
 	}
 	tracer := tp.Tracer(cfg.ServiceName)
 
-	return &Telemetry{
+	return &telemetry{
 		lp:             lp,
-		MeterProvider:  mp,
-		TracerProvider: tp,
-		Logger:         logger,
+		meterProvider:  mp,
+		tracerProvider: tp,
+		logger:         logger,
 		meter:          meter,
 		tracer:         tracer,
 		cfg:            cfg,
 	}, nil
+}
+
+// MeterInt64UpDownCounter creates a new int64 up down counter metric.
+func (t *telemetry) MeterInt64Counter(metric Metric) (otelmetric.Int64Counter, error) { //nolint:ireturn
+	counter, err := t.meter.Int64Counter(
+		metric.Name,
+		otelmetric.WithDescription(metric.Description),
+		otelmetric.WithUnit(metric.Unit),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create counter: %w", err)
+	}
+
+	return counter, nil
+}
+
+func (t *telemetry) Logger() *slog.Logger {
+	return t.logger
+}
+
+func (t *telemetry) MeterProvider() otelmetric.MeterProvider {
+	return t.meterProvider
+}
+
+func (t *telemetry) TracerProvider() *trace.TracerProvider {
+	return t.tracerProvider
+}
+
+// Shutdown shuts down the logger, meter, and tracer.
+func (t *telemetry) Shutdown(ctx context.Context) {
+	t.lp.Shutdown(ctx)
+	t.meterProvider.Shutdown(ctx)
+	t.tracerProvider.Shutdown(ctx)
 }
 
 func SpanFromContext(ctx context.Context, spanName string) (context.Context, oteltrace.Span, *otelhttp.Labeler) {
@@ -93,25 +135,4 @@ func ErrorOccurredAttribute() attribute.KeyValue {
 
 func ErrorTypeAttribute(errType string) attribute.KeyValue {
 	return attribute.String("errorType", errType)
-}
-
-// MeterInt64UpDownCounter creates a new int64 up down counter metric.
-func (t *Telemetry) MeterInt64Counter(metric Metric) (otelmetric.Int64Counter, error) { //nolint:ireturn
-	counter, err := t.meter.Int64Counter(
-		metric.Name,
-		otelmetric.WithDescription(metric.Description),
-		otelmetric.WithUnit(metric.Unit),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create counter: %w", err)
-	}
-
-	return counter, nil
-}
-
-// Shutdown shuts down the logger, meter, and tracer.
-func (t *Telemetry) Shutdown(ctx context.Context) {
-	t.lp.Shutdown(ctx)
-	t.MeterProvider.Shutdown(ctx)
-	t.TracerProvider.Shutdown(ctx)
 }

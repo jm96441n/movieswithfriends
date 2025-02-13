@@ -5,6 +5,8 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+
+	"github.com/jm96441n/movieswithfriends/metrics"
 )
 
 type contextKey string
@@ -17,18 +19,26 @@ const (
 	sessionName               = "moviesWithFriendsCookie"
 )
 
+func (a *Application) GetLogger(ctx context.Context) *slog.Logger {
+	// span := trace.SpanFromContext(ctx)
+	return a.Logger //.With("trace.trace_id", span.SpanContext().TraceID().String(), "trace.span_id", span.SpanContext().SpanID().String())
+}
+
 func (a *Application) authenticateMiddleware() func(http.HandlerFunc) http.HandlerFunc {
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			ctx := req.Context()
-			logger := a.Logger
+			ctx, span, _ := metrics.SpanFromContext(req.Context(), "authenticateMiddleware")
+			defer span.End()
+			logger := a.GetLogger(ctx)
 
-			id, err := a.getAccountIDFromSession(req)
+			logger.InfoContext(ctx, "checking if user is authenticated")
+			id, err := a.getAccountIDFromSession(ctx, req)
 			if err != nil {
 				if errors.Is(err, ErrFailedToGetAccountIDFromSession) {
 					next.ServeHTTP(w, req)
 					return
 				}
+				logger.ErrorContext(ctx, "error getting account id from session, logging user out", slog.Any("error", err))
 				a.logout(w, req)
 				a.setErrorFlashMessage(w, req, "Please log in first.")
 				http.Redirect(w, req, "/login", http.StatusInternalServerError)
@@ -65,14 +75,14 @@ func (a *Application) authenticateMiddleware() func(http.HandlerFunc) http.Handl
 func (a *Application) authenticatedMiddleware() func(http.HandlerFunc) http.HandlerFunc {
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			if !isAuthenticated(req.Context()) {
-				session, err := a.SessionStore.Get(req, sessionName)
-				if err != nil {
-					a.serverError(w, req, err)
-				}
-				session.AddFlash("Please log in first.")
-				session.Save(req, w)
+			ctx, span, _ := metrics.SpanFromContext(req.Context(), "authenticatedMiddleware")
+			defer span.End()
+
+			if !isAuthenticated(ctx) {
+				a.GetLogger(ctx).ErrorContext(ctx, "user is not authenticated")
+				a.setErrorFlashMessage(w, req, "Please log in first.")
 				http.Redirect(w, req, "/login", http.StatusSeeOther)
+				return
 			}
 
 			next.ServeHTTP(w, req)
@@ -81,6 +91,8 @@ func (a *Application) authenticatedMiddleware() func(http.HandlerFunc) http.Hand
 }
 
 func isAuthenticated(ctx context.Context) bool {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "isAuthenticated")
+	defer span.End()
 	isAuthenticated := ctx.Value(isAuthenticatedContextKey)
 	if isAuthenticated == nil {
 		return false
