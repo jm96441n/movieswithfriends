@@ -20,7 +20,7 @@ type InviteModalTemplateData struct {
 func (a *Application) CreateInviteHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, span, _ := metrics.SpanFromContext(r.Context(), "CreateInviteHandler")
 	defer span.End()
-	logger := a.GetLogger(ctx).With("handler", "InvitationsHandler")
+	logger := a.Logger.With("handler", "InvitationsHandler")
 
 	partyID, email, err := parseInviteForm(r)
 	if err != nil {

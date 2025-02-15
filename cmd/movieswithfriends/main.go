@@ -180,6 +180,8 @@ func main() {
 	partyRepo := partymgmtstore.NewPartyRepository(connPool)
 	invitationsRepo := partymgmtstore.NewInvitationsRepository(connPool)
 
+	partySvc := partymgmt.NewPartyService(logger, partyRepo)
+
 	app := web.NewApplication(
 		web.AppConfig{
 			Telemetry:         telemetry,
@@ -187,7 +189,7 @@ func main() {
 			SessionStore:      sessionStore,
 			MoviesService:     partymgmt.NewMovieService(tmdbClient, moviesRepo),
 			MoviesRepository:  moviesRepo,
-			PartyService:      partymgmt.NewPartyService(logger, partyRepo),
+			PartyService:      partySvc,
 			PartiesRepository: partyRepo,
 			ProfilesService:   identityaccess.NewProfileService(profileRepo),
 			WatcherService:    partymgmt.NewWatcherService(watcherRepo),
@@ -197,6 +199,7 @@ func main() {
 			ProfileAggregatorService: services.NewProfileAggregatorService(
 				profileRepo,
 				watcherRepo,
+				partySvc,
 			),
 			InvitationsService: partymgmt.NewInvitationsService(invitationsRepo),
 			AssetLoader:        loader,

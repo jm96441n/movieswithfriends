@@ -23,7 +23,7 @@ func (a *Application) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
 	ctx, cancel := context.WithTimeout(r.Context(), time.Millisecond*500)
 	r = r.WithContext(ctx)
-	logger := a.GetLogger(ctx).With("handler", "SignUpHandler")
+	logger := a.Logger.With("handler", "SignUpHandler")
 
 	defer cancel()
 	defer r.Body.Close()

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/jm96441n/movieswithfriends/metrics"
 	"github.com/jm96441n/movieswithfriends/partymgmt/store"
 )
 
@@ -76,23 +77,19 @@ func (w Watcher) GetWatchHistory(ctx context.Context, logger *slog.Logger, membe
 	return watchedMovies, numRecords, nil
 }
 
-func (w Watcher) GetParties(ctx context.Context) ([]Party, error) {
-	parties, err := w.db.GetPartiesForWatcher(ctx, w.ID, 50)
+func (w Watcher) GetParties(ctx context.Context, ps PartyService) ([]Party, error) {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "Watcher.GetParties")
+	defer span.End()
+
+	var parties []Party
+	err := w.db.GetPartiesForWatcher(ctx, w.ID, 50, func(ctx context.Context, id int, name string, memberCount int, movieCount int) {
+		parties = append(parties, ps.NewParty(ctx, id, name, movieCount, memberCount))
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	var res []Party
-	for _, party := range parties {
-		res = append(res, Party{
-			ID:          party.ID,
-			Name:        party.Name,
-			MemberCount: party.MemberCount,
-			MovieCount:  party.MovieCount,
-		})
-	}
-
-	return res, nil
+	return parties, nil
 }
 
 type PartiesForMovie struct {

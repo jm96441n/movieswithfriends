@@ -19,19 +19,14 @@ const (
 	sessionName               = "moviesWithFriendsCookie"
 )
 
-func (a *Application) GetLogger(ctx context.Context) *slog.Logger {
-	// span := trace.SpanFromContext(ctx)
-	return a.Logger //.With("trace.trace_id", span.SpanContext().TraceID().String(), "trace.span_id", span.SpanContext().SpanID().String())
-}
-
 func (a *Application) authenticateMiddleware() func(http.HandlerFunc) http.HandlerFunc {
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			ctx, span, _ := metrics.SpanFromContext(req.Context(), "authenticateMiddleware")
 			defer span.End()
-			logger := a.GetLogger(ctx)
+			logger := a.Logger
 
-			logger.InfoContext(ctx, "checking if user is authenticated")
+			logger.DebugContext(ctx, "checking if user is authenticated")
 			id, err := a.getAccountIDFromSession(ctx, req)
 			if err != nil {
 				if errors.Is(err, ErrFailedToGetAccountIDFromSession) {
@@ -79,7 +74,7 @@ func (a *Application) authenticatedMiddleware() func(http.HandlerFunc) http.Hand
 			defer span.End()
 
 			if !isAuthenticated(ctx) {
-				a.GetLogger(ctx).ErrorContext(ctx, "user is not authenticated")
+				a.Logger.DebugContext(ctx, "user is not authenticated")
 				a.setErrorFlashMessage(w, req, "Please log in first.")
 				http.Redirect(w, req, "/login", http.StatusSeeOther)
 				return

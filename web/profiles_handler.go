@@ -13,10 +13,10 @@ import (
 
 func (a *Application) ProfileShowHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	logger := a.GetLogger(ctx).With("handler", "ProfileShowHandler")
+	logger := a.Logger.With("handler", "ProfileShowHandler")
 	logger.DebugContext(ctx, "getting profile info")
 
-	profileID, err := a.getProfileIDFromSession(r)
+	profileID, err := a.getProfileIDFromSession(ctx, r)
 	if err != nil {
 		logger.ErrorContext(ctx, "failed to get profile id from session", "error", err)
 		a.setErrorFlashMessage(w, r, "There was an error loading your profile, please try logging in again")
@@ -53,7 +53,7 @@ func (a *Application) ProfileShowHandler(w http.ResponseWriter, r *http.Request)
 
 func (a *Application) ProfileEditPageHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	logger := a.GetLogger(ctx).With("handler", "ProfileEditPageHandler")
+	logger := a.Logger.With("handler", "ProfileEditPageHandler")
 
 	profile, err := a.getProfileFromSession(r)
 	if err != nil {
@@ -76,7 +76,7 @@ func (a *Application) ProfileEditPageHandler(w http.ResponseWriter, r *http.Requ
 
 func (a *Application) ProfileEditHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	logger := a.GetLogger(ctx).With("handler", "ProfileEditHandler")
+	logger := a.Logger.With("handler", "ProfileEditHandler")
 
 	profile, err := a.getProfileFromSession(r)
 	if err != nil {
@@ -156,10 +156,10 @@ func parseEditProfileForm(r *http.Request) (identityaccess.ProfileUpdateReq, err
 
 func (a *Application) GetPaginatedWatchHistoryHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	logger := a.GetLogger(ctx).With("handler", "GetPaginatedWatchHistoryHandler")
+	logger := a.Logger.With("handler", "GetPaginatedWatchHistoryHandler")
 	logger.DebugContext(ctx, "getting paginated movies list")
 
-	profileID, err := a.getProfileIDFromSession(r)
+	profileID, err := a.getProfileIDFromSession(ctx, r)
 	if err != nil {
 		a.serverError(w, r, err)
 		return

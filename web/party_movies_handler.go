@@ -17,7 +17,7 @@ func (a *Application) AddMovieToPartiesHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	watcher, err := a.getWatcherFromSession(r)
+	watcher, err := a.getWatcherFromSession(ctx, r)
 	if err != nil {
 		logger.ErrorContext(ctx, "failed to get watcher from session", slog.Any("error", err))
 		a.clientError(w, r, http.StatusInternalServerError, "failed to get watcher from session")
@@ -73,7 +73,7 @@ func (a *Application) AddMovieToPartiesHandler(w http.ResponseWriter, r *http.Re
 			return
 		}
 
-		party := a.PartyService.NewParty(ctx)
+		party := a.PartyService.NewParty(ctx, id, "", 0, 0)
 		party.ID = id
 		party.AddMovie(ctx, watcher.ID, movieID)
 	}
@@ -109,7 +109,7 @@ func (a *Application) GetAddMovieToPartyModal(w http.ResponseWriter, r *http.Req
 	default:
 	}
 
-	watcher, err := a.getWatcherFromSession(r)
+	watcher, err := a.getWatcherFromSession(ctx, r)
 	if err != nil {
 		logger.ErrorContext(ctx, "failed to get watcher from session", slog.Any("error", err))
 		a.setErrorFlashMessage(w, r, "There was an issue getting this movie, try again.")

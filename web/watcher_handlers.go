@@ -9,10 +9,10 @@ import (
 
 func (a *Application) WatchedMoviesHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	logger := a.GetLogger(ctx).With("handler", "WatchedMoviesHandler")
+	logger := a.Logger.With("handler", "WatchedMoviesHandler")
 	logger.DebugContext(ctx, "getting paginated movies list")
 
-	profileID, err := a.getProfileIDFromSession(r)
+	profileID, err := a.getProfileIDFromSession(ctx, r)
 	if err != nil {
 		a.serverError(w, r, err)
 		return

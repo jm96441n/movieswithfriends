@@ -7,7 +7,7 @@ import (
 
 func (a *Application) AddMemberToPartyHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	logger := a.GetLogger(ctx).With("handler", "AddMemberToPartyHandler")
+	logger := a.Logger.With("handler", "AddMemberToPartyHandler")
 
 	err := r.ParseForm()
 	if err != nil {
@@ -18,7 +18,7 @@ func (a *Application) AddMemberToPartyHandler(w http.ResponseWriter, r *http.Req
 
 	partyShortID := r.FormValue("party_short_id")
 
-	watcher, err := a.getWatcherFromSession(r)
+	watcher, err := a.getWatcherFromSession(ctx, r)
 	if err != nil {
 		logger.ErrorContext(ctx, "failed to get profile id from session", slog.Any("error", err))
 		a.serverError(w, r, err)

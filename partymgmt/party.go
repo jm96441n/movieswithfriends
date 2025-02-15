@@ -64,20 +64,26 @@ type Party struct {
 	db             *store.PartyRepository
 }
 
-func NewPartyService(logger *slog.Logger, db *store.PartyRepository) *PartyService {
-	return &PartyService{
+func NewPartyService(logger *slog.Logger, db *store.PartyRepository) PartyService {
+	return PartyService{
 		logger: logger,
 		db:     db,
 	}
 }
 
-func (s *PartyService) NewParty(ctx context.Context) Party {
+func (s PartyService) NewParty(ctx context.Context, id int, name string, movieCount int, memberCount int) Party {
 	_, span, _ := metrics.SpanFromContext(ctx, "PartyService.NewParty")
 	defer span.End()
-	return Party{db: s.db}
+	return Party{
+		ID:          id,
+		Name:        name,
+		MovieCount:  movieCount,
+		MemberCount: memberCount,
+		db:          s.db,
+	}
 }
 
-func (s *PartyService) AddNewMemberToParty(ctx context.Context, idMember int, shortID string) error {
+func (s PartyService) AddNewMemberToParty(ctx context.Context, idMember int, shortID string) error {
 	party, err := s.db.GetPartyByShortID(ctx, shortID)
 	if err != nil {
 		return err
@@ -94,7 +100,7 @@ func (s *PartyService) AddNewMemberToParty(ctx context.Context, idMember int, sh
 	return nil
 }
 
-func (s *PartyService) CreateParty(ctx context.Context, idMember int, name string) (int, error) {
+func (s PartyService) CreateParty(ctx context.Context, idMember int, name string) (int, error) {
 	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyService.CreateParty")
 	defer span.End()
 	successFullyCreated := false
@@ -123,10 +129,10 @@ func (s *PartyService) CreateParty(ctx context.Context, idMember int, name strin
 	return id, nil
 }
 
-func (s *PartyService) GetPartyWithMovies(ctx context.Context, logger *slog.Logger, id int) (Party, error) {
+func (s PartyService) GetPartyWithMovies(ctx context.Context, logger *slog.Logger, id int) (Party, error) {
 	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyService.GetPartyWithMovies")
 	defer span.End()
-	party := s.NewParty(ctx)
+	var party Party
 	err := s.db.GetPartyByIDWithStats(ctx, id, func(res store.GetPartyByIDWithStatsResult) {
 		party.ID = res.ID
 		party.Name = res.Name
@@ -157,7 +163,7 @@ func (s *PartyService) GetPartyWithMovies(ctx context.Context, logger *slog.Logg
 	return party, nil
 }
 
-func (s *PartyService) GetPartyByShortID(ctx context.Context, shortID string) (Party, error) {
+func (s PartyService) GetPartyByShortID(ctx context.Context, shortID string) (Party, error) {
 	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyService.GetPartyByShortID")
 	defer span.End()
 

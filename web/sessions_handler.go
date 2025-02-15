@@ -67,6 +67,7 @@ func (a *Application) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 		a.serverError(w, r, err)
 		return
 	}
+	a.setInfoFlashMessage(w, r, "Successfully logged out.")
 	http.Redirect(w, r, "/login", http.StatusSeeOther)
 }
 

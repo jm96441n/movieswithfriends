@@ -13,7 +13,7 @@ import (
 
 func (a *Application) MoviesIndexHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	logger := a.GetLogger(ctx).With(slog.Any("handler", "MoviesIndexHandler"))
+	logger := a.Logger.With(slog.Any("handler", "MoviesIndexHandler"))
 	queryParams := r.URL.Query()
 	templateData := a.NewMoviesTemplateData(r, w, "/movies")
 
@@ -44,7 +44,7 @@ func (a *Application) MoviesIndexHandler(w http.ResponseWriter, r *http.Request)
 
 func (a *Application) MoviesCreateHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	logger := a.GetLogger(ctx).With(slog.Any("handler", "MoviesCreateHandler"))
+	logger := a.Logger.With(slog.Any("handler", "MoviesCreateHandler"))
 	err := r.ParseForm()
 	if err != nil {
 		logger.ErrorContext(ctx, "failed to parse form", slog.Any("error", err))
@@ -75,7 +75,7 @@ func (a *Application) MoviesCreateHandler(w http.ResponseWriter, r *http.Request
 
 func (a *Application) MoviesShowHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	logger := a.GetLogger(ctx).With(slog.Any("handler", "MoviesShowHandler"))
+	logger := a.Logger.With(slog.Any("handler", "MoviesShowHandler"))
 	idParams := r.PathValue("id")
 
 	id, err := strconv.Atoi(idParams)

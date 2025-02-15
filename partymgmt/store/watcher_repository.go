@@ -125,30 +125,36 @@ type PartiesForWatcherResult struct {
 	MovieCount  int
 }
 
-func (p *WatcherRepository) GetPartiesForWatcher(ctx context.Context, watcherID, limit int) ([]PartiesForWatcherResult, error) {
+type assignPartyFn func(context.Context, int, string, int, int)
+
+func (p *WatcherRepository) GetPartiesForWatcher(ctx context.Context, watcherID, limit int, assignFn assignPartyFn) error {
 	ctx, span, _ := metrics.SpanFromContext(ctx, "WatcherRepository.GetPartiesForWatcher")
 	defer span.End()
 	rows, err := p.db.Query(ctx, getPartiesForWatcherQuery, watcherID, limit)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer rows.Close()
 
-	var parties []PartiesForWatcherResult
 	for rows.Next() {
-		var party PartiesForWatcherResult
-		var t time.Time
-		err := rows.Scan(&party.ID, &party.Name, &t, &party.MemberCount, &party.MovieCount)
+		var (
+			id          int
+			name        string
+			memberCount int
+			movieCount  int
+			t           time.Time
+		)
+		err := rows.Scan(&id, &name, &t, &memberCount, &movieCount)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		parties = append(parties, party)
+		assignFn(ctx, id, name, memberCount, movieCount)
 	}
 
 	if rows.Err() != nil {
-		return nil, rows.Err()
+		return rows.Err()
 	}
-	return parties, nil
+	return nil
 }
 
 const getPartiesWithMovieQuery = `

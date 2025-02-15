@@ -26,7 +26,7 @@ func (a *Application) EditPartyHandler(w http.ResponseWriter, r *http.Request) {
 func (a *Application) CreatePartyHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := a.GetLogger(ctx).With("handler", "CreatePartyHandler")
-	profileID, err := a.getProfileIDFromSession(r)
+	profileID, err := a.getProfileIDFromSession(ctx, r)
 	if err != nil {
 		logger.ErrorContext(ctx, "failed to get profile ID from session", slog.Any("error", err))
 		a.setErrorFlashMessage(w, r, "There was an error creating this party, try again.")
@@ -70,11 +70,9 @@ func (a *Application) PartyShowHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := a.GetLogger(ctx).With("handler", "PartyShowHandler")
 
-	watcher, err := a.getWatcherFromSession(r)
+	watcher, err := a.getWatcherFromSession(ctx, r)
 	if err != nil {
-		logger.ErrorContext(ctx, "failed to get party ID from path", slog.Any("error", err))
-		a.setErrorFlashMessage(w, r, "There was an issue getting this party, try again.")
-		http.Redirect(w, r, "/parties", http.StatusInternalServerError)
+		a.handleFailedToGetWatcherFromSession(ctx, logger, w, r, err)
 		return
 	}
 
@@ -121,7 +119,24 @@ func (a *Application) PartyShowHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *Application) PartiesIndexHandler(w http.ResponseWriter, r *http.Request) {
-	templateData := a.NewPartiesTemplateData(r, w, "/parties")
+	ctx := r.Context()
+	logger := a.GetLogger(ctx).With("handler", "PartyIndexHandler")
+
+	watcher, err := a.getWatcherFromSession(ctx, r)
+	if err != nil {
+		a.handleFailedToGetWatcherFromSession(ctx, logger, w, r, err)
+		return
+	}
+
+	parties, err := watcher.GetParties(ctx, a.PartyService)
+	if err != nil {
+		logger.ErrorContext(ctx, "failed to get parties", slog.Any("error", err))
+		a.setErrorFlashMessage(w, r, "There was an issue getting your parties, try again.")
+		http.Redirect(w, r, "/profile", http.StatusBadRequest)
+		return
+	}
+
+	templateData := a.NewPartiesIndexTemplateData(r, w, "/parties", parties)
 	a.render(w, r, http.StatusOK, "parties/index.gohtml", templateData)
 }
 

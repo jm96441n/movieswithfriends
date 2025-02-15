@@ -75,6 +75,12 @@ type PartiesTemplateData struct {
 	BaseTemplateData
 }
 
+type PartiesIndexTemplateData struct {
+	Parties       []partymgmt.Party
+	InvitedPartes []partymgmt.Party
+	BaseTemplateData
+}
+
 type SignupTemplateData struct {
 	HasEmailError     *bool
 	HasPasswordError  *bool
@@ -102,6 +108,13 @@ func (a *Application) NewMoviesTemplateData(r *http.Request, w http.ResponseWrit
 
 func (a *Application) NewProfilesTemplateData(r *http.Request, w http.ResponseWriter, path string) ProfilesTemplateData {
 	return ProfilesTemplateData{
+		BaseTemplateData: a.newBaseTemplateData(r, w, path),
+	}
+}
+
+func (a *Application) NewPartiesIndexTemplateData(r *http.Request, w http.ResponseWriter, path string, parties []partymgmt.Party) PartiesIndexTemplateData {
+	return PartiesIndexTemplateData{
+		Parties:          parties,
 		BaseTemplateData: a.newBaseTemplateData(r, w, path),
 	}
 }

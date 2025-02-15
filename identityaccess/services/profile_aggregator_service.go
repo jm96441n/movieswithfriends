@@ -13,13 +13,15 @@ import (
 
 type ProfileAggregatorService struct {
 	profileRepository *iamstore.ProfileRepository
+	partyService      partymgmt.PartyService
 	watcherRepository *partymgmtstore.WatcherRepository
 }
 
-func NewProfileAggregatorService(profileRepository *iamstore.ProfileRepository, watcherRepository *partymgmtstore.WatcherRepository) *ProfileAggregatorService {
+func NewProfileAggregatorService(profileRepository *iamstore.ProfileRepository, watcherRepository *partymgmtstore.WatcherRepository, partyService partymgmt.PartyService) *ProfileAggregatorService {
 	return &ProfileAggregatorService{
 		profileRepository: profileRepository,
 		watcherRepository: watcherRepository,
+		partyService:      partyService,
 	}
 }
 
@@ -156,19 +158,13 @@ func (p *ProfileAggregatorService) getProfileStats(ctx context.Context, logger *
 func (p *ProfileAggregatorService) getParties(ctx context.Context, profileID int) ([]partymgmt.Party, error) {
 	ctx, span, _ := metrics.SpanFromContext(ctx, "profileAggregatorService.getParties")
 	defer span.End()
-	partyRes, err := p.watcherRepository.GetPartiesForWatcher(ctx, profileID, 50)
+	parties := make([]partymgmt.Party, 0)
+
+	err := p.watcherRepository.GetPartiesForWatcher(ctx, profileID, 50, func(ctx context.Context, id int, name string, memberCount int, movieCount int) {
+		parties = append(parties, p.partyService.NewParty(ctx, id, name, movieCount, memberCount))
+	})
 	if err != nil {
 		return nil, err
-	}
-
-	parties := make([]partymgmt.Party, 0, len(partyRes))
-	for _, party := range partyRes {
-		parties = append(parties, partymgmt.Party{
-			ID:          party.ID,
-			Name:        party.Name,
-			MemberCount: party.MemberCount,
-			MovieCount:  party.MovieCount,
-		})
 	}
 
 	return parties, nil
