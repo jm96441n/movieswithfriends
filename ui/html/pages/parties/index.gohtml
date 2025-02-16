@@ -37,6 +37,7 @@
                   <i class="fas fa-ellipsis-v"></i>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end">
+                {{ if eq .IDOwner $.CurrentUserID }}
                   <li>
                     <a class="dropdown-item" href="#"
                       ><i class="fas fa-cog me-2"></i>Settings</a
@@ -48,6 +49,7 @@
                     >
                   </li>
                   <li><hr class="dropdown-divider" /></li>
+                  {{ end }}
                   <li>
                     <a class="dropdown-item text-danger" href="#"
                       ><i class="fas fa-sign-out-alt me-2"></i>Leave Party</a

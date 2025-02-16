@@ -139,7 +139,7 @@ func (a *Application) PartiesIndexHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	templateData := a.NewPartiesIndexTemplateData(r, w, "/parties", parties, invites)
+	templateData := a.NewPartiesIndexTemplateData(r, w, "/parties", parties, invites, watcher.ID)
 	a.render(w, r, http.StatusOK, "parties/index.gohtml", templateData)
 }
 

@@ -78,6 +78,7 @@ type PartiesTemplateData struct {
 type PartiesIndexTemplateData struct {
 	Parties        []partymgmt.Party
 	InvitedParties []partymgmt.Party
+	CurrentUserID  int
 	BaseTemplateData
 }
 
@@ -112,10 +113,11 @@ func (a *Application) NewProfilesTemplateData(r *http.Request, w http.ResponseWr
 	}
 }
 
-func (a *Application) NewPartiesIndexTemplateData(r *http.Request, w http.ResponseWriter, path string, parties, invitedParties []partymgmt.Party) PartiesIndexTemplateData {
+func (a *Application) NewPartiesIndexTemplateData(r *http.Request, w http.ResponseWriter, path string, parties, invitedParties []partymgmt.Party, currentUserID int) PartiesIndexTemplateData {
 	return PartiesIndexTemplateData{
 		Parties:          parties,
 		InvitedParties:   invitedParties,
+		CurrentUserID:    currentUserID,
 		BaseTemplateData: a.newBaseTemplateData(r, w, path),
 	}
 }
