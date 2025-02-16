@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 	"log"
 	"log/slog"
@@ -20,9 +21,20 @@ import (
 
 // TODO: add subcommands to nuke the DB and make seeding configurable (maybe with a file)
 func main() {
+	var shouldDrop bool
+	flag.BoolVar(&shouldDrop, "drop", false, "drop the database before seeding")
+	flag.Parse()
+
 	connPool, err := setupDB()
 	if err != nil {
 		log.Fatalf("failed to setup db: %v", err)
+	}
+
+	if shouldDrop {
+		err = dropDB(context.Background(), connPool)
+		if err != nil {
+			log.Fatalf("failed to drop db: %v", err)
+		}
 	}
 
 	accountOneProfileInfo, err := seedAccountAndProfile(connPool, "test1@test.com", "1Password")
@@ -123,12 +135,12 @@ type DBCreds struct {
 }
 
 func setupDB() (*pgxpool.Pool, error) {
-	dbUser := os.Getenv("DB_USERNAME")
+	dbUser := os.Getenv("DB_MIGRATION_USER")
 	if dbUser == "" {
 		return nil, ErrMissingDBUsername
 	}
 
-	dbPassword := os.Getenv("DB_PASSWORD")
+	dbPassword := os.Getenv("DB_MIGRATION_PASSWORD")
 	if dbPassword == "" {
 		return nil, ErrMissingDBPassword
 	}
@@ -187,6 +199,28 @@ func createConnPool(host string, dbname string, creds DBCreds) (*pgxpool.Pool, e
 		return nil, err
 	}
 	return db, nil
+}
+
+func dropDB(ctx context.Context, conn *pgxpool.Pool) error {
+	_, err := conn.Exec(ctx, `DO $$ 
+DECLARE 
+    r RECORD;
+BEGIN
+    -- Disable foreign key checks temporarily
+    SET CONSTRAINTS ALL DEFERRED;
+    
+    FOR r IN (SELECT tablename 
+              FROM pg_tables 
+              WHERE schemaname = 'public' 
+              AND tablename != 'goose_db_version') LOOP
+        EXECUTE 'TRUNCATE TABLE ' || quote_ident(r.tablename) || ' CASCADE';
+    END LOOP;
+END $$;`)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 var (

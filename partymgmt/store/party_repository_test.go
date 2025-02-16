@@ -202,7 +202,7 @@ func getPartyCount(ctx context.Context, t *testing.T, conn *pgxpool.Pool) int {
 func getOwnerForParty(ctx context.Context, t *testing.T, conn *pgxpool.Pool, partyID int) int {
 	t.Helper()
 	var idOwner int
-	err := conn.QueryRow(ctx, "select id_member from party_members where id_party = $1 AND owner = true", partyID).Scan(&idOwner)
+	err := conn.QueryRow(ctx, "select id_owner from parties where id_party = $1", partyID).Scan(&idOwner)
 	testhelpers.Ok(t, err, "failed to get owner for party")
 	return idOwner
 }

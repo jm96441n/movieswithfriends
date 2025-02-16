@@ -18,7 +18,7 @@ const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
 type PartyService struct {
 	logger *slog.Logger
-	db     *store.PartyRepository
+	db     store.PartyRepository
 }
 
 type PartyMovie struct {
@@ -47,7 +47,7 @@ type PartyMember struct {
 	FirstName string
 	LastName  string
 	ID        int
-	Owner     bool
+	IDWatcher int
 	JoinedOn  time.Time
 }
 
@@ -59,19 +59,21 @@ type Party struct {
 	MemberCount  int
 	MovieCount   int
 	WatchedCount int
+	IDOwner      int
 
 	MoviesByStatus MoviesByStatus
-	db             *store.PartyRepository
+	db             store.PartyRepository
 }
 
-func NewPartyService(logger *slog.Logger, db *store.PartyRepository) PartyService {
+func NewPartyService(logger *slog.Logger, db store.PartyRepository) PartyService {
 	return PartyService{
 		logger: logger,
 		db:     db,
 	}
 }
 
-func (s PartyService) NewParty(ctx context.Context, id int, name string, movieCount int, memberCount int) Party {
+// TODO: group these args so they can't be mixed up
+func (s PartyService) NewParty(ctx context.Context, id int, name string, movieCount, memberCount, idOwner int) Party {
 	_, span, _ := metrics.SpanFromContext(ctx, "PartyService.NewParty")
 	defer span.End()
 	return Party{
@@ -79,6 +81,7 @@ func (s PartyService) NewParty(ctx context.Context, id int, name string, movieCo
 		Name:        name,
 		MovieCount:  movieCount,
 		MemberCount: memberCount,
+		IDOwner:     idOwner,
 		db:          s.db,
 	}
 }
@@ -132,14 +135,10 @@ func (s PartyService) CreateParty(ctx context.Context, idMember int, name string
 func (s PartyService) GetPartyWithMovies(ctx context.Context, logger *slog.Logger, id int) (Party, error) {
 	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyService.GetPartyWithMovies")
 	defer span.End()
+
 	var party Party
-	err := s.db.GetPartyByIDWithStats(ctx, id, func(res store.GetPartyByIDWithStatsResult) {
-		party.ID = res.ID
-		party.Name = res.Name
-		party.ShortID = res.ShortID
-		party.MemberCount = res.MemberCount
-		party.MovieCount = res.MovieCount
-		party.WatchedCount = res.WatchedCount
+	err := s.db.GetPartyByIDWithStats(ctx, id, func(id int, name string, ownerID int, memberCount, movieCount, watchedCount int) {
+		party = s.NewParty(ctx, id, name, movieCount, memberCount, ownerID)
 	})
 	if err != nil {
 		logger.ErrorContext(ctx, "failed to get party by id", slog.Any("error", err))
@@ -263,13 +262,13 @@ func (p *Party) GetPartyMembers(ctx context.Context) error {
 	ctx, span, _ := metrics.SpanFromContext(ctx, "Party.GetPartyMembers")
 	defer span.End()
 
-	err := p.db.GetPartyMembers(ctx, p.ID, func(firstName, lastName string, id int, owner bool, joinedAt time.Time) {
+	err := p.db.GetPartyMembers(ctx, p.ID, func(firstName, lastName string, id int, joinedAt time.Time, idWatcher int) {
 		p.Members = append(p.Members, PartyMember{
 			FirstName: firstName,
 			LastName:  lastName,
 			ID:        id,
-			Owner:     owner,
 			JoinedOn:  joinedAt,
+			IDWatcher: idWatcher,
 		})
 	})
 	if err != nil {

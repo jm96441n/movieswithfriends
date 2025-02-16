@@ -34,6 +34,8 @@ func (s WatcherService) GetWatcher(ctx context.Context, memberID int) (Watcher, 
 }
 
 func (s WatcherService) GetWatcherByEmail(ctx context.Context, email string) (Watcher, error) {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "WatcherService.GetWatcherByEmail")
+	defer span.End()
 	w := Watcher{db: s.db, Email: email}
 	err := s.db.GetWatcherByEmail(ctx, email, func(id int) {
 		w.ID = id
@@ -50,6 +52,8 @@ func (s WatcherService) GetWatcherByEmail(ctx context.Context, email string) (Wa
 }
 
 func (s WatcherService) GetWatchHistory(ctx context.Context, logger *slog.Logger, memberID, offset int) ([]store.WatchedMoviesForWatcherResult, int, error) {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "Watcher.GetWatchHistory")
+	defer span.End()
 	watchedMovies, err := s.db.GetWatchedMoviesForWatcher(ctx, memberID, offset)
 	if err != nil {
 		return nil, 0, err
@@ -64,6 +68,8 @@ func (s WatcherService) GetWatchHistory(ctx context.Context, logger *slog.Logger
 }
 
 func (w Watcher) GetWatchHistory(ctx context.Context, logger *slog.Logger, memberID, offset int) ([]store.WatchedMoviesForWatcherResult, int, error) {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "Watcher.GetWatchHistory")
+	defer span.End()
 	watchedMovies, err := w.db.GetWatchedMoviesForWatcher(ctx, memberID, offset)
 	if err != nil {
 		return nil, 0, err
@@ -82,8 +88,8 @@ func (w Watcher) GetParties(ctx context.Context, ps PartyService) ([]Party, erro
 	defer span.End()
 
 	var parties []Party
-	err := w.db.GetPartiesForWatcher(ctx, w.ID, 50, func(ctx context.Context, id int, name string, memberCount int, movieCount int) {
-		parties = append(parties, ps.NewParty(ctx, id, name, movieCount, memberCount))
+	err := w.db.GetPartiesForWatcher(ctx, w.ID, 10, func(ctx context.Context, id int, name string, memberCount int, movieCount int, idOwner int) {
+		parties = append(parties, ps.NewParty(ctx, id, name, movieCount, memberCount, idOwner))
 	})
 	if err != nil {
 		return nil, err
@@ -98,6 +104,9 @@ type PartiesForMovie struct {
 }
 
 func (w Watcher) GetPartiesToAddMovie(ctx context.Context, logger *slog.Logger, idMovie MovieID) (PartiesForMovie, error) {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "Watcher.GetPartiesToAddMovie")
+	defer span.End()
+
 	switch {
 	case idMovie.TMDBID != nil:
 		return w.getPartiesForMovieByTMDBID(ctx, logger, *idMovie.TMDBID)
@@ -109,6 +118,9 @@ func (w Watcher) GetPartiesToAddMovie(ctx context.Context, logger *slog.Logger, 
 }
 
 func (w Watcher) getPartiesForMovieByTMDBID(ctx context.Context, logger *slog.Logger, tmdbID int) (PartiesForMovie, error) {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "Watcher.getPartiesForMovieByTMDBID")
+	defer span.End()
+
 	parties := PartiesForMovie{
 		WithMovie:    make([]Party, 0, 10),
 		WithoutMovie: make([]Party, 0, 10),
@@ -140,6 +152,9 @@ func (w Watcher) getPartiesForMovieByTMDBID(ctx context.Context, logger *slog.Lo
 }
 
 func (w Watcher) getPartiesForMovieByMovieID(ctx context.Context, logger *slog.Logger, idMovie int) (PartiesForMovie, error) {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "Watcher.getPartiesForMovieByMovieID")
+	defer span.End()
+
 	parties := PartiesForMovie{
 		WithMovie:    make([]Party, 0, 10),
 		WithoutMovie: make([]Party, 0, 10),
@@ -170,9 +185,27 @@ func (w Watcher) getPartiesForMovieByMovieID(ctx context.Context, logger *slog.L
 }
 
 func (w Watcher) IsOwnerOfParty(ctx context.Context, idParty int) (bool, error) {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "Watcher.IsOwnerOfParty")
+	defer span.End()
+
 	isOwner, err := w.db.WatcherOwnsParty(ctx, w.ID, idParty)
 	if err != nil {
 		return false, err
 	}
 	return isOwner, nil
+}
+
+func (w Watcher) GetInvitedParties(ctx context.Context, ps PartyService) ([]Party, error) {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "Watcher.GetInvitedParties")
+	defer span.End()
+
+	var parties []Party
+	err := w.db.GetInvitedPartiesForWatcher(ctx, w.ID, 10, func(ctx context.Context, id int, name string, memberCount int, movieCount int, idOwner int) {
+		parties = append(parties, ps.NewParty(ctx, id, name, movieCount, memberCount, idOwner))
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return parties, nil
 }

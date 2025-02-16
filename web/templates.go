@@ -76,8 +76,8 @@ type PartiesTemplateData struct {
 }
 
 type PartiesIndexTemplateData struct {
-	Parties       []partymgmt.Party
-	InvitedPartes []partymgmt.Party
+	Parties        []partymgmt.Party
+	InvitedParties []partymgmt.Party
 	BaseTemplateData
 }
 
@@ -112,9 +112,10 @@ func (a *Application) NewProfilesTemplateData(r *http.Request, w http.ResponseWr
 	}
 }
 
-func (a *Application) NewPartiesIndexTemplateData(r *http.Request, w http.ResponseWriter, path string, parties []partymgmt.Party) PartiesIndexTemplateData {
+func (a *Application) NewPartiesIndexTemplateData(r *http.Request, w http.ResponseWriter, path string, parties, invitedParties []partymgmt.Party) PartiesIndexTemplateData {
 	return PartiesIndexTemplateData{
 		Parties:          parties,
+		InvitedParties:   invitedParties,
 		BaseTemplateData: a.newBaseTemplateData(r, w, path),
 	}
 }

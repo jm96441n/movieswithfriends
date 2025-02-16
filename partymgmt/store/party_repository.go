@@ -17,8 +17,8 @@ type PartyRepository struct {
 	db *pgxpool.Pool
 }
 
-func NewPartyRepository(db *pgxpool.Pool) *PartyRepository {
-	return &PartyRepository{db: db}
+func NewPartyRepository(db *pgxpool.Pool) PartyRepository {
+	return PartyRepository{db: db}
 }
 
 type PartyMovie struct {
@@ -36,7 +36,7 @@ type GetPartyResult struct {
 	ShortID string
 }
 
-func (p *PartyRepository) GetPartyByID(ctx context.Context, id int) (GetPartyResult, error) {
+func (p PartyRepository) GetPartyByID(ctx context.Context, id int) (GetPartyResult, error) {
 	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyRepository.GetPartyByID")
 	defer span.End()
 	res := GetPartyResult{}
@@ -52,7 +52,7 @@ func (p *PartyRepository) GetPartyByID(ctx context.Context, id int) (GetPartyRes
 
 const getPartyByShortIDQuery = `select id_party, name, short_id from parties where short_id = $1`
 
-func (p *PartyRepository) GetPartyByShortID(ctx context.Context, shortID string) (GetPartyResult, error) {
+func (p PartyRepository) GetPartyByShortID(ctx context.Context, shortID string) (GetPartyResult, error) {
 	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyRepository.GetPartyByShortID")
 	defer span.End()
 	party := GetPartyResult{}
@@ -78,7 +78,7 @@ const getPartyByIDWithStatsQuery = `
 select
     parties.id_party,
     parties.name,
-    parties.short_id,
+    parties.id_owner,
     count(distinct party_members.id_member) as member_count,
     count(distinct party_movies.id_movie) as movie_count,
 	  count(distinct case when party_movies.watch_status = 'watched' then party_movies.id_movie end) as watched_count
@@ -89,36 +89,43 @@ select
   group by parties.id_party;
 `
 
-type getAssignFn func(GetPartyByIDWithStatsResult)
+type getAssignFn func(id int, name string, idOwner int, memberCount, movieCount, watchedCount int)
 
-func (p *PartyRepository) GetPartyByIDWithStats(ctx context.Context, id int, assignFn getAssignFn) error {
+func (p PartyRepository) GetPartyByIDWithStats(ctx context.Context, partyID int, assignFn getAssignFn) error {
 	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyRepository.GetPartyByIDWithStats")
 	defer span.End()
 
-	result := GetPartyByIDWithStatsResult{}
-	err := p.db.QueryRow(ctx, getPartyByIDWithStatsQuery, id).
+	var (
+		id           int
+		name         string
+		memberCount  int
+		movieCount   int
+		watchedCount int
+		idOwner      int
+	)
+
+	err := p.db.QueryRow(ctx, getPartyByIDWithStatsQuery, partyID).
 		Scan(
-			&result.ID,
-			&result.Name,
-			&result.ShortID,
-			&result.MemberCount,
-			&result.MovieCount,
-			&result.WatchedCount,
+			&id,
+			&name,
+			&idOwner,
+			&memberCount,
+			&movieCount,
+			&watchedCount,
 		)
 	if err != nil {
 		return err
 	}
 
-	assignFn(result)
+	assignFn(id, name, idOwner, memberCount, movieCount, watchedCount)
 	return nil
 }
 
 const (
-	createPartyQuery              = `INSERT INTO parties (name, short_id) VALUES ($1, $2) returning id_party;`
-	createPartyMemberAsOwnerQuery = `INSERT INTO party_members (id_member, id_party, owner) VALUES ($1, $2, true);`
+	createPartyQuery = `INSERT INTO parties (name, id_owner, short_id) VALUES ($1, $2, $3) returning id_party;`
 )
 
-func (p *PartyRepository) CreateParty(ctx context.Context, idMember int, name, shortID string) (int, error) {
+func (p PartyRepository) CreateParty(ctx context.Context, idWatcher int, name, shortID string) (int, error) {
 	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyRepository.CreateParty")
 	defer span.End()
 	txn, err := p.db.Begin(ctx)
@@ -130,7 +137,7 @@ func (p *PartyRepository) CreateParty(ctx context.Context, idMember int, name, s
 
 	var id int
 
-	err = txn.QueryRow(ctx, createPartyQuery, name, shortID).Scan(&id)
+	err = txn.QueryRow(ctx, createPartyQuery, name, idWatcher, shortID).Scan(&id)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
@@ -143,7 +150,7 @@ func (p *PartyRepository) CreateParty(ctx context.Context, idMember int, name, s
 		return 0, err
 	}
 
-	_, err = txn.Exec(ctx, createPartyMemberAsOwnerQuery, idMember, id)
+	_, err = txn.Exec(ctx, createPartyMemberQuery, idWatcher, id)
 	if err != nil {
 		return 0, err
 	}
@@ -157,7 +164,7 @@ func (p *PartyRepository) CreateParty(ctx context.Context, idMember int, name, s
 
 const AddMovietoPartyQuery = `insert into party_movies (id_party, id_movie, id_added_by) values ($1, $2, $3)`
 
-func (p *PartyRepository) AddMovieToParty(ctx context.Context, idParty, idMovie, id_added_by int) error {
+func (p PartyRepository) AddMovieToParty(ctx context.Context, idParty, idMovie, id_added_by int) error {
 	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyRepository.AddMovieToParty")
 	defer span.End()
 	_, err := p.db.Exec(ctx, AddMovietoPartyQuery, idParty, idMovie, id_added_by)
@@ -167,7 +174,7 @@ func (p *PartyRepository) AddMovieToParty(ctx context.Context, idParty, idMovie,
 	return nil
 }
 
-func (p *PartyRepository) MarkPartyMovieAsWatched(ctx context.Context, idParty, idMovie int) error {
+func (p PartyRepository) MarkPartyMovieAsWatched(ctx context.Context, idParty, idMovie int) error {
 	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyRepository.MarkPartyMovieAsWatched")
 	defer span.End()
 	curTime := time.Now().UTC()
@@ -206,7 +213,7 @@ AND id_party = $1
 RETURNING id_movie;
 `
 
-func (p *PartyRepository) SelectMovieForParty(ctx context.Context, idParty int) error {
+func (p PartyRepository) SelectMovieForParty(ctx context.Context, idParty int) error {
 	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyRepository.SelectMovieForParty")
 	defer span.End()
 	tx, err := p.db.BeginTx(ctx, pgx.TxOptions{})
@@ -236,7 +243,7 @@ const updateWatchStatusQuery = `
   where id_party = $2 and id_movie = $3
 `
 
-func (p *PartyRepository) updatePartyMovieStatus(ctx context.Context, idParty, idMovie int, status WatchStatusEnum, watchDate *time.Time) error {
+func (p PartyRepository) updatePartyMovieStatus(ctx context.Context, idParty, idMovie int, status WatchStatusEnum, watchDate *time.Time) error {
 	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyRepository.updatePartyMovieStatus")
 	defer span.End()
 	_, err := p.db.Exec(ctx, updateWatchStatusQuery, status, idParty, idMovie, watchDate)
@@ -246,12 +253,12 @@ func (p *PartyRepository) updatePartyMovieStatus(ctx context.Context, idParty, i
 	return nil
 }
 
-const AddFriendToPartyQuery = `insert into party_members (id_member, id_party) values($1, $2)`
+const createPartyMemberQuery = `insert into party_members (id_member, id_party) values($1, $2)`
 
-func (p *PartyRepository) CreatePartyMember(ctx context.Context, idMember, idParty int) error {
+func (p PartyRepository) CreatePartyMember(ctx context.Context, idWatcher, idParty int) error {
 	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyRepository.CreatePartyMember")
 	defer span.End()
-	_, err := p.db.Exec(ctx, AddFriendToPartyQuery, idMember, idParty)
+	_, err := p.db.Exec(ctx, createPartyMemberQuery, idWatcher, idParty)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
@@ -304,7 +311,7 @@ GROUP BY watch_status;
 `
 
 // GetMoviesForParty returns a paginated list of movies for a party grouped by watchStatus
-func (p *PartyRepository) GetMoviesForParty(ctx context.Context, logger *slog.Logger, idParty, offset int, assignFn func(WatchStatusEnum, []byte) error) error {
+func (p PartyRepository) GetMoviesForParty(ctx context.Context, logger *slog.Logger, idParty, offset int, assignFn func(WatchStatusEnum, []byte) error) error {
 	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyRepository.GetMoviesForParty")
 	defer span.End()
 	rows, err := p.db.Query(ctx, getMoviesForPartyQuery, idParty)
@@ -342,7 +349,7 @@ func (p *PartyRepository) GetMoviesForParty(ctx context.Context, logger *slog.Lo
 const createPartyMovieQuery = `insert into party_movies (id_party, id_movie, id_added_by) values ($1, $2, $3)`
 
 // CreatePartMovie creates a movie within a party
-func (p *PartyRepository) CreatePartyMovie(ctx context.Context, idParty, idMovie, idAddedBy int) error {
+func (p PartyRepository) CreatePartyMovie(ctx context.Context, idParty, idMovie, idAddedBy int) error {
 	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyRepository.CreatePartyMovie")
 	defer span.End()
 	_, err := p.db.Exec(ctx, createPartyMovieQuery, idParty, idMovie, idAddedBy)
@@ -354,7 +361,7 @@ func (p *PartyRepository) CreatePartyMovie(ctx context.Context, idParty, idMovie
 
 const movieInPartyQuery = `SELECT EXISTS(select 1 from party_movies where id_movie = $1 and id_party = $2)`
 
-func (p *PartyRepository) MovieAddedToParty(ctx context.Context, idParty, idMovie int) (bool, error) {
+func (p PartyRepository) MovieAddedToParty(ctx context.Context, idParty, idMovie int) (bool, error) {
 	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyRepository.MovieAddedToParty")
 	defer span.End()
 	var exists bool
@@ -371,20 +378,21 @@ const getPartiesByMembersQuery = `
 select 
     pm.id_member,
     pm.created_at,
-    pm.owner,
     p.first_name,
-    p.last_name
+    p.last_name,
+    p.id_profile
 from party_members pm
 join profiles p on p.id_profile = pm.id_member
 where pm.id_party = $1
-order by pm.owner desc, pm.created_at asc;
+order by pm.created_at asc;
 `
 
-type getMembersAssignFn func(string, string, int, bool, time.Time)
+type getMembersAssignFn func(string, string, int, time.Time, int)
 
-func (p *PartyRepository) GetPartyMembers(ctx context.Context, idParty int, assignFn getMembersAssignFn) error {
+func (p PartyRepository) GetPartyMembers(ctx context.Context, idParty int, assignFn getMembersAssignFn) error {
 	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyRepository.GetPartyMembers")
 	defer span.End()
+
 	rows, err := p.db.Query(ctx, getPartiesByMembersQuery, idParty)
 	if err != nil {
 		return err
@@ -395,14 +403,14 @@ func (p *PartyRepository) GetPartyMembers(ctx context.Context, idParty int, assi
 			firstName string
 			lastName  string
 			id        int
+			idProfile int
 			joinDate  time.Time
-			owner     bool
 		)
-		err = rows.Scan(&id, &joinDate, &owner, &firstName, &lastName)
+		err = rows.Scan(&id, &joinDate, &firstName, &lastName, &idProfile)
 		if err != nil {
 			return err
 		}
-		assignFn(firstName, lastName, id, owner, joinDate)
+		assignFn(firstName, lastName, id, joinDate, idProfile)
 	}
 	return nil
 }

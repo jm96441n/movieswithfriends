@@ -21,6 +21,10 @@ psql:
 run:
 	docker compose up --build
 
+.PHONY: seed
+seed:
+	go run ./tools/seed -drop
+
 ### TESTS
 headless ?= true
 

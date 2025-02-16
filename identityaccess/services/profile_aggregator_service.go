@@ -160,8 +160,8 @@ func (p *ProfileAggregatorService) getParties(ctx context.Context, profileID int
 	defer span.End()
 	parties := make([]partymgmt.Party, 0)
 
-	err := p.watcherRepository.GetPartiesForWatcher(ctx, profileID, 50, func(ctx context.Context, id int, name string, memberCount int, movieCount int) {
-		parties = append(parties, p.partyService.NewParty(ctx, id, name, movieCount, memberCount))
+	err := p.watcherRepository.GetPartiesForWatcher(ctx, profileID, 50, func(ctx context.Context, id int, name string, memberCount, movieCount, idOwner int) {
+		parties = append(parties, p.partyService.NewParty(ctx, id, name, movieCount, memberCount, idOwner))
 	})
 	if err != nil {
 		return nil, err

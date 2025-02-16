@@ -136,7 +136,7 @@
         <div class="card-body p-0">
           <div class="list-group list-group-flush">
             {{ range $party.Members }}
-              {{ if .Owner }}
+              {{ if eq .IDWatcher $party.IDOwner }}
                 <!-- Party Owner -->
                 <div class="list-group-item">
                   <div class="d-flex align-items-center">

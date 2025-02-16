@@ -16,7 +16,7 @@ func (a *Application) LoginShowHandler(w http.ResponseWriter, r *http.Request) {
 
 func (a *Application) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	logger := a.GetLogger(ctx).With("handler", "LoginHandler")
+	logger := a.Logger.With("handler", "LoginHandler")
 	err := r.ParseForm()
 	if err != nil {
 		logger.ErrorContext(ctx, "error parsing form", slog.Any("error", err))

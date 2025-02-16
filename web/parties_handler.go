@@ -9,7 +9,7 @@ import (
 
 func (a *Application) NewPartyHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	logger := a.GetLogger(ctx).With("handler", "NewPartyHandler")
+	logger := a.Logger.With("handler", "NewPartyHandler")
 	logger.InfoContext(ctx, "calling NewPartyHandler")
 	templateData := a.NewPartiesTemplateData(r, w, "/parties")
 	a.render(w, r, http.StatusOK, "parties/new.gohtml", templateData)
@@ -17,7 +17,7 @@ func (a *Application) NewPartyHandler(w http.ResponseWriter, r *http.Request) {
 
 func (a *Application) EditPartyHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	logger := a.GetLogger(ctx).With("handler", "EditPartyHandler")
+	logger := a.Logger.With("handler", "EditPartyHandler")
 	logger.InfoContext(ctx, "calling EditPartyHandler")
 	templateData := a.NewPartiesTemplateData(r, w, "/parties")
 	a.render(w, r, http.StatusOK, "parties/edit.gohtml", templateData)
@@ -25,7 +25,7 @@ func (a *Application) EditPartyHandler(w http.ResponseWriter, r *http.Request) {
 
 func (a *Application) CreatePartyHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	logger := a.GetLogger(ctx).With("handler", "CreatePartyHandler")
+	logger := a.Logger.With("handler", "CreatePartyHandler")
 	profileID, err := a.getProfileIDFromSession(ctx, r)
 	if err != nil {
 		logger.ErrorContext(ctx, "failed to get profile ID from session", slog.Any("error", err))
@@ -68,7 +68,7 @@ func (a *Application) CreatePartyHandler(w http.ResponseWriter, r *http.Request)
 
 func (a *Application) PartyShowHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	logger := a.GetLogger(ctx).With("handler", "PartyShowHandler")
+	logger := a.Logger.With("handler", "PartyShowHandler")
 
 	watcher, err := a.getWatcherFromSession(ctx, r)
 	if err != nil {
@@ -93,13 +93,7 @@ func (a *Application) PartyShowHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	currentWatcherIsOwner, err := watcher.IsOwnerOfParty(ctx, id)
-	if err != nil {
-		logger.ErrorContext(ctx, "failed to get if current user is owner", slog.Any("error", err))
-		a.setErrorFlashMessage(w, r, "There was an issue getting this party, try again.")
-		http.Redirect(w, r, "/parties", http.StatusBadRequest)
-		return
-	}
+	currentWatcherIsOwner := watcher.ID == party.IDOwner
 
 	invites, err := a.InvitationsService.GetInvitationsForParty(ctx, id)
 	if err != nil {
@@ -120,7 +114,7 @@ func (a *Application) PartyShowHandler(w http.ResponseWriter, r *http.Request) {
 
 func (a *Application) PartiesIndexHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	logger := a.GetLogger(ctx).With("handler", "PartyIndexHandler")
+	logger := a.Logger.With("handler", "PartyIndexHandler")
 
 	watcher, err := a.getWatcherFromSession(ctx, r)
 	if err != nil {
@@ -128,6 +122,7 @@ func (a *Application) PartiesIndexHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	// TODO: paginate both of these
 	parties, err := watcher.GetParties(ctx, a.PartyService)
 	if err != nil {
 		logger.ErrorContext(ctx, "failed to get parties", slog.Any("error", err))
@@ -136,7 +131,15 @@ func (a *Application) PartiesIndexHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	templateData := a.NewPartiesIndexTemplateData(r, w, "/parties", parties)
+	invites, err := watcher.GetInvitedParties(ctx, a.PartyService)
+	if err != nil {
+		logger.ErrorContext(ctx, "failed to invitations", slog.Any("error", err))
+		a.setErrorFlashMessage(w, r, "There was an issue getting your parties, try again.")
+		http.Redirect(w, r, "/profile", http.StatusBadRequest)
+		return
+	}
+
+	templateData := a.NewPartiesIndexTemplateData(r, w, "/parties", parties, invites)
 	a.render(w, r, http.StatusOK, "parties/index.gohtml", templateData)
 }
 
@@ -167,7 +170,7 @@ func (a *Application) MarkMovieAsWatchedHandler(w http.ResponseWriter, r *http.R
 
 func (a *Application) SelectMovieForParty(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	logger := a.GetLogger(ctx).With("handler", "SelectMovieForParty")
+	logger := a.Logger.With("handler", "SelectMovieForParty")
 	idPartyParam := r.PathValue("party_id")
 	idParty, err := strconv.Atoi(idPartyParam)
 	if err != nil {

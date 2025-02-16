@@ -20,12 +20,13 @@
     <!-- Party Cards -->
     <div class="row g-4">
       <!-- Active Party Card -->
+      {{ range .Parties }}
       <div class="col-md-6 col-xl-4">
         <div class="card border-0 shadow-sm h-100">
           <div class="card-body">
             <div class="d-flex justify-content-between align-items-start mb-3">
               <div>
-                <h5 class="card-title mb-1">Friday Night Movies</h5>
+                <h5 class="card-title mb-1">{{ .Name }}</h5>
                 <span class="badge bg-success">Active</span>
               </div>
               <div class="dropdown">
@@ -59,44 +60,41 @@
             <!-- Party Stats -->
             <div class="row g-2 mb-3 text-muted small">
               <div class="col-auto">
-                <i class="fas fa-users me-1"></i>4 members
+                <i class="fas fa-users me-1"></i>{{ .MemberCount }} members
               </div>
               <div class="col-auto">
-                <i class="fas fa-film me-1"></i>12 movies
-              </div>
-              <div class="col-auto">
-                <i class="fas fa-clock me-1"></i>Next: Friday 8 PM
+                <i class="fas fa-film me-1"></i>{{ .MovieCount }} movies
               </div>
             </div>
 
             <!-- Member Avatars -->
-            <div class="d-flex align-items-center mb-3">
-              <div class="avatar-group">
-                <img
-                  src="/api/placeholder/32/32"
-                  class="rounded-circle border border-white"
-                  alt="Member"
-                />
-                <img
-                  src="/api/placeholder/32/32"
-                  class="rounded-circle border border-white"
-                  style="margin-left: -0.5rem;"
-                  alt="Member"
-                />
-                <img
-                  src="/api/placeholder/32/32"
-                  class="rounded-circle border border-white"
-                  style="margin-left: -0.5rem;"
-                  alt="Member"
-                />
-                <div
-                  class="rounded-circle bg-light border border-white d-flex align-items-center justify-content-center"
-                  style="width: 32px; height: 32px; margin-left: -0.5rem;"
-                >
-                  <small>+1</small>
-                </div>
-              </div>
-            </div>
+            <!-- <div class="d-flex align-items-center mb-3"> -->
+            <!--   <div class="avatar-group"> -->
+            <!--     <img -->
+            <!--       src="/api/placeholder/32/32" -->
+            <!--       class="rounded-circle border border-white" -->
+            <!--       alt="Member" -->
+            <!--     /> -->
+            <!--     <img -->
+            <!--       src="/api/placeholder/32/32" -->
+            <!--       class="rounded-circle border border-white" -->
+            <!--       style="margin-left: -0.5rem;" -->
+            <!--       alt="Member" -->
+            <!--     /> -->
+            <!--     <img -->
+            <!--       src="/api/placeholder/32/32" -->
+            <!--       class="rounded-circle border border-white" -->
+            <!--       style="margin-left: -0.5rem;" -->
+            <!--       alt="Member" -->
+            <!--     /> -->
+            <!--     <div -->
+            <!--       class="rounded-circle bg-light border border-white d-flex align-items-center justify-content-center" -->
+            <!--       style="width: 32px; height: 32px; margin-left: -0.5rem;" -->
+            <!--     > -->
+            <!--       <small>+1</small> -->
+            <!--     </div> -->
+            <!--   </div> -->
+            <!-- </div> -->
 
             <!-- Next Movie -->
             <div class="bg-light rounded p-2 mb-3">
@@ -114,20 +112,22 @@
             </div>
 
             <!-- Action Button -->
-            <button class="btn btn-outline-primary btn-sm w-100">
+            <a href="/parties/{{ .ID }}" class="btn btn-outline-primary btn-sm w-100">
               View Party
-            </button>
+            </a>
           </div>
         </div>
       </div>
+      {{ end }}
 
       <!-- Pending Invitation Card -->
+      {{ range .InvitedParties }}
       <div class="col-md-6 col-xl-4">
         <div class="card border-0 shadow-sm h-100">
           <div class="card-body">
             <div class="d-flex justify-content-between align-items-start mb-3">
               <div>
-                <h5 class="card-title mb-1">Weekend Warriors</h5>
+                <h5 class="card-title mb-1">{{ .Name }}</h5>
                 <span class="badge bg-warning text-dark"
                   >Invitation Pending</span
                 >
@@ -137,20 +137,20 @@
             <!-- Party Stats -->
             <div class="row g-2 mb-3 text-muted small">
               <div class="col-auto">
-                <i class="fas fa-users me-1"></i>6 members
+                <i class="fas fa-users me-1"></i>{{ .MemberCount }} members
               </div>
               <div class="col-auto">
-                <i class="fas fa-film me-1"></i>8 movies
+                <i class="fas fa-film me-1"></i>{{ .MovieCount }} movies
               </div>
             </div>
 
             <!-- Invited By -->
             <div class="d-flex align-items-center mb-3">
-              <img
-                src="/api/placeholder/32/32"
-                class="rounded-circle me-2"
-                alt="Inviter"
-              />
+              <!-- <img -->
+              <!--   src="/api/placeholder/32/32" -->
+              <!--   class="rounded-circle me-2" -->
+              <!--   alt="Inviter" -->
+              <!-- /> -->
               <div class="small">
                 <strong>John Smith</strong> invited you
                 <div class="text-muted">2 hours ago</div>
@@ -167,6 +167,7 @@
           </div>
         </div>
       </div>
+      {{ end }}
 
       <!-- Create New Party Card -->
       <div class="col-md-6 col-xl-4">
@@ -188,56 +189,56 @@
     </div>
 
     <!-- Past Parties Section -->
-    <div class="mt-5">
-      <h2 class="h4 mb-4">Past Parties</h2>
-      <div class="card border-0 shadow-sm">
-        <div class="table-responsive">
-          <table class="table mb-0">
-            <thead class="table-light">
-              <tr>
-                <th>Party Name</th>
-                <th>Duration</th>
-                <th>Movies Watched</th>
-                <th>Members</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Summer Movie Club</td>
-                <td>June 2023 - September 2023</td>
-                <td>15 movies</td>
-                <td>
-                  <div class="avatar-group">
-                    <img
-                      src="/api/placeholder/24/24"
-                      class="rounded-circle border border-white"
-                      alt="Member"
-                    />
-                    <img
-                      src="/api/placeholder/24/24"
-                      class="rounded-circle border border-white"
-                      style="margin-left: -0.5rem;"
-                      alt="Member"
-                    />
-                    <img
-                      src="/api/placeholder/24/24"
-                      class="rounded-circle border border-white"
-                      style="margin-left: -0.5rem;"
-                      alt="Member"
-                    />
-                  </div>
-                </td>
-                <td>
-                  <button class="btn btn-sm btn-outline-primary">
-                    View History
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+    <!-- <div class="mt-5"> -->
+    <!--   <h2 class="h4 mb-4">Past Parties</h2> -->
+    <!--   <div class="card border-0 shadow-sm"> -->
+    <!--     <div class="table-responsive"> -->
+    <!--       <table class="table mb-0"> -->
+    <!--         <thead class="table-light"> -->
+    <!--           <tr> -->
+    <!--             <th>Party Name</th> -->
+    <!--             <th>Duration</th> -->
+    <!--             <th>Movies Watched</th> -->
+    <!--             <th>Members</th> -->
+    <!--             <th>Actions</th> -->
+    <!--           </tr> -->
+    <!--         </thead> -->
+    <!--         <tbody> -->
+    <!--           <tr> -->
+    <!--             <td>Summer Movie Club</td> -->
+    <!--             <td>June 2023 - September 2023</td> -->
+    <!--             <td>15 movies</td> -->
+    <!--             <td> -->
+    <!--               <div class="avatar-group"> -->
+    <!--                 <img -->
+    <!--                   src="/api/placeholder/24/24" -->
+    <!--                   class="rounded-circle border border-white" -->
+    <!--                   alt="Member" -->
+    <!--                 /> -->
+    <!--                 <img -->
+    <!--                   src="/api/placeholder/24/24" -->
+    <!--                   class="rounded-circle border border-white" -->
+    <!--                   style="margin-left: -0.5rem;" -->
+    <!--                   alt="Member" -->
+    <!--                 /> -->
+    <!--                 <img -->
+    <!--                   src="/api/placeholder/24/24" -->
+    <!--                   class="rounded-circle border border-white" -->
+    <!--                   style="margin-left: -0.5rem;" -->
+    <!--                   alt="Member" -->
+    <!--                 /> -->
+    <!--               </div> -->
+    <!--             </td> -->
+    <!--             <td> -->
+    <!--               <button class="btn btn-sm btn-outline-primary"> -->
+    <!--                 View History -->
+    <!--               </button> -->
+    <!--             </td> -->
+    <!--           </tr> -->
+    <!--         </tbody> -->
+    <!--       </table> -->
+    <!--     </div> -->
+    <!--   </div> -->
+    <!-- </div> -->
   </div>
 {{ end }}

@@ -95,7 +95,8 @@ const getPartiesForWatcherQuery = `
     select 
       parties.id_party,
       parties.name,
-      party_members.created_at
+      parties.created_at,
+      parties.id_owner
     from parties
     join party_members on party_members.id_party = parties.id_party
     where party_members.id_member = $1
@@ -104,6 +105,7 @@ const getPartiesForWatcherQuery = `
       current_member_parties.id_party,
       current_member_parties.name,
       current_member_parties.created_at,
+      current_member_parties.id_owner,
       count(distinct party_members.id_member) as member_count,
       count(distinct party_movies.id_movie) as movie_count
     from party_members
@@ -113,23 +115,18 @@ const getPartiesForWatcherQuery = `
     group by 
       current_member_parties.id_party, 
       current_member_parties.name, 
-      current_member_parties.created_at
+      current_member_parties.created_at,
+      current_member_parties.id_owner
     order by current_member_parties.created_at desc  -- Order by created_on
     limit $2;
 `
 
-type PartiesForWatcherResult struct {
-	ID          int
-	Name        string
-	MemberCount int
-	MovieCount  int
-}
-
-type assignPartyFn func(context.Context, int, string, int, int)
+type assignPartyFn func(ctx context.Context, id int, name string, movieCount int, memberCount int, idOwner int)
 
 func (p *WatcherRepository) GetPartiesForWatcher(ctx context.Context, watcherID, limit int, assignFn assignPartyFn) error {
 	ctx, span, _ := metrics.SpanFromContext(ctx, "WatcherRepository.GetPartiesForWatcher")
 	defer span.End()
+
 	rows, err := p.db.Query(ctx, getPartiesForWatcherQuery, watcherID, limit)
 	if err != nil {
 		return err
@@ -143,12 +140,76 @@ func (p *WatcherRepository) GetPartiesForWatcher(ctx context.Context, watcherID,
 			memberCount int
 			movieCount  int
 			t           time.Time
+			idOwner     int
 		)
-		err := rows.Scan(&id, &name, &t, &memberCount, &movieCount)
+		err := rows.Scan(&id, &name, &t, &idOwner, &memberCount, &movieCount)
 		if err != nil {
 			return err
 		}
-		assignFn(ctx, id, name, memberCount, movieCount)
+		assignFn(ctx, id, name, memberCount, movieCount, idOwner)
+	}
+
+	if rows.Err() != nil {
+		return rows.Err()
+	}
+	return nil
+}
+
+const getInvitedPartiesForWatcherQuery = `
+  with current_member_parties as (
+    select 
+      parties.id_party,
+      parties.name,
+      parties.created_at,
+      parties.id_owner
+    from parties
+    join invitations on invitations.id_party = parties.id_party
+    where invitations.id_profile = $1
+  )
+    select 
+      current_member_parties.id_party,
+      current_member_parties.name,
+      current_member_parties.created_at,
+      current_member_parties.id_owner,
+      count(distinct party_members.id_member) as member_count,
+      count(distinct party_movies.id_movie) as movie_count
+    from party_members
+    left join party_movies on party_members.id_party = party_movies.id_party
+    join current_member_parties on current_member_parties.id_party = party_members.id_party
+    where party_members.id_party = current_member_parties.id_party
+    group by 
+      current_member_parties.id_party, 
+      current_member_parties.name, 
+      current_member_parties.created_at,
+      current_member_parties.id_owner
+    order by current_member_parties.created_at desc  -- Order by created_on
+    limit $2;
+`
+
+func (p *WatcherRepository) GetInvitedPartiesForWatcher(ctx context.Context, watcherID, limit int, assignFn assignPartyFn) error {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "WatcherRepository.GetInvitedPartiesForWatcher")
+	defer span.End()
+
+	rows, err := p.db.Query(ctx, getInvitedPartiesForWatcherQuery, watcherID, limit)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var (
+			id          int
+			name        string
+			memberCount int
+			movieCount  int
+			idOwner     int
+			t           time.Time
+		)
+		err := rows.Scan(&id, &name, &t, &idOwner, &memberCount, &movieCount)
+		if err != nil {
+			return err
+		}
+		assignFn(ctx, id, name, memberCount, movieCount, idOwner)
 	}
 
 	if rows.Err() != nil {
@@ -168,6 +229,7 @@ const getPartiesWithMovieQuery = `
 func (p *WatcherRepository) GetWatcherPartiesWithMovie(ctx context.Context, logger *slog.Logger, idMember int, idMovie int, assignFn func(int, string)) error {
 	ctx, span, _ := metrics.SpanFromContext(ctx, "WatcherRepository.GetWatcherPartiesWithMovie")
 	defer span.End()
+
 	rows, err := p.db.Query(ctx, getPartiesWithMovieQuery, idMovie, idMember)
 	if err != nil {
 		return err

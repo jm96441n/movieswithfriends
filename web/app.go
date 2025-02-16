@@ -32,7 +32,7 @@ type AppConfig struct {
 	MoviesService            *partymgmt.MovieService
 	MoviesRepository         *partymgmtstore.MoviesRepository
 	PartyService             partymgmt.PartyService
-	PartiesRepository        *partymgmtstore.PartyRepository
+	PartiesRepository        partymgmtstore.PartyRepository
 	WatcherService           partymgmt.WatcherService
 	ProfilesService          *identityaccess.ProfileService
 	ProfileAggregatorService *services.ProfileAggregatorService
@@ -49,7 +49,7 @@ type Application struct {
 	MoviesService            *partymgmt.MovieService
 	MoviesRepository         *partymgmtstore.MoviesRepository
 	PartyService             partymgmt.PartyService
-	PartiesRepository        *partymgmtstore.PartyRepository
+	PartiesRepository        partymgmtstore.PartyRepository
 	WatcherService           partymgmt.WatcherService
 	ProfilesService          *identityaccess.ProfileService
 	ProfileAggregatorService *services.ProfileAggregatorService

@@ -86,7 +86,7 @@ func SeedPartyWithUsersAndMovies(ctx context.Context, t *testing.T, conn *pgxpoo
 		// if the accountInfo we're on is the current account and the currnet account owns the party then set the current account as the owner
 		// OR if the party is not owned yet and the current user does not own the party then set the owner to be the first account we come across
 		if (cfg.CurrentAccount.AccountID == accountInfo.AccountID && cfg.CurrentUserOwns) || (!owned && !cfg.CurrentUserOwns) {
-			addMemberToPartyAsOwner(ctx, t, conn, partyID, accountInfo.AccountID)
+			addMemberToPartyAsOwner(ctx, t, conn, partyID, accountInfo.ProfileID)
 			owned = true
 			continue
 		}
@@ -135,11 +135,21 @@ func addMemberToParty(ctx context.Context, t *testing.T, conn *pgxpool.Pool, par
 	Ok(t, err, "failed to add member to party")
 }
 
-func addMemberToPartyAsOwner(ctx context.Context, t *testing.T, conn *pgxpool.Pool, partyID, accountID int) {
+func addMemberToPartyAsOwner(ctx context.Context, t *testing.T, conn *pgxpool.Pool, partyID, profileID int) {
 	t.Helper()
 
-	_, err := conn.Exec(ctx, `INSERT INTO party_members (id_party, id_member, owner) VALUES ($1, $2, true)`, partyID, accountID)
+	txn, err := conn.Begin(ctx)
+	defer txn.Rollback(ctx)
+	Ok(t, err, "failed to open transaction")
+
+	_, err = txn.Exec(ctx, `INSERT INTO party_members (id_party, id_member) VALUES ($1, $2, true)`, partyID, profileID)
 	Ok(t, err, "failed to add member to party")
+
+	_, err = txn.Exec(ctx, `UPDATE parties SET id_owner = $1 WHERE id_party = $2`, profileID, partyID)
+	Ok(t, err, "failed to add member to party")
+
+	err = txn.Commit(ctx)
+	Ok(t, err, "failed to commit transaction")
 }
 
 func addMovieToParty(ctx context.Context, t *testing.T, conn *pgxpool.Pool, partyID, movieID, accountID int) {

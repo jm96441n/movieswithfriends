@@ -10,7 +10,7 @@ import (
 
 func (a *Application) AddMovieToPartiesHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	logger := a.GetLogger(ctx).With("handler", "AddMovieToPartiesHandler")
+	logger := a.Logger.With("handler", "AddMovieToPartiesHandler")
 	err := r.ParseForm()
 	if err != nil {
 		a.serverError(w, r, err)
@@ -73,7 +73,7 @@ func (a *Application) AddMovieToPartiesHandler(w http.ResponseWriter, r *http.Re
 			return
 		}
 
-		party := a.PartyService.NewParty(ctx, id, "", 0, 0)
+		party := a.PartyService.NewParty(ctx, id, "", 0, 0, 0)
 		party.ID = id
 		party.AddMovie(ctx, watcher.ID, movieID)
 	}
@@ -85,7 +85,7 @@ func (a *Application) AddMovieToPartiesHandler(w http.ResponseWriter, r *http.Re
 
 func (a *Application) GetAddMovieToPartyModal(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	logger := a.GetLogger(ctx).With("handler", "GetAddMovieToMovieModal")
+	logger := a.Logger.With("handler", "GetAddMovieToMovieModal")
 	idParams := r.PathValue("id")
 
 	movieID, err := strconv.Atoi(idParams)
