@@ -4,5 +4,13 @@
   "semi": false,
   "singleQuote": true,
   "bracketSpacing": true,
-  "plugins": ["prettier-plugin-go-template"]
+  "plugins": ["prettier-plugin-go-template"],
+  "overrides": [
+    {
+      "files": ["*.gohtml"],
+      "options": {
+        "parser": "go-template"
+      }
+    }
+  ]
 }

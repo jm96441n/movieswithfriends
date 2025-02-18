@@ -53,6 +53,15 @@ func (a *Application) CreateInviteHandler(w http.ResponseWriter, r *http.Request
 	a.renderPartial(w, r, http.StatusOK, "parties/partials/invite_modal.gohtml", templateData)
 }
 
+func (a *Application) AcceptInviteHandler(w http.ResponseWriter, r *http.Request) {
+	// ctx, span, _ := metrics.SpanFromContext(r.Context(), "AcceptInviteHandler")
+	// defer span.End()
+	// logger := a.Logger.With("handler", "InvitationsHandler")
+
+	// this should remove the invitation, create the party_member record
+	// and then cause a re-render of the parties listing
+}
+
 func parseInviteForm(r *http.Request) (int, string, error) {
 	err := r.ParseForm()
 	if err != nil {

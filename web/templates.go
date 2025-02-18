@@ -30,7 +30,6 @@ type BaseTemplateData struct {
 	CurrentYear     int
 	FullName        string
 	UserEmail       string
-	Parties         []partymgmt.Party
 }
 
 type AddMovieToPartiesModalTemplateData struct {
@@ -51,6 +50,9 @@ type MoviesTemplateData struct {
 type ProfilesTemplateData struct {
 	Profile           *identityaccess.Profile
 	WatchedMovies     []partymgmt.PartyMovie
+	Parties           []partymgmt.Party
+	InvitedParties    []partymgmt.Party
+	CurrentUserID     int
 	NumPages          int
 	CurPage           int
 	HasEmailError     *bool
