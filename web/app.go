@@ -198,7 +198,7 @@ func (a *Application) getWatcherFromSession(ctx context.Context, r *http.Request
 		return partymgmt.Watcher{}, err
 	}
 
-	watcher, err := a.WatcherService.GetWatcher(ctx, watcherID)
+	watcher, err := a.WatcherService.NewWatcher(ctx, watcherID)
 	if err != nil {
 		return partymgmt.Watcher{}, err
 	}

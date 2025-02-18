@@ -181,6 +181,7 @@ func main() {
 	invitationsRepo := partymgmtstore.NewInvitationsRepository(connPool)
 
 	partySvc := partymgmt.NewPartyService(logger, partyRepo)
+	watcherSvc := partymgmt.NewWatcherService(watcherRepo)
 
 	app := web.NewApplication(
 		web.AppConfig{
@@ -192,7 +193,7 @@ func main() {
 			PartyService:      partySvc,
 			PartiesRepository: partyRepo,
 			ProfilesService:   identityaccess.NewProfileService(profileRepo),
-			WatcherService:    partymgmt.NewWatcherService(watcherRepo),
+			WatcherService:    watcherSvc,
 			Auth: &identityaccess.Authenticator{
 				ProfileRepository: profileRepo,
 			},
@@ -200,6 +201,7 @@ func main() {
 				profileRepo,
 				watcherRepo,
 				partySvc,
+				watcherSvc,
 			),
 			InvitationsService: partymgmt.NewInvitationsService(invitationsRepo),
 			AssetLoader:        loader,

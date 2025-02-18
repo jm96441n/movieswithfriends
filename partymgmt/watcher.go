@@ -26,7 +26,7 @@ func NewWatcherService(db *store.WatcherRepository) WatcherService {
 	return WatcherService{db: db}
 }
 
-func (s WatcherService) GetWatcher(ctx context.Context, memberID int) (Watcher, error) {
+func (s WatcherService) NewWatcher(ctx context.Context, memberID int) (Watcher, error) {
 	return Watcher{
 		ID: memberID,
 		db: s.db,
@@ -67,10 +67,10 @@ func (s WatcherService) GetWatchHistory(ctx context.Context, logger *slog.Logger
 	return watchedMovies, numRecords, nil
 }
 
-func (w Watcher) GetWatchHistory(ctx context.Context, logger *slog.Logger, memberID, offset int) ([]store.WatchedMoviesForWatcherResult, int, error) {
+func (w Watcher) GetWatchHistory(ctx context.Context, logger *slog.Logger, offset int) ([]store.WatchedMoviesForWatcherResult, int, error) {
 	ctx, span, _ := metrics.SpanFromContext(ctx, "Watcher.GetWatchHistory")
 	defer span.End()
-	watchedMovies, err := w.db.GetWatchedMoviesForWatcher(ctx, memberID, offset)
+	watchedMovies, err := w.db.GetWatchedMoviesForWatcher(ctx, w.ID, offset)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -83,12 +83,44 @@ func (w Watcher) GetWatchHistory(ctx context.Context, logger *slog.Logger, membe
 	return watchedMovies, numRecords, nil
 }
 
+func (w Watcher) GetPartiesAndInvitedParties(ctx context.Context, ps PartyService) ([]Party, []Party, error) {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "Watcher.GetPartiesAndInvitedParties")
+	defer span.End()
+
+	parties, err := w.GetParties(ctx, ps)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	invitedParties, err := w.GetInvitedParties(ctx, ps)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return parties, invitedParties, nil
+}
+
 func (w Watcher) GetParties(ctx context.Context, ps PartyService) ([]Party, error) {
 	ctx, span, _ := metrics.SpanFromContext(ctx, "Watcher.GetParties")
 	defer span.End()
 
 	var parties []Party
 	err := w.db.GetPartiesForWatcher(ctx, w.ID, 10, func(ctx context.Context, id int, name string, memberCount int, movieCount int, idOwner int) {
+		parties = append(parties, ps.NewParty(ctx, id, name, movieCount, memberCount, idOwner))
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return parties, nil
+}
+
+func (w Watcher) GetInvitedParties(ctx context.Context, ps PartyService) ([]Party, error) {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "Watcher.GetInvitedParties")
+	defer span.End()
+
+	var parties []Party
+	err := w.db.GetInvitedPartiesForWatcher(ctx, w.ID, 10, func(ctx context.Context, id int, name string, memberCount int, movieCount int, idOwner int) {
 		parties = append(parties, ps.NewParty(ctx, id, name, movieCount, memberCount, idOwner))
 	})
 	if err != nil {
@@ -181,31 +213,5 @@ func (w Watcher) getPartiesForMovieByMovieID(ctx context.Context, logger *slog.L
 	if err != nil {
 		return PartiesForMovie{}, err
 	}
-	return parties, nil
-}
-
-func (w Watcher) IsOwnerOfParty(ctx context.Context, idParty int) (bool, error) {
-	ctx, span, _ := metrics.SpanFromContext(ctx, "Watcher.IsOwnerOfParty")
-	defer span.End()
-
-	isOwner, err := w.db.WatcherOwnsParty(ctx, w.ID, idParty)
-	if err != nil {
-		return false, err
-	}
-	return isOwner, nil
-}
-
-func (w Watcher) GetInvitedParties(ctx context.Context, ps PartyService) ([]Party, error) {
-	ctx, span, _ := metrics.SpanFromContext(ctx, "Watcher.GetInvitedParties")
-	defer span.End()
-
-	var parties []Party
-	err := w.db.GetInvitedPartiesForWatcher(ctx, w.ID, 10, func(ctx context.Context, id int, name string, memberCount int, movieCount int, idOwner int) {
-		parties = append(parties, ps.NewParty(ctx, id, name, movieCount, memberCount, idOwner))
-	})
-	if err != nil {
-		return nil, err
-	}
-
 	return parties, nil
 }

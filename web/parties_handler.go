@@ -123,17 +123,9 @@ func (a *Application) PartiesIndexHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	// TODO: paginate both of these
-	parties, err := watcher.GetParties(ctx, a.PartyService)
+	parties, invites, err := watcher.GetPartiesAndInvitedParties(ctx, a.PartyService)
 	if err != nil {
-		logger.ErrorContext(ctx, "failed to get parties", slog.Any("error", err))
-		a.setErrorFlashMessage(w, r, "There was an issue getting your parties, try again.")
-		http.Redirect(w, r, "/profile", http.StatusBadRequest)
-		return
-	}
-
-	invites, err := watcher.GetInvitedParties(ctx, a.PartyService)
-	if err != nil {
-		logger.ErrorContext(ctx, "failed to invitations", slog.Any("error", err))
+		logger.ErrorContext(ctx, "failed to get parties and invites", slog.Any("error", err))
 		a.setErrorFlashMessage(w, r, "There was an issue getting your parties, try again.")
 		http.Redirect(w, r, "/profile", http.StatusBadRequest)
 		return

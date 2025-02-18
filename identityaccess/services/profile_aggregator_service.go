@@ -15,12 +15,14 @@ type ProfileAggregatorService struct {
 	profileRepository *iamstore.ProfileRepository
 	partyService      partymgmt.PartyService
 	watcherRepository *partymgmtstore.WatcherRepository
+	watcherService    partymgmt.WatcherService
 }
 
-func NewProfileAggregatorService(profileRepository *iamstore.ProfileRepository, watcherRepository *partymgmtstore.WatcherRepository, partyService partymgmt.PartyService) *ProfileAggregatorService {
+func NewProfileAggregatorService(profileRepository *iamstore.ProfileRepository, watcherRepository *partymgmtstore.WatcherRepository, partyService partymgmt.PartyService, watcherService partymgmt.WatcherService) *ProfileAggregatorService {
 	return &ProfileAggregatorService{
 		profileRepository: profileRepository,
 		watcherRepository: watcherRepository,
+		watcherService:    watcherService,
 		partyService:      partyService,
 	}
 }
@@ -32,8 +34,9 @@ type MovieData struct {
 }
 
 type ProfilePageData struct {
-	Profile *identityaccess.Profile
-	Parties []partymgmt.Party
+	Profile        *identityaccess.Profile
+	Parties        []partymgmt.Party
+	InvitedParties []partymgmt.Party
 
 	NumPages      int
 	CurPage       int
@@ -52,6 +55,7 @@ type statsResult struct {
 
 type partiesResult struct {
 	parties []partymgmt.Party
+	invites []partymgmt.Party
 	err     error
 }
 
@@ -79,8 +83,8 @@ func (p *ProfileAggregatorService) GetProfilePageData(ctx context.Context, logge
 	}()
 
 	go func() {
-		parties, err := p.getParties(ctx, profileID)
-		partiesResultCh <- partiesResult{parties: parties, err: err}
+		parties, invites, err := p.getParties(ctx, profileID)
+		partiesResultCh <- partiesResult{parties: parties, invites: invites, err: err}
 	}()
 
 	go func() {
@@ -155,19 +159,21 @@ func (p *ProfileAggregatorService) getProfileStats(ctx context.Context, logger *
 	}, err
 }
 
-func (p *ProfileAggregatorService) getParties(ctx context.Context, profileID int) ([]partymgmt.Party, error) {
+func (p *ProfileAggregatorService) getParties(ctx context.Context, profileID int) ([]partymgmt.Party, []partymgmt.Party, error) {
 	ctx, span, _ := metrics.SpanFromContext(ctx, "profileAggregatorService.getParties")
 	defer span.End()
-	parties := make([]partymgmt.Party, 0)
 
-	err := p.watcherRepository.GetPartiesForWatcher(ctx, profileID, 50, func(ctx context.Context, id int, name string, memberCount, movieCount, idOwner int) {
-		parties = append(parties, p.partyService.NewParty(ctx, id, name, movieCount, memberCount, idOwner))
-	})
+	watcher, err := p.watcherService.NewWatcher(ctx, profileID)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return parties, nil
+	parties, invites, err := watcher.GetPartiesAndInvitedParties(ctx, p.partyService)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return parties, invites, nil
 }
 
 type PageInfo struct {
@@ -185,12 +191,12 @@ func (p *ProfileAggregatorService) GetWatchPaginatedHistory(ctx context.Context,
 
 	offset := pageSize * (pageNum - 1)
 
-	watchedMovies, err := p.watcherRepository.GetWatchedMoviesForWatcher(ctx, profileID, offset)
+	watcher, err := p.watcherService.NewWatcher(ctx, profileID)
 	if err != nil {
 		return MovieData{}, err
 	}
 
-	numMovies, err := p.watcherRepository.GetWatchedMoviesCountForMember(ctx, logger, profileID)
+	watchedMovies, numMovies, err := watcher.GetWatchHistory(ctx, logger, offset)
 	if err != nil {
 		return MovieData{}, err
 	}
