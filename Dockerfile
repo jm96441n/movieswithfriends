@@ -26,7 +26,7 @@ RUN chown -R myuser:myuser .
 USER myuser
 RUN go mod download && go run ./tools/assetbuilder/ && CGO_ENABLED=0 go build -o /go/bin/app ./cmd/movieswithfriends/ 
 
-FROM gcr.io/distroless/static-debian12 AS prod
+FROM gcr.io/distroless/static-debian12:nonroot AS prod
 COPY --from=builder /etc/passwd /etc/passwd
 COPY --from=builder /etc/group /etc/group
 USER myuser
