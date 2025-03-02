@@ -15,10 +15,83 @@ import (
 
 type PartyRepository struct {
 	db *pgxpool.Pool
+	tx pgx.Tx
 }
 
 func NewPartyRepository(db *pgxpool.Pool) PartyRepository {
 	return PartyRepository{db: db}
+}
+
+func (p PartyRepository) RunInTransaction(ctx context.Context, fn func(context.Context, PartyRepository) error) error {
+	txnRepo, err := p.withTransaction(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	defer txnRepo.rollback(ctx)
+
+	err = fn(ctx, txnRepo)
+	if err != nil {
+		return err
+	}
+
+	return txnRepo.commit(ctx)
+}
+
+func (p PartyRepository) withTransaction(ctx context.Context, tx pgx.Tx) (PartyRepository, error) {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyRepository.WithTransaction")
+	defer span.End()
+
+	var err error
+	if tx == nil {
+		tx, err = p.db.Begin(ctx)
+		if err != nil {
+			return p, err
+		}
+	}
+
+	p.tx = tx
+	return p, nil
+}
+
+func (p PartyRepository) commit(ctx context.Context) error {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyRepository.Commit")
+	defer span.End()
+	if p.tx == nil {
+		return nil
+	}
+	err := p.tx.Commit(ctx)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (p PartyRepository) rollback(ctx context.Context) error {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyRepository.Rollback")
+	defer span.End()
+	if p.tx == nil {
+		return nil
+	}
+	err := p.tx.Rollback(ctx)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type querier interface {
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
+}
+
+func (p PartyRepository) getQuerier(ctx context.Context) querier {
+	_, span, _ := metrics.SpanFromContext(ctx, "PartyRepository.getQuerier")
+	defer span.End()
+	if p.tx != nil {
+		return p.tx
+	}
+	return p.db
 }
 
 type PartyMovie struct {
@@ -216,7 +289,7 @@ RETURNING id_movie;
 func (p PartyRepository) SelectMovieForParty(ctx context.Context, idParty int) error {
 	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyRepository.SelectMovieForParty")
 	defer span.End()
-	tx, err := p.db.BeginTx(ctx, pgx.TxOptions{})
+	tx, err := p.db.Begin(ctx)
 	if err != nil {
 		return err
 	}
@@ -258,7 +331,8 @@ const createPartyMemberQuery = `insert into party_members (id_member, id_party) 
 func (p PartyRepository) CreatePartyMember(ctx context.Context, idWatcher, idParty int) error {
 	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyRepository.CreatePartyMember")
 	defer span.End()
-	_, err := p.db.Exec(ctx, createPartyMemberQuery, idWatcher, idParty)
+
+	_, err := p.getQuerier(ctx).Exec(ctx, createPartyMemberQuery, idWatcher, idParty)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
@@ -411,6 +485,20 @@ func (p PartyRepository) GetPartyMembers(ctx context.Context, idParty int, assig
 			return err
 		}
 		assignFn(firstName, lastName, id, joinDate, idProfile)
+	}
+	return nil
+}
+
+const deleteInviteQuery = `
+  DELETE FROM invitations 
+  WHERE id_profile = $1 and id_party = $2;`
+
+func (p PartyRepository) DeleteInvite(ctx context.Context, idWatcher, idParty int) error {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyRepository.DeleteInvite")
+	defer span.End()
+	_, err := p.getQuerier(ctx).Exec(ctx, deleteInviteQuery, idWatcher, idParty)
+	if err != nil {
+		return err
 	}
 	return nil
 }

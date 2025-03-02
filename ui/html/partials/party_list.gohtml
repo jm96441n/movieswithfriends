@@ -129,23 +129,28 @@
           </div>
 
           <!-- Invited By -->
-          <div class="d-flex align-items-center mb-3">
-            <!-- <img -->
-            <!--   src="/api/placeholder/32/32" -->
-            <!--   class="rounded-circle me-2" -->
-            <!--   alt="Inviter" -->
-            <!-- /> -->
-            <div class="small">
-              <strong>John Smith</strong> invited you
-              <div class="text-muted">2 hours ago</div>
-            </div>
-          </div>
+          <!-- <div class="d-flex align-items-center mb-3"> -->
+          <!-- <img -->
+          <!--   src="/api/placeholder/32/32" -->
+          <!--   class="rounded-circle me-2" -->
+          <!--   alt="Inviter" -->
+          <!-- /> -->
+          <!-- <div class="small"> -->
+          <!-- <strong>John Smith</strong> invited you -->
+          <!-- <div class="text-muted">2 hours ago</div> -->
+          <!-- </div> -->
+          <!-- </div> -->
 
           <!-- Action Buttons -->
           <div class="d-flex gap-2">
             <form>
-              <input type="hidden" name="party" value="{{ .ID }}" />
-              <button class="btn btn-success btn-sm flex-grow-1" type="submit">
+              <input type="hidden" name="partyID" value="{{ .ID }}" />
+              <button
+                hx-post="/party_members"
+                class="btn btn-success btn-sm flex-grow-1"
+                type="submit"
+                hx-target="#party-list"
+              >
                 Accept
               </button>
             </form>

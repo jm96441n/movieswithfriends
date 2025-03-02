@@ -13,6 +13,8 @@ Application to randomly select movies to watch with friends.
 
 **partymgmt.Party**
 
+- Invitation
+
 **partymgmt.partymovie**
 
 **partymgmt.partymember**

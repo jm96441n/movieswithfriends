@@ -34,6 +34,7 @@ type Config struct {
 
 type TelemetryProvider interface {
 	IncreaseUserRegisteredCounter(context.Context, *slog.Logger)
+	IncreseInvitationAcceptedCounter(context.Context, *slog.Logger)
 	MeterInt64Counter(metric Metric) (otelmetric.Int64Counter, error)
 	Shutdown(ctx context.Context)
 	MeterProvider() otelmetric.MeterProvider

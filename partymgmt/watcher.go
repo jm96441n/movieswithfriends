@@ -105,6 +105,7 @@ func (w Watcher) GetParties(ctx context.Context, ps PartyService) ([]Party, erro
 	defer span.End()
 
 	var parties []Party
+	// TODO: this should be a methon on the PartyService and take a scope object for the scope of fetching parties
 	err := w.db.GetPartiesForWatcher(ctx, w.ID, 10, func(ctx context.Context, id int, name string, memberCount int, movieCount int, idOwner int) {
 		parties = append(parties, ps.NewParty(ctx, id, name, movieCount, memberCount, idOwner))
 	})

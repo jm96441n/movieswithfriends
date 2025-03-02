@@ -54,10 +54,63 @@ func (a *Application) CreateInviteHandler(w http.ResponseWriter, r *http.Request
 }
 
 func (a *Application) AcceptInviteHandler(w http.ResponseWriter, r *http.Request) {
-	// ctx, span, _ := metrics.SpanFromContext(r.Context(), "AcceptInviteHandler")
-	// defer span.End()
-	// logger := a.Logger.With("handler", "InvitationsHandler")
+	ctx, span, _ := metrics.SpanFromContext(r.Context(), "AcceptInviteHandler")
+	defer span.End()
+	logger := a.Logger.With("handler", "InvitationsHandler")
 
+	err := r.ParseForm()
+	if err != nil {
+		logger.ErrorContext(ctx, "Failed to parse form", slog.Any("error", err))
+		a.setErrorFlashMessage(w, r, "There was an error accepting this invite, try again.")
+		http.Redirect(w, r, "/parties", http.StatusInternalServerError)
+		return
+	}
+
+	partyID, err := strconv.Atoi(r.FormValue("partyID"))
+	if err != nil {
+		logger.ErrorContext(ctx, "failed to convert partyID to int", slog.Any("error", err))
+		a.setErrorFlashMessage(w, r, "There was an error accepting this invite, try again.")
+		http.Redirect(w, r, "/parties", http.StatusBadRequest)
+		return
+	}
+
+	if partyID == 0 {
+		logger.ErrorContext(ctx, "invalid partyID", slog.Int("partyID", 0))
+		a.setErrorFlashMessage(w, r, "There was an error accepting this invite, try again.")
+		http.Redirect(w, r, "/parties", http.StatusBadRequest)
+		return
+	}
+
+	watcher, err := a.getWatcherFromSession(ctx, r)
+	if err != nil {
+		logger.ErrorContext(ctx, "failed to get watcher from session", slog.Any("error", err))
+		a.setErrorFlashMessage(w, r, "There was an error accepting this invite, try again.")
+		http.Redirect(w, r, "/parties", http.StatusBadRequest)
+		return
+	}
+
+	party := a.PartyService.NewParty(ctx, partyID, "", 0, 0, 0)
+
+	err = party.AcceptInvite(ctx, logger, watcher.ID)
+	if err != nil {
+		logger.ErrorContext(ctx, "failed to add member to party", slog.Any("error", err))
+		a.setErrorFlashMessage(w, r, "There was an error accepting this invite, try again.")
+		http.Redirect(w, r, "/parties", http.StatusBadRequest)
+		return
+	}
+
+	a.Telemetry.IncreseInvitationAcceptedCounter(ctx, logger)
+
+	parties, invites, err := watcher.GetPartiesAndInvitedParties(ctx, a.PartyService)
+	if err != nil {
+		logger.ErrorContext(ctx, "failed to get parties and invites", slog.Any("error", err))
+		a.setErrorFlashMessage(w, r, "There was an issue getting your parties, try again.")
+		http.Redirect(w, r, "/profile", http.StatusBadRequest)
+		return
+	}
+
+	templateData := a.NewPartiesIndexTemplateData(r, w, "/parties", parties, invites, watcher.ID)
+	a.renderPartial(w, r, http.StatusOK, "partials/party_list.gohtml", templateData)
 	// this should remove the invitation, create the party_member record
 	// and then cause a re-render of the parties listing
 }

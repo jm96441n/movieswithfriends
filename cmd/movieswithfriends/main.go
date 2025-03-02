@@ -38,17 +38,18 @@ const length = 32
 
 func main() {
 	ctx := context.Background()
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	var version string
 
 	buildInfo, ok := debug.ReadBuildInfo()
 	if !ok {
-		slog.Error("Error reading build info")
+		logger.ErrorContext(ctx, "Error reading build info")
 		os.Exit(1)
 	}
 
 	for _, setting := range buildInfo.Settings {
 		if setting.Key == "vcs.revision" {
-			slog.Info("Git version", slog.Any("vcs.revision", setting.Value))
+			logger.InfoContext(ctx, "Git version", slog.Any("vcs.revision", setting.Value))
 			version = setting.Value
 			break
 		}
@@ -60,11 +61,9 @@ func main() {
 
 	collectorEndpoint := os.Getenv("COLLECTOR_ENDPOINT")
 	if collectorEndpoint == "" {
-		slog.Error("COLLECTOR_ENDPOINT is not set")
+		logger.ErrorContext(ctx, "COLLECTOR_ENDPOINT is not set")
 		os.Exit(1)
 	}
-
-	slog.Info("Got collector endpoint", slog.String("endpoint", collectorEndpoint))
 
 	telemetry, err := metrics.NewTelemetry(ctx, metrics.Config{
 		ServiceName:       "movieswithfriends",
@@ -73,13 +72,13 @@ func main() {
 		CollectorEndpoint: collectorEndpoint,
 	})
 	if err != nil {
-		slog.Error("Error building telemetry", slog.Any("err", err))
+		logger.ErrorContext(ctx, "Error building telemetry", slog.Any("err", err))
 		os.Exit(1)
 	}
 
 	defer telemetry.Shutdown(ctx)
 
-	logger := telemetry.Logger()
+	logger = telemetry.Logger()
 	logger.Info("successfully setup otel")
 
 	logger.Info("running migrations")

@@ -86,23 +86,6 @@ func (s PartyService) NewParty(ctx context.Context, id int, name string, movieCo
 	}
 }
 
-func (s PartyService) AddNewMemberToParty(ctx context.Context, idMember int, shortID string) error {
-	party, err := s.db.GetPartyByShortID(ctx, shortID)
-	if err != nil {
-		return err
-	}
-
-	err = s.db.CreatePartyMember(ctx, idMember, party.ID)
-	if errors.Is(err, store.ErrMemberPartyCombinationNotUnique) {
-		return errors.Join(ErrMemberExistsInParty, err)
-	}
-
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (s PartyService) CreateParty(ctx context.Context, idMember int, name string) (int, error) {
 	ctx, span, _ := metrics.SpanFromContext(ctx, "PartyService.CreateParty")
 	defer span.End()
@@ -179,16 +162,35 @@ func (s PartyService) GetPartyByShortID(ctx context.Context, shortID string) (Pa
 	}, nil
 }
 
-func (p Party) AddMember(ctx context.Context, idMember int) error {
-	err := p.db.CreatePartyMember(ctx, idMember, p.ID)
+func (p Party) AcceptInvite(ctx context.Context, logger *slog.Logger, watcherID int) error {
+	ctx, span, _ := metrics.SpanFromContext(ctx, "Party.AddMember")
+	defer span.End()
 
-	if errors.Is(err, store.ErrMemberPartyCombinationNotUnique) {
-		return errors.Join(ErrMemberExistsInParty, err)
-	}
+	err := p.db.RunInTransaction(ctx, func(ctx context.Context, db store.PartyRepository) error {
+		err := db.DeleteInvite(ctx, watcherID, p.ID)
+		if err != nil {
+			logger.ErrorContext(ctx, "failed to delete invite", slog.Any("watcher_id", watcherID), slog.Any("party_id", p.ID))
+			return err
+		}
 
+		err = db.CreatePartyMember(ctx, watcherID, p.ID)
+
+		// if the party member exists then it's fine because it's all done
+		if errors.Is(err, store.ErrMemberPartyCombinationNotUnique) {
+			logger.DebugContext(ctx, "watcher already in party", slog.Any("watcher_id", watcherID), slog.Any("party_id", p.ID))
+			return nil
+		}
+
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 

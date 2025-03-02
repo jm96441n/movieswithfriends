@@ -25,10 +25,11 @@ func (a *Application) Routes() http.Handler {
 	partyMovieRoutes := a.partyMovieRoutes()
 	sessionRoutes := a.sessionRoutes()
 	profileRoutes := a.profileRoutes()
+	partyMemberRoutes := a.partyMemberRoutes()
 	invitationRoutes := a.invitationRoutes()
 
 	// allocate capacity for all routes
-	routes := make([]Route, 0, len(staticRoutes)+len(movieRoutes)+len(partyRoutes)+len(sessionRoutes)+len(profileRoutes))
+	routes := make([]Route, 0)
 
 	routes = slices.Concat(
 		routes,
@@ -39,6 +40,7 @@ func (a *Application) Routes() http.Handler {
 		sessionRoutes,
 		profileRoutes,
 		invitationRoutes,
+		partyMemberRoutes,
 	)
 
 	authenticatorMW := a.authenticateMiddleware()
@@ -194,6 +196,16 @@ func (a *Application) sessionRoutes() []Route {
 			path:               "POST /logout",
 			handler:            a.LogoutHandler,
 			authenticatedRoute: false,
+		},
+	}
+}
+
+func (a *Application) partyMemberRoutes() []Route {
+	return []Route{
+		{
+			path:               "POST /party_members",
+			handler:            a.AcceptInviteHandler,
+			authenticatedRoute: true,
 		},
 	}
 }

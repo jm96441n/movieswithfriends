@@ -7,6 +7,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// TODO: this should be in the party repository
 type InvitationsRepository struct {
 	db *pgxpool.Pool
 }
