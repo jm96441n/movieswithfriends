@@ -26,7 +26,6 @@ func (a *Application) authenticateMiddleware() func(http.HandlerFunc) http.Handl
 			defer span.End()
 			logger := a.Logger
 
-			logger.DebugContext(ctx, "checking if user is authenticated")
 			id, err := a.getAccountIDFromSession(ctx, req)
 			if err != nil {
 				if errors.Is(err, ErrFailedToGetAccountIDFromSession) {

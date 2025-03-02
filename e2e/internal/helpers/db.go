@@ -142,7 +142,7 @@ func addMemberToPartyAsOwner(ctx context.Context, t *testing.T, conn *pgxpool.Po
 	defer txn.Rollback(ctx)
 	Ok(t, err, "failed to open transaction")
 
-	_, err = txn.Exec(ctx, `INSERT INTO party_members (id_party, id_member) VALUES ($1, $2, true)`, partyID, profileID)
+	_, err = txn.Exec(ctx, `INSERT INTO party_members (id_party, id_member) VALUES ($1, $2)`, partyID, profileID)
 	Ok(t, err, "failed to add member to party")
 
 	_, err = txn.Exec(ctx, `UPDATE parties SET id_owner = $1 WHERE id_party = $2`, profileID, partyID)

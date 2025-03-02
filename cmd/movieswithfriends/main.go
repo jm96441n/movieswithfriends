@@ -101,7 +101,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = runMigrations(logger, os.Getenv("DB_HOST"), os.Getenv("DB_DATABASE_NAME"), migrationCreds)
+	err = runMigrations(ctx, logger, os.Getenv("DB_HOST"), os.Getenv("DB_DATABASE_NAME"), migrationCreds)
 	if err != nil {
 		logger.Error(err.Error())
 		os.Exit(1)
@@ -283,9 +283,25 @@ func createConnPool(host string, dbname string, creds DBCreds) (*pgxpool.Pool, e
 	return db, nil
 }
 
-func runMigrations(logger *slog.Logger, host, dbname string, creds DBCreds) error {
+type gooseLogger struct {
+	ctx    context.Context
+	logger *slog.Logger
+}
+
+func (n gooseLogger) Fatalf(format string, v ...interface{}) {
+	n.logger.ErrorContext(n.ctx, fmt.Sprintf(format, v...))
+	os.Exit(1)
+}
+
+func (n gooseLogger) Printf(format string, v ...interface{}) {
+	n.logger.DebugContext(n.ctx, fmt.Sprintf(format, v...))
+}
+
+func runMigrations(ctx context.Context, logger *slog.Logger, host, dbname string, creds DBCreds) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
 	defer cancel()
+
+	goose.SetLogger(gooseLogger{ctx: ctx, logger: logger})
 
 	goose.SetBaseFS(migrations.MigrationsFS)
 
