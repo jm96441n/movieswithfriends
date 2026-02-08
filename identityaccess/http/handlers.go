@@ -82,3 +82,8 @@ func NewHandlers(
 		logger:                   logger,
 	}
 }
+
+// SetRenderer sets the renderer after handler creation to avoid circular dependencies.
+func (h *Handlers) SetRenderer(renderer Renderer) {
+	h.renderer = renderer
+}

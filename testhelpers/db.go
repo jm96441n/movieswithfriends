@@ -122,7 +122,7 @@ func getMigrationPath(path string) string {
 	_, err := os.Stat(filepath.Join(path, "go.mod"))
 
 	if err == nil {
-		return filepath.Join(path, "migrations")
+		return filepath.Join(path, "migrations", "migrations")
 	}
 
 	if path == "/" {

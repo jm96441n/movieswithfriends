@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
 	"github.com/jm96441n/movieswithfriends/identityaccess"
+	identityaccesshttp "github.com/jm96441n/movieswithfriends/identityaccess/http"
 	"github.com/jm96441n/movieswithfriends/identityaccess/services"
 	iamstore "github.com/jm96441n/movieswithfriends/identityaccess/store"
 	"github.com/jm96441n/movieswithfriends/metrics"
@@ -206,7 +207,12 @@ func main() {
 		watcherSvc,
 	)
 
-	// Initialize party management handlers first to pass to app config
+	profilesSvc := identityaccess.NewProfileService(profileRepo)
+	auth := &identityaccess.Authenticator{
+		ProfileRepository: profileRepo,
+	}
+
+	// Initialize domain-specific handlers first to pass to app config
 	partyMgmtHandlers := partymgmthttp.NewHandlers(partymgmthttp.Config{
 		Logger:                   logger,
 		SessionStore:             sessionStore,
@@ -220,29 +226,46 @@ func main() {
 		Renderer:                 nil, // Set after app is created to avoid circular dependency
 	})
 
-	app := web.NewApplication(
+	// Create a placeholder for the Application to use in the template data provider closure
+	var app *web.Application
+
+	// Initialize identity access handlers
+	identityAccessHandlers := identityaccesshttp.NewHandlers(
+		nil, // Renderer set after app is created to avoid circular dependency
+		sessionStore,
+		func(r *http.Request, w http.ResponseWriter, path string) interface{} {
+			return app.NewTemplateData(r, w, path)
+		},
+		profilesSvc,
+		profileAggregatorSvc,
+		auth,
+		telemetry,
+		logger,
+	)
+
+	app = web.NewApplication(
 		web.AppConfig{
-			Telemetry:         telemetry,
-			Logger:            logger,
-			SessionStore:      sessionStore,
-			MoviesService:     moviesSvc,
-			MoviesRepository:  moviesRepo,
-			PartyService:      partySvc,
-			PartiesRepository: partyRepo,
-			ProfilesService:   identityaccess.NewProfileService(profileRepo),
-			WatcherService:    watcherSvc,
-			Auth: &identityaccess.Authenticator{
-				ProfileRepository: profileRepo,
-			},
+			Telemetry:                telemetry,
+			Logger:                   logger,
+			SessionStore:             sessionStore,
+			MoviesService:            moviesSvc,
+			MoviesRepository:         moviesRepo,
+			PartyService:             partySvc,
+			PartiesRepository:        partyRepo,
+			ProfilesService:          profilesSvc,
+			WatcherService:           watcherSvc,
+			Auth:                     auth,
 			ProfileAggregatorService: profileAggregatorSvc,
 			InvitationsService:       invitationsSvc,
 			AssetLoader:              loader,
 			PartyMgmtHandlers:        partyMgmtHandlers,
+			IdentityAccessHandlers:   identityAccessHandlers,
 		},
 	)
 
 	// Set the Renderer after app is created (to avoid circular dependency)
 	partyMgmtHandlers.Renderer = app
+	identityAccessHandlers.SetRenderer(app)
 
 	addr := os.Getenv("ADDR")
 	if addr == "" {
