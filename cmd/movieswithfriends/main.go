@@ -36,9 +36,23 @@ import (
 
 const length = 32
 
+func logLevelFromString(level string) slog.Level {
+	switch level {
+	case "ERROR":
+		return slog.LevelError
+	case "WARN":
+		return slog.LevelWarn
+	case "DEBUG":
+		return slog.LevelDebug
+	default:
+		return slog.LevelInfo
+	}
+}
+
 func main() {
 	ctx := context.Background()
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	level := logLevelFromString(os.Getenv("LOG_LEVEL"))
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: level}))
 	var version string
 
 	buildInfo, ok := debug.ReadBuildInfo()
@@ -70,6 +84,7 @@ func main() {
 		ServiceVersion:    version,
 		Enabled:           true,
 		CollectorEndpoint: collectorEndpoint,
+		LogLevel:          level,
 	})
 	if err != nil {
 		logger.ErrorContext(ctx, "Error building telemetry", slog.Any("err", err))

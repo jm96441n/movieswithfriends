@@ -52,11 +52,11 @@ pkr:
 
 .PHONY: tf-plan
 tf-plan:
-	cd ./infra/terraform && terraform plan -out=tfplan
+	cd ./infra/terraform && source ../.envrc && terraform plan -out=tfplan
 
 .PHONY: tf-apply
 tf-apply: tf-plan
-	cd ./infra/terraform && terraform apply "tfplan"
+	cd ./infra/terraform && source ../.envrc && terraform apply "tfplan"
 
 .PHONY: deploy
 deploy:

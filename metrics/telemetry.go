@@ -30,6 +30,7 @@ type Config struct {
 	ServiceVersion    string
 	Enabled           bool
 	CollectorEndpoint string
+	LogLevel          slog.Level
 }
 
 type TelemetryProvider interface {
@@ -64,8 +65,8 @@ func NewTelemetry(ctx context.Context, cfg Config) (TelemetryProvider, error) {
 
 	logger := slog.New(
 		slogmulti.Fanout(
-			slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
-			otelslog.NewHandler("movieswithfriends", otelslog.WithLoggerProvider(lp)),
+			slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: cfg.LogLevel}),
+			otelslog.NewHandler("movieswithfriends", otelslog.WithLoggerProvider(lp), otelslog.WithSource(true)),
 		))
 
 	mp, err := newMeterProvider(ctx, rp, cfg.CollectorEndpoint)
