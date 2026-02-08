@@ -1,14 +1,12 @@
 package web
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"html/template"
 	"log/slog"
 	"net/http"
-	"path/filepath"
 
 	"github.com/gorilla/sessions"
 	"github.com/jm96441n/movieswithfriends/identityaccess"
@@ -80,76 +78,23 @@ func NewApplication(cfg AppConfig) *Application {
 	return a
 }
 
+// Legacy methods - these now delegate to the public Renderer interface methods
+// for backward compatibility with existing handlers in the web package.
+
 func (a *Application) serverError(w http.ResponseWriter, r *http.Request, err error) {
-	method := r.Method
-	uri := r.URL.RequestURI()
-
-	ctx, span, _ := metrics.SpanFromContext(r.Context(), "serverError")
-	defer span.End()
-
-	a.Logger.ErrorContext(ctx, err.Error(), slog.String("method", method), slog.String("uri", uri))
-	http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	a.ServerError(w, r, err)
 }
 
 func (a *Application) clientError(w http.ResponseWriter, r *http.Request, status int, message string) {
-	session, err := a.SessionStore.Get(r, sessionName)
-	if err != nil {
-		a.serverError(w, r, err)
-	}
-	session.AddFlash(message)
-	session.Save(r, w)
-
-	http.Error(w, http.StatusText(status), status)
+	a.ClientError(w, r, status, message)
 }
 
 func (a *Application) render(w http.ResponseWriter, r *http.Request, status int, page string, data interface{}) {
-	ts, ok := a.templateCache[page]
-
-	if !ok {
-		a.serverError(w, r, fmt.Errorf("template does not exist for page %q", page))
-	}
-
-	buf := bytes.NewBuffer([]byte{})
-
-	// write to the buffer  to check if we have any template errors before rendering the response
-	err := ts.ExecuteTemplate(buf, "base", data)
-	if err != nil {
-		a.serverError(w, r, err)
-		return
-	}
-
-	w.WriteHeader(status)
-
-	buf.WriteTo(w)
+	a.Render(w, r, status, page, data)
 }
 
 func (a *Application) renderPartial(w http.ResponseWriter, r *http.Request, status int, page string, data interface{}) {
-	ts, ok := a.templateCache[page]
-
-	ctx, span, _ := metrics.SpanFromContext(r.Context(), "serverError")
-	defer span.End()
-
-	if !ok {
-		a.Logger.ErrorContext(ctx, "template does not exist for page", slog.Any("page", page))
-		a.serverError(w, r, fmt.Errorf("template does not exist for page %q", page))
-		return
-	}
-
-	tmplName := filepath.Base(page)
-
-	buf := bytes.NewBuffer([]byte{})
-	// write to the buffer  to check if we have any template errors before rendering the response
-	err := ts.ExecuteTemplate(buf, tmplName, data)
-	if err != nil {
-		a.serverError(w, r, err)
-		return
-	}
-
-	a.Logger.InfoContext(ctx, "rendering template", slog.Any("template", page))
-
-	w.WriteHeader(status)
-
-	buf.WriteTo(w)
+	a.RenderPartial(w, r, status, page, data)
 }
 
 func (a *Application) getAccountIDFromSession(ctx context.Context, r *http.Request) (int, error) {
@@ -236,33 +181,17 @@ func (a *Application) handleFailedToGetWatcherFromSession(ctx context.Context, l
 }
 
 func (a *Application) setInfoFlashMessage(w http.ResponseWriter, r *http.Request, msg string) {
-	_, span, _ := metrics.SpanFromContext(r.Context(), "Application.setInfoFlashMessage")
-	defer span.End()
-
-	a.setFlashMessage(w, r, FlashInfoKey, msg)
+	a.SetInfoFlashMessage(w, r, msg)
 }
 
 func (a *Application) setErrorFlashMessage(w http.ResponseWriter, r *http.Request, msg string) {
-	_, span, _ := metrics.SpanFromContext(r.Context(), "Application.setErrorFlashMessage")
-	defer span.End()
-	a.setFlashMessage(w, r, FlashErrorKey, msg)
+	a.SetErrorFlashMessage(w, r, msg)
 }
 
 // func (a *Application) setWarningFlashMessage(w http.ResponseWriter, r *http.Request, msg string) {
-// a.setFlashMessage(w, r, FlashWarningKey, msg)
+// a.SetFlashMessage(w, r, FlashWarningKey, msg)
 // }
 
 func (a *Application) setFlashMessage(w http.ResponseWriter, r *http.Request, key, msg string) {
-	ctx, span, _ := metrics.SpanFromContext(r.Context(), "Application.setFlashMessage")
-	defer span.End()
-
-	session, err := a.SessionStore.Get(r, sessionName)
-	if err != nil {
-		a.Logger.ErrorContext(ctx, "failed to get session", slog.Any("error", err))
-		return
-	}
-
-	a.Logger.DebugContext(ctx, "adding flash message")
-	session.AddFlash(msg, key)
-	session.Save(r, w)
+	a.SetFlashMessage(w, r, key, msg)
 }

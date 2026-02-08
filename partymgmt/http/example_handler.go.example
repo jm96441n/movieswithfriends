@@ -1,0 +1,126 @@
+package http
+
+import (
+	"log/slog"
+	"net/http"
+	"strconv"
+
+	"github.com/jm96441n/movieswithfriends/partymgmt"
+	"github.com/jm96441n/movieswithfriends/web"
+)
+
+// PartyHandler demonstrates how domain handlers can use the web.Renderer interface.
+// This is an example file showing the pattern for DDD-style handlers.
+type PartyHandler struct {
+	renderer     web.Renderer
+	partyService partymgmt.PartyService
+	logger       *slog.Logger
+}
+
+// NewPartyHandler creates a new PartyHandler with the required dependencies.
+func NewPartyHandler(
+	renderer web.Renderer,
+	partyService partymgmt.PartyService,
+	logger *slog.Logger,
+) *PartyHandler {
+	return &PartyHandler{
+		renderer:     renderer,
+		partyService: partyService,
+		logger:       logger,
+	}
+}
+
+// Show displays a single party with its details.
+func (h *PartyHandler) Show(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	logger := h.logger.With("handler", "PartyHandler.Show")
+
+	// Extract party ID from path
+	idParam := r.PathValue("id")
+	partyID, err := strconv.Atoi(idParam)
+	if err != nil {
+		logger.ErrorContext(ctx, "invalid party ID", slog.Any("error", err))
+		h.renderer.SetErrorFlashMessage(w, r, "Invalid party ID")
+		http.Redirect(w, r, "/parties", http.StatusBadRequest)
+		return
+	}
+
+	// Fetch party from service
+	party, err := h.partyService.GetPartyWithMovies(ctx, logger, partyID)
+	if err != nil {
+		logger.ErrorContext(ctx, "failed to get party", slog.Any("error", err))
+		h.renderer.ServerError(w, r, err)
+		return
+	}
+
+	// Prepare template data
+	templateData := PartyShowTemplateData{
+		Party: party,
+		// BaseTemplateData would be added via web.NewPartiesTemplateData
+	}
+
+	// Render the template
+	h.renderer.Render(w, r, http.StatusOK, "parties/show.gohtml", templateData)
+}
+
+// AddMovie adds a movie to a party (demonstrates partial rendering for HTMX).
+func (h *PartyHandler) AddMovie(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	logger := h.logger.With("handler", "PartyHandler.AddMovie")
+
+	// Parse form data
+	if err := r.ParseForm(); err != nil {
+		logger.ErrorContext(ctx, "failed to parse form", slog.Any("error", err))
+		h.renderer.ClientError(w, r, http.StatusBadRequest, "Invalid form data")
+		return
+	}
+
+	partyID, _ := strconv.Atoi(r.FormValue("party_id"))
+	movieID, _ := strconv.Atoi(r.FormValue("movie_id"))
+
+	// Add movie via service
+	if err := h.partyService.AddMovieToParty(ctx, partyID, movieID); err != nil {
+		logger.ErrorContext(ctx, "failed to add movie", slog.Any("error", err))
+		h.renderer.SetErrorFlashMessage(w, r, "Failed to add movie to party")
+		http.Redirect(w, r, "/parties", http.StatusSeeOther)
+		return
+	}
+
+	// Success - set flash and redirect
+	h.renderer.SetInfoFlashMessage(w, r, "Movie added successfully!")
+	http.Redirect(w, r, "/parties/"+strconv.Itoa(partyID), http.StatusSeeOther)
+}
+
+// MovieListPartial renders just the movie list (for HTMX updates).
+func (h *PartyHandler) MovieListPartial(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	logger := h.logger.With("handler", "PartyHandler.MovieListPartial")
+
+	partyID, _ := strconv.Atoi(r.PathValue("id"))
+
+	// Fetch movies for the party
+	movies, err := h.partyService.GetMoviesForParty(ctx, partyID)
+	if err != nil {
+		logger.ErrorContext(ctx, "failed to get movies", slog.Any("error", err))
+		h.renderer.ServerError(w, r, err)
+		return
+	}
+
+	// Render partial template (no base layout)
+	templateData := MovieListPartialData{
+		Movies: movies,
+	}
+
+	h.renderer.RenderPartial(w, r, http.StatusOK, "parties/partials/movie_list.gohtml", templateData)
+}
+
+// Template data structures (these would typically live in a separate file)
+
+type PartyShowTemplateData struct {
+	Party partymgmt.Party
+	web.BaseTemplateData
+}
+
+type MovieListPartialData struct {
+	Movies []partymgmt.Movie
+}
