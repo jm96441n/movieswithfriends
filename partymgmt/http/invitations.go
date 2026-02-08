@@ -6,17 +6,8 @@ import (
 	"strconv"
 
 	"github.com/jm96441n/movieswithfriends/metrics"
-	"github.com/jm96441n/movieswithfriends/partymgmt"
+	"github.com/jm96441n/movieswithfriends/web"
 )
-
-// InviteModalTemplateData holds the data for rendering the invite modal.
-type InviteModalTemplateData struct {
-	CreateErrorMsg string
-	FetchErrorMsg  string
-	PendingInvites []partymgmt.Invite
-	PartyID        int
-	ShowModal      bool
-}
 
 // CreateInviteHandler handles creating a new invitation for a party.
 func (h *Handlers) CreateInviteHandler(w http.ResponseWriter, r *http.Request) {
@@ -32,7 +23,7 @@ func (h *Handlers) CreateInviteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	templateData := InviteModalTemplateData{
+	templateData := web.InviteModalTemplateData{
 		PartyID:   partyID,
 		ShowModal: true,
 	}

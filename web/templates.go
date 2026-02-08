@@ -97,6 +97,15 @@ func (s *ProfilesTemplateData) GetErrorFields() (email, password, firstName, las
 	return &s.HasEmailError, &s.HasPasswordError, &s.HasFirstNameError, &s.HasLastNameError
 }
 
+// InviteModalTemplateData holds the data for rendering the invite modal.
+type InviteModalTemplateData struct {
+	CreateErrorMsg string
+	FetchErrorMsg  string
+	PendingInvites []partymgmt.Invite
+	PartyID        int
+	ShowModal      bool
+}
+
 type PartiesTemplateData struct {
 	Party                 partymgmt.Party
 	CurrentWatcherIsOwner bool

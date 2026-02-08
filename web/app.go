@@ -223,3 +223,7 @@ func (a *Application) setErrorFlashMessage(w http.ResponseWriter, r *http.Reques
 func (a *Application) setFlashMessage(w http.ResponseWriter, r *http.Request, key, msg string) {
 	a.SetFlashMessage(w, r, key, msg)
 }
+
+func (a *Application) logout(w http.ResponseWriter, r *http.Request) {
+	_ = a.IdentityAccessHandlers.Logout(w, r)
+}
