@@ -10,6 +10,7 @@ import (
 
 	"github.com/gorilla/sessions"
 	"github.com/jm96441n/movieswithfriends/identityaccess"
+	identityaccesshttp "github.com/jm96441n/movieswithfriends/identityaccess/http"
 	"github.com/jm96441n/movieswithfriends/identityaccess/services"
 	"github.com/jm96441n/movieswithfriends/metrics"
 	"github.com/jm96441n/movieswithfriends/partymgmt"
@@ -54,6 +55,7 @@ type Application struct {
 	InvitationsService       partymgmt.InvitationsService
 	Auth                     *identityaccess.Authenticator
 	AssetLoader              *Loader
+	IdentityAccessHandlers   *identityaccesshttp.Handlers
 }
 
 func NewApplication(cfg AppConfig) *Application {
@@ -74,6 +76,19 @@ func NewApplication(cfg AppConfig) *Application {
 	}
 
 	a.initTemplateCache(ui.TemplateFS)
+
+	// Initialize domain handlers
+	a.IdentityAccessHandlers = identityaccesshttp.NewHandlers(
+		a, // Application implements Renderer interface
+		cfg.SessionStore,
+		func(r *http.Request, w http.ResponseWriter, path string) interface{} {
+			return a.NewTemplateData(r, w, path)
+		},
+		cfg.ProfilesService,
+		cfg.ProfileAggregatorService,
+		cfg.Auth,
+		cfg.Logger,
+	)
 
 	return a
 }

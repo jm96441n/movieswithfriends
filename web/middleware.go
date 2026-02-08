@@ -93,3 +93,35 @@ func isAuthenticated(ctx context.Context) bool {
 	}
 	return isAuthenticated.(bool)
 }
+
+// IsAuthenticated returns whether the current request is authenticated.
+// This is exported for use by domain handlers.
+func IsAuthenticated(ctx context.Context) bool {
+	return isAuthenticated(ctx)
+}
+
+// GetFullName retrieves the full name from the request context.
+// Returns empty string if not authenticated.
+func GetFullName(ctx context.Context) string {
+	if !isAuthenticated(ctx) {
+		return ""
+	}
+	fullName := ctx.Value(fullNameContextKey)
+	if fullName == nil {
+		return ""
+	}
+	return fullName.(string)
+}
+
+// GetEmail retrieves the email from the request context.
+// Returns empty string if not authenticated.
+func GetEmail(ctx context.Context) string {
+	if !isAuthenticated(ctx) {
+		return ""
+	}
+	email := ctx.Value(emailContextKey)
+	if email == nil {
+		return ""
+	}
+	return email.(string)
+}
