@@ -7,6 +7,7 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/jm96441n/movieswithfriends/identityaccess"
 	"github.com/jm96441n/movieswithfriends/identityaccess/services"
+	"github.com/jm96441n/movieswithfriends/metrics"
 )
 
 const (
@@ -38,6 +39,7 @@ type Handlers struct {
 	profileService           *identityaccess.ProfileService
 	profileAggregatorService *services.ProfileAggregatorService
 	authenticator            *identityaccess.Authenticator
+	telemetry                metrics.TelemetryProvider
 	logger                   *slog.Logger
 }
 
@@ -49,6 +51,7 @@ func NewHandlers(
 	profileService *identityaccess.ProfileService,
 	profileAggregatorService *services.ProfileAggregatorService,
 	authenticator *identityaccess.Authenticator,
+	telemetry metrics.TelemetryProvider,
 	logger *slog.Logger,
 ) *Handlers {
 	return &Handlers{
@@ -58,6 +61,7 @@ func NewHandlers(
 		profileService:           profileService,
 		profileAggregatorService: profileAggregatorService,
 		authenticator:            authenticator,
+		telemetry:                telemetry,
 		logger:                   logger,
 	}
 }

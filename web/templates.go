@@ -99,6 +99,10 @@ func (s *SignupTemplateData) InitHasErrorFields() {
 	s.HasLastNameError = new(bool)
 }
 
+func (s *SignupTemplateData) GetErrorFields() (email, password, firstName, lastName **bool) {
+	return &s.HasEmailError, &s.HasPasswordError, &s.HasFirstNameError, &s.HasLastNameError
+}
+
 func (a *Application) NewTemplateData(r *http.Request, w http.ResponseWriter, path string) BaseTemplateData {
 	return a.newBaseTemplateData(r, w, path)
 }

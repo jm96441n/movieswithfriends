@@ -87,6 +87,7 @@ func NewApplication(cfg AppConfig) *Application {
 		cfg.ProfilesService,
 		cfg.ProfileAggregatorService,
 		cfg.Auth,
+		cfg.Telemetry,
 		cfg.Logger,
 	)
 

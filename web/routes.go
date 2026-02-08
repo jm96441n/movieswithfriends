@@ -174,12 +174,12 @@ func (a *Application) sessionRoutes() []Route {
 	return []Route{
 		{
 			path:               "GET /signup",
-			handler:            a.SignUpShowHandler,
+			handler:            a.IdentityAccessHandlers.SignUpShowHandler,
 			authenticatedRoute: false,
 		},
 		{
 			path:               "POST /signup",
-			handler:            a.SignUpHandler,
+			handler:            a.IdentityAccessHandlers.SignUpHandler,
 			authenticatedRoute: false,
 		},
 		{
