@@ -171,6 +171,9 @@ import (
 ## Architecture Principles
 
 1. **Domain-Driven Design:** Keep domain logic in domain packages
+   - HTTP handlers live in `<domain>/http/` subdirectories
+   - Each domain exposes routes through a `GetRoutes()` or `RegisterRoutes()` method
+   - Domains use Renderer interface to decouple from web package
 2. **Repository Pattern:** Data access abstraction in `store/` directories
 3. **Service Layer:** Business logic in `*Service` structs
 4. **No ORM:** Direct SQL with pgx driver for clarity and performance
@@ -184,11 +187,13 @@ import (
 cmd/movieswithfriends/      # Application entry point
 config/                     # Configuration loading
 identityaccess/             # User authentication domain
+  ├── http/                 # Domain HTTP handlers (sessions, signup, profiles)
   └── store/                # User repository
 partymgmt/                  # Party management domain
+  ├── http/                 # Domain HTTP handlers (parties, movies, invitations)
   └── store/                # Party repository
 migrations/migrations/      # Database migrations (22 files)
-web/                        # HTTP handlers and middleware
+web/                        # Web layer (routing, middleware, rendering)
 ui/html/                    # Go templates
 ui/static/js/               # JavaScript source files
 ui/dist/                    # Built/fingerprinted assets
@@ -205,10 +210,11 @@ infra/                      # Infrastructure as code
 2. Add domain logic to domain package
 3. Create/update repository methods in `store/`
 4. Add service methods if needed
-5. Create HTTP handler in `web/`
-6. Add template in `ui/html/`
-7. Write tests at each layer
-8. Add e2e test if user-facing
+5. Create HTTP handler in `<domain>/http/`
+6. Register route in domain's `GetRoutes()` or `RegisterRoutes()` method
+7. Add template in `ui/html/`
+8. Write tests at each layer
+9. Add e2e test if user-facing
 
 ### Database Changes
 1. Create migration: `goose -dir migrations/migrations create migration_name sql`
