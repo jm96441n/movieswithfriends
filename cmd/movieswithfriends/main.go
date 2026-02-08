@@ -29,6 +29,7 @@ import (
 	"github.com/jm96441n/movieswithfriends/metrics"
 	"github.com/jm96441n/movieswithfriends/migrations"
 	"github.com/jm96441n/movieswithfriends/partymgmt"
+	partymgmthttp "github.com/jm96441n/movieswithfriends/partymgmt/http"
 	partymgmtstore "github.com/jm96441n/movieswithfriends/partymgmt/store"
 	"github.com/jm96441n/movieswithfriends/ui"
 	"github.com/jm96441n/movieswithfriends/web"
@@ -196,13 +197,15 @@ func main() {
 
 	partySvc := partymgmt.NewPartyService(logger, partyRepo)
 	watcherSvc := partymgmt.NewWatcherService(watcherRepo)
+	moviesSvc := partymgmt.NewMovieService(tmdbClient, moviesRepo)
+	invitationsSvc := partymgmt.NewInvitationsService(invitationsRepo)
 
 	app := web.NewApplication(
 		web.AppConfig{
 			Telemetry:         telemetry,
 			Logger:            logger,
 			SessionStore:      sessionStore,
-			MoviesService:     partymgmt.NewMovieService(tmdbClient, moviesRepo),
+			MoviesService:     moviesSvc,
 			MoviesRepository:  moviesRepo,
 			PartyService:      partySvc,
 			PartiesRepository: partyRepo,
@@ -217,10 +220,23 @@ func main() {
 				partySvc,
 				watcherSvc,
 			),
-			InvitationsService: partymgmt.NewInvitationsService(invitationsRepo),
+			InvitationsService: invitationsSvc,
 			AssetLoader:        loader,
 		},
 	)
+
+	// Initialize party management handlers after app is created (to avoid circular dependency)
+	app.PartyMgmtHandlers = partymgmthttp.NewHandlers(partymgmthttp.Config{
+		Renderer:           app, // Application implements Renderer interface
+		Logger:             logger,
+		SessionStore:       sessionStore,
+		MoviesService:      moviesSvc,
+		PartyService:       partySvc,
+		WatcherService:     watcherSvc,
+		InvitationsService: invitationsSvc,
+		PartiesRepository:  partyRepo,
+		Telemetry:          telemetry,
+	})
 
 	addr := os.Getenv("ADDR")
 	if addr == "" {

@@ -23,10 +23,11 @@ func (a *Application) Routes() http.Handler {
 	movieRoutes := a.movieRoutes()
 	partyRoutes := a.partyRoutes()
 	partyMovieRoutes := a.partyMovieRoutes()
-	sessionRoutes := a.sessionRoutes()
-	profileRoutes := a.profileRoutes()
 	partyMemberRoutes := a.partyMemberRoutes()
 	invitationRoutes := a.invitationRoutes()
+
+	// Domain-specific routes
+	identityAccessRoutes := a.identityAccessRoutes()
 
 	// allocate capacity for all routes
 	routes := make([]Route, 0)
@@ -37,10 +38,9 @@ func (a *Application) Routes() http.Handler {
 		movieRoutes,
 		partyRoutes,
 		partyMovieRoutes,
-		sessionRoutes,
-		profileRoutes,
 		invitationRoutes,
 		partyMemberRoutes,
+		identityAccessRoutes,
 	)
 
 	authenticatorMW := a.authenticateMiddleware()
@@ -104,7 +104,7 @@ func (a *Application) movieRoutes() []Route {
 		},
 		{
 			path:               "GET /movies/{id}/modal",
-			handler:            a.GetAddMovieToPartyModal,
+			handler:            a.PartyMgmtHandlers.GetAddMovieToPartyModal,
 			authenticatedRoute: true,
 		},
 	}
@@ -114,7 +114,7 @@ func (a *Application) partyMovieRoutes() []Route {
 	return []Route{
 		{
 			path:               "POST /party_movies",
-			handler:            a.AddMovieToPartiesHandler,
+			handler:            a.PartyMgmtHandlers.AddMovieToPartiesHandler,
 			authenticatedRoute: true,
 		},
 	}
@@ -170,34 +170,21 @@ func (a *Application) invitationRoutes() []Route {
 	}
 }
 
-func (a *Application) sessionRoutes() []Route {
-	return []Route{
-		{
-			path:               "GET /signup",
-			handler:            a.IdentityAccessHandlers.SignUpShowHandler,
-			authenticatedRoute: false,
-		},
-		{
-			path:               "POST /signup",
-			handler:            a.IdentityAccessHandlers.SignUpHandler,
-			authenticatedRoute: false,
-		},
-		{
-			path:               "GET /login",
-			handler:            a.LoginShowHandler,
-			authenticatedRoute: false,
-		},
-		{
-			path:               "POST /login",
-			handler:            a.LoginHandler,
-			authenticatedRoute: false,
-		},
-		{
-			path:               "POST /logout",
-			handler:            a.LogoutHandler,
-			authenticatedRoute: false,
-		},
+func (a *Application) identityAccessRoutes() []Route {
+	// Get routes from the identityaccess domain package
+	domainRoutes := a.IdentityAccessHandlers.RegisterRoutes()
+
+	// Convert domain routes to web routes
+	routes := make([]Route, len(domainRoutes))
+	for i, dr := range domainRoutes {
+		routes[i] = Route{
+			path:               dr.Path,
+			handler:            dr.Handler,
+			authenticatedRoute: dr.AuthenticatedRoute,
+		}
 	}
+
+	return routes
 }
 
 func (a *Application) partyMemberRoutes() []Route {
@@ -219,28 +206,3 @@ func (a *Application) partyMemberRoutes() []Route {
 // 		},
 // 	}
 // }
-
-func (a *Application) profileRoutes() []Route {
-	return []Route{
-		{
-			path:               "GET /profile",
-			handler:            a.ProfileShowHandler,
-			authenticatedRoute: true,
-		},
-		{
-			path:               "GET /profile/edit",
-			handler:            a.ProfileEditPageHandler,
-			authenticatedRoute: true,
-		},
-		{
-			path:               "POST /profile",
-			handler:            a.ProfileEditHandler,
-			authenticatedRoute: true,
-		},
-		{
-			path:               "GET /profile/watched",
-			handler:            a.GetPaginatedWatchHistoryHandler,
-			authenticatedRoute: true,
-		},
-	}
-}

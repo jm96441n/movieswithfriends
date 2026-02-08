@@ -24,6 +24,12 @@ var (
 	ErrFailedToGetAccountIDFromSession = errors.New("failed to get accountl id from session")
 )
 
+// PartyMgmtHandlers defines the interface for party management HTTP handlers.
+type PartyMgmtHandlers interface {
+	AddMovieToPartiesHandler(w http.ResponseWriter, r *http.Request)
+	GetAddMovieToPartyModal(w http.ResponseWriter, r *http.Request)
+}
+
 type AppConfig struct {
 	Telemetry                metrics.TelemetryProvider
 	Logger                   *slog.Logger
@@ -38,6 +44,7 @@ type AppConfig struct {
 	InvitationsService       partymgmt.InvitationsService
 	Auth                     *identityaccess.Authenticator
 	AssetLoader              *Loader
+	PartyMgmtHandlers        PartyMgmtHandlers
 }
 
 type Application struct {
@@ -56,6 +63,7 @@ type Application struct {
 	Auth                     *identityaccess.Authenticator
 	AssetLoader              *Loader
 	IdentityAccessHandlers   *identityaccesshttp.Handlers
+	PartyMgmtHandlers        PartyMgmtHandlers
 }
 
 func NewApplication(cfg AppConfig) *Application {
@@ -73,6 +81,7 @@ func NewApplication(cfg AppConfig) *Application {
 		InvitationsService:       cfg.InvitationsService,
 		Auth:                     cfg.Auth,
 		AssetLoader:              cfg.AssetLoader,
+		PartyMgmtHandlers:        cfg.PartyMgmtHandlers,
 	}
 
 	a.initTemplateCache(ui.TemplateFS)
