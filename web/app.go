@@ -26,8 +26,11 @@ var (
 
 // PartyMgmtHandlers defines the interface for party management HTTP handlers.
 type PartyMgmtHandlers interface {
-	AddMovieToPartiesHandler(w http.ResponseWriter, r *http.Request)
-	GetAddMovieToPartyModal(w http.ResponseWriter, r *http.Request)
+	GetRoutes() []struct {
+		Path               string
+		Handler            http.HandlerFunc
+		AuthenticatedRoute bool
+	}
 }
 
 type AppConfig struct {

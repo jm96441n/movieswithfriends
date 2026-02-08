@@ -48,8 +48,9 @@ var (
 	ErrMissingFirstName             = errors.New("first name is required")
 	ErrMissingLastName              = errors.New("last name is required")
 
-	ErrInvalidCredentials = errors.New("invalid credentials")
-	ErrAccountExists      = errors.New("account already exists")
+	ErrInvalidCredentials              = errors.New("invalid credentials")
+	ErrAccountExists                   = errors.New("account already exists")
+	ErrFailedToGetProfileIDFromSession = errors.New("failed to get profile id from session")
 )
 
 var numRegex = regexp.MustCompile("[0-9]+")

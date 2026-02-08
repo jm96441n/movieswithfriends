@@ -1,196 +1,25 @@
 package web
 
 import (
-	"errors"
-	"log/slog"
 	"net/http"
-	"strconv"
-
-	"github.com/jm96441n/movieswithfriends/identityaccess"
-	"github.com/jm96441n/movieswithfriends/identityaccess/services"
-	"github.com/jm96441n/movieswithfriends/identityaccess/store"
 )
 
+// ProfileShowHandler delegates to the identityaccess domain handler.
 func (a *Application) ProfileShowHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	logger := a.Logger.With("handler", "ProfileShowHandler")
-	logger.DebugContext(ctx, "getting profile info")
-
-	profileID, err := a.getProfileIDFromSession(ctx, r)
-	if err != nil {
-		logger.ErrorContext(ctx, "failed to get profile id from session", "error", err)
-		a.setErrorFlashMessage(w, r, "There was an error loading your profile, please try logging in again")
-		a.logout(w, r)
-		http.Redirect(w, r, "/login", http.StatusInternalServerError)
-		return
-	}
-
-	pageData, err := a.ProfileAggregatorService.GetProfilePageData(ctx, logger, profileID)
-	if err != nil {
-		status := http.StatusInternalServerError
-		if errors.Is(err, store.ErrNoRecord) {
-			logger.ErrorContext(ctx, "did not find profile in db", "profileID", profileID)
-			status = http.StatusNotFound
-		} else {
-			logger.ErrorContext(ctx, "failed to retrieve profile from db", "error", err)
-		}
-
-		a.setErrorFlashMessage(w, r, "There was an error loading your profile, please try logging in again")
-		a.logout(w, r)
-		http.Redirect(w, r, "/login", status)
-		return
-	}
-	templateData := a.NewProfilesTemplateData(r, w, "/profile")
-	templateData.Profile = pageData.Profile
-	templateData.Parties = pageData.Parties
-	templateData.InvitedParties = pageData.InvitedParties
-	templateData.WatchedMovies = pageData.WatchedMovies
-	templateData.CurPage = pageData.CurPage
-	templateData.NumPages = pageData.NumPages
-
-	logger.InfoContext(ctx, "successfully loaded profile info")
-	a.render(w, r, http.StatusOK, "profiles/show.gohtml", templateData)
+	a.IdentityAccessHandlers.ProfileShowHandler(w, r)
 }
 
+// ProfileEditPageHandler delegates to the identityaccess domain handler.
 func (a *Application) ProfileEditPageHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	logger := a.Logger.With("handler", "ProfileEditPageHandler")
-
-	profile, err := a.getProfileFromSession(r)
-	if err != nil {
-		status := http.StatusInternalServerError
-		if errors.Is(err, store.ErrNoRecord) {
-			logger.ErrorContext(ctx, "did not find profile in db", "profileID", profile.ID)
-			status = http.StatusNotFound
-		}
-
-		a.setErrorFlashMessage(w, r, "There was an error loading your profile, please try logging in again")
-		a.logout(w, r)
-		http.Redirect(w, r, "/login", status)
-		return
-	}
-
-	templateData := a.NewProfilesTemplateData(r, w, "/profile")
-	templateData.Profile = profile
-	a.render(w, r, http.StatusOK, "profiles/edit.gohtml", templateData)
+	a.IdentityAccessHandlers.ProfileEditPageHandler(w, r)
 }
 
+// ProfileEditHandler delegates to the identityaccess domain handler.
 func (a *Application) ProfileEditHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	logger := a.Logger.With("handler", "ProfileEditHandler")
-
-	profile, err := a.getProfileFromSession(r)
-	if err != nil {
-		status := http.StatusInternalServerError
-		if errors.Is(err, store.ErrNoRecord) {
-			logger.ErrorContext(ctx, "did not find profile in db", slog.Any("error", err))
-			status = http.StatusNotFound
-		}
-
-		a.setErrorFlashMessage(w, r, "There was an error loading your profile, please try logging in again")
-		a.logout(w, r)
-		http.Redirect(w, r, "/login", status)
-		return
-	}
-
-	req, err := parseEditProfileForm(r)
-	if err != nil {
-		templateData := a.NewProfilesTemplateData(r, w, "/profile")
-		templateData.Profile = profile
-		a.setErrorFlashMessage(w, r, "There was an error editing your profile, please try again")
-
-		a.render(w, r, http.StatusBadRequest, "profiles/edit.gohtml", templateData)
-		return
-	}
-
-	logger.InfoContext(ctx, "req to update profile", "req", req)
-
-	err = profile.Update(ctx, logger, req)
-	if err != nil {
-		templateData := a.NewProfilesTemplateData(r, w, "/profile")
-		templateData.Profile = profile
-
-		var editErr *identityaccess.ProfileEditValidationError
-
-		a.setErrorFlashMessage(w, r, "There was an error editing your profile, please try again")
-		if errors.As(err, &editErr) {
-			templateData.InitHasErrorFields()
-
-			if editErr.EmailError != nil {
-				*templateData.HasEmailError = true
-			}
-
-			if editErr.PasswordError != nil {
-				*templateData.HasPasswordError = true
-			}
-
-			if editErr.FirstNameError != nil {
-				*templateData.HasFirstNameError = true
-			}
-
-			if editErr.LastNameError != nil {
-				*templateData.HasLastNameError = true
-			}
-		}
-
-		a.render(w, r, http.StatusBadRequest, "profiles/edit.gohtml", templateData)
-		return
-	}
-
-	a.setInfoFlashMessage(w, r, "Edited your profile!")
-	http.Redirect(w, r, "/profile", http.StatusSeeOther)
+	a.IdentityAccessHandlers.ProfileEditHandler(w, r)
 }
 
-func parseEditProfileForm(r *http.Request) (identityaccess.ProfileUpdateReq, error) {
-	r.ParseForm()
-	req := identityaccess.ProfileUpdateReq{
-		FirstName:               r.FormValue("firstName"),
-		LastName:                r.FormValue("lastName"),
-		Email:                   r.FormValue("email"),
-		CurrentPassword:         r.FormValue("currentPassword"),
-		NewPassword:             r.FormValue("newPassword"),
-		NewPasswordConfirmation: r.FormValue("confirmPassword"),
-	}
-
-	return req, nil
-}
-
+// GetPaginatedWatchHistoryHandler delegates to the identityaccess domain handler.
 func (a *Application) GetPaginatedWatchHistoryHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	logger := a.Logger.With("handler", "GetPaginatedWatchHistoryHandler")
-	logger.DebugContext(ctx, "getting paginated movies list")
-
-	profileID, err := a.getProfileIDFromSession(ctx, r)
-	if err != nil {
-		a.serverError(w, r, err)
-		return
-	}
-
-	page := r.URL.Query().Get("page")
-
-	if page == "" {
-		page = "1"
-	}
-
-	pageNum, err := strconv.Atoi(page)
-	if err != nil {
-		a.serverError(w, r, err)
-		return
-	}
-
-	movieData, err := a.ProfileAggregatorService.GetWatchPaginatedHistory(ctx, logger, profileID, services.PageInfo{PageNum: pageNum})
-	if err != nil {
-		a.serverError(w, r, err)
-		return
-	}
-
-	templateData := a.NewProfilesTemplateData(r, w, "/profile")
-	templateData.WatchedMovies = movieData.WatchedMovies
-	templateData.CurPage = pageNum
-	templateData.NumPages = movieData.NumPages
-
-	if r.Header.Get("HX-Request") != "" {
-		a.renderPartial(w, r, http.StatusOK, "profiles/partials/watch_list.gohtml", templateData)
-		return
-	}
+	a.IdentityAccessHandlers.GetPaginatedWatchHistoryHandler(w, r)
 }

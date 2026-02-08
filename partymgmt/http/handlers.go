@@ -7,8 +7,10 @@ import (
 	"net/http"
 
 	"github.com/gorilla/sessions"
+	"github.com/jm96441n/movieswithfriends/identityaccess/services"
 	"github.com/jm96441n/movieswithfriends/metrics"
 	"github.com/jm96441n/movieswithfriends/partymgmt"
+	"github.com/jm96441n/movieswithfriends/partymgmt/store"
 	"github.com/jm96441n/movieswithfriends/web"
 )
 
@@ -21,35 +23,44 @@ var (
 // and contains domain-specific services for business logic.
 type Handlers struct {
 	web.Renderer
-	logger             *slog.Logger
-	sessionStore       *sessions.CookieStore
-	moviesService      *partymgmt.MovieService
-	partyService       partymgmt.PartyService
-	watcherService     partymgmt.WatcherService
-	invitationsService partymgmt.InvitationsService
+	logger                   *slog.Logger
+	sessionStore             *sessions.CookieStore
+	moviesService            *partymgmt.MovieService
+	partyService             partymgmt.PartyService
+	watcherService           partymgmt.WatcherService
+	invitationsService       partymgmt.InvitationsService
+	partiesRepository        store.PartyRepository
+	profileAggregatorService *services.ProfileAggregatorService
+	telemetry                metrics.TelemetryProvider
 }
 
 // Config contains the dependencies required to create Handlers.
 type Config struct {
-	Renderer           web.Renderer
-	Logger             *slog.Logger
-	SessionStore       *sessions.CookieStore
-	MoviesService      *partymgmt.MovieService
-	PartyService       partymgmt.PartyService
-	WatcherService     partymgmt.WatcherService
-	InvitationsService partymgmt.InvitationsService
+	Renderer                 web.Renderer
+	Logger                   *slog.Logger
+	SessionStore             *sessions.CookieStore
+	MoviesService            *partymgmt.MovieService
+	PartyService             partymgmt.PartyService
+	WatcherService           partymgmt.WatcherService
+	InvitationsService       partymgmt.InvitationsService
+	PartiesRepository        store.PartyRepository
+	ProfileAggregatorService *services.ProfileAggregatorService
+	Telemetry                metrics.TelemetryProvider
 }
 
 // NewHandlers creates a new Handlers instance with the provided dependencies.
 func NewHandlers(cfg Config) *Handlers {
 	return &Handlers{
-		Renderer:           cfg.Renderer,
-		logger:             cfg.Logger,
-		sessionStore:       cfg.SessionStore,
-		moviesService:      cfg.MoviesService,
-		partyService:       cfg.PartyService,
-		watcherService:     cfg.WatcherService,
-		invitationsService: cfg.InvitationsService,
+		Renderer:                 cfg.Renderer,
+		logger:                   cfg.Logger,
+		sessionStore:             cfg.SessionStore,
+		moviesService:            cfg.MoviesService,
+		partyService:             cfg.PartyService,
+		watcherService:           cfg.WatcherService,
+		invitationsService:       cfg.InvitationsService,
+		partiesRepository:        cfg.PartiesRepository,
+		profileAggregatorService: cfg.ProfileAggregatorService,
+		telemetry:                cfg.Telemetry,
 	}
 }
 

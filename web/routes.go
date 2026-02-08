@@ -20,14 +20,10 @@ func (a *Application) Routes() http.Handler {
 	router := http.NewServeMux()
 
 	staticRoutes := a.staticRoutes()
-	movieRoutes := a.movieRoutes()
-	partyRoutes := a.partyRoutes()
-	partyMovieRoutes := a.partyMovieRoutes()
-	partyMemberRoutes := a.partyMemberRoutes()
-	invitationRoutes := a.invitationRoutes()
 
 	// Domain-specific routes
 	identityAccessRoutes := a.identityAccessRoutes()
+	partyMgmtRoutes := a.partyMgmtRoutes()
 
 	// allocate capacity for all routes
 	routes := make([]Route, 0)
@@ -35,12 +31,8 @@ func (a *Application) Routes() http.Handler {
 	routes = slices.Concat(
 		routes,
 		staticRoutes,
-		movieRoutes,
-		partyRoutes,
-		partyMovieRoutes,
-		invitationRoutes,
-		partyMemberRoutes,
 		identityAccessRoutes,
+		partyMgmtRoutes,
 	)
 
 	authenticatorMW := a.authenticateMiddleware()
@@ -85,89 +77,21 @@ func (a *Application) staticRoutes() []Route {
 	}
 }
 
-func (a *Application) movieRoutes() []Route {
-	return []Route{
-		{
-			path:               "GET /movies",
-			handler:            a.MoviesIndexHandler,
-			authenticatedRoute: false,
-		},
-		{
-			path:               "GET /movies/{id}",
-			handler:            a.MoviesShowHandler,
-			authenticatedRoute: false,
-		},
-		{
-			path:               "POST /movies/create",
-			handler:            a.MoviesCreateHandler,
-			authenticatedRoute: false,
-		},
-		{
-			path:               "GET /movies/{id}/modal",
-			handler:            a.PartyMgmtHandlers.GetAddMovieToPartyModal,
-			authenticatedRoute: true,
-		},
-	}
-}
+func (a *Application) partyMgmtRoutes() []Route {
+	// Get routes from the partymgmt domain package
+	domainRoutes := a.PartyMgmtHandlers.GetRoutes()
 
-func (a *Application) partyMovieRoutes() []Route {
-	return []Route{
-		{
-			path:               "POST /party_movies",
-			handler:            a.PartyMgmtHandlers.AddMovieToPartiesHandler,
-			authenticatedRoute: true,
-		},
+	// Convert domain routes to web routes
+	routes := make([]Route, len(domainRoutes))
+	for i, dr := range domainRoutes {
+		routes[i] = Route{
+			path:               dr.Path,
+			handler:            dr.Handler,
+			authenticatedRoute: dr.AuthenticatedRoute,
+		}
 	}
-}
 
-func (a *Application) partyRoutes() []Route {
-	return []Route{
-		{
-			path:               "GET /parties/",
-			handler:            a.PartiesIndexHandler,
-			authenticatedRoute: true,
-		},
-		{
-			path:               "GET /parties/new",
-			handler:            a.NewPartyHandler,
-			authenticatedRoute: true,
-		},
-		{
-			path:               "GET /parties/{id}",
-			handler:            a.PartyShowHandler,
-			authenticatedRoute: true,
-		},
-		{
-			path:               "POST /parties/{party_id}/movies/{id}",
-			handler:            a.MarkMovieAsWatchedHandler,
-			authenticatedRoute: true,
-		},
-		{
-			path:               "POST /parties/{party_id}/movies",
-			handler:            a.SelectMovieForParty,
-			authenticatedRoute: true,
-		},
-		{
-			path:               "POST /parties",
-			handler:            a.CreatePartyHandler,
-			authenticatedRoute: true,
-		},
-		{
-			path:               "GET /parties/{id}/edit",
-			handler:            a.EditPartyHandler,
-			authenticatedRoute: true,
-		},
-	}
-}
-
-func (a *Application) invitationRoutes() []Route {
-	return []Route{
-		{
-			path:               "POST /invitations",
-			handler:            a.CreateInviteHandler,
-			authenticatedRoute: true,
-		},
-	}
+	return routes
 }
 
 func (a *Application) identityAccessRoutes() []Route {
@@ -186,23 +110,3 @@ func (a *Application) identityAccessRoutes() []Route {
 
 	return routes
 }
-
-func (a *Application) partyMemberRoutes() []Route {
-	return []Route{
-		{
-			path:               "POST /party_members",
-			handler:            a.AcceptInviteHandler,
-			authenticatedRoute: true,
-		},
-	}
-}
-
-// func (a *Application) watcherRoutes() []Route {
-// 	return []Route{
-// 		{
-// 			path:               "GET /watched_movies",
-// 			handler:            a.WatchedMoviesHandler,
-// 			authenticatedRoute: true,
-// 		},
-// 	}
-// }

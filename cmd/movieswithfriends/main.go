@@ -199,6 +199,26 @@ func main() {
 	watcherSvc := partymgmt.NewWatcherService(watcherRepo)
 	moviesSvc := partymgmt.NewMovieService(tmdbClient, moviesRepo)
 	invitationsSvc := partymgmt.NewInvitationsService(invitationsRepo)
+	profileAggregatorSvc := services.NewProfileAggregatorService(
+		profileRepo,
+		watcherRepo,
+		partySvc,
+		watcherSvc,
+	)
+
+	// Initialize party management handlers first to pass to app config
+	partyMgmtHandlers := partymgmthttp.NewHandlers(partymgmthttp.Config{
+		Logger:                   logger,
+		SessionStore:             sessionStore,
+		MoviesService:            moviesSvc,
+		PartyService:             partySvc,
+		WatcherService:           watcherSvc,
+		InvitationsService:       invitationsSvc,
+		PartiesRepository:        partyRepo,
+		ProfileAggregatorService: profileAggregatorSvc,
+		Telemetry:                telemetry,
+		Renderer:                 nil, // Set after app is created to avoid circular dependency
+	})
 
 	app := web.NewApplication(
 		web.AppConfig{
@@ -214,29 +234,15 @@ func main() {
 			Auth: &identityaccess.Authenticator{
 				ProfileRepository: profileRepo,
 			},
-			ProfileAggregatorService: services.NewProfileAggregatorService(
-				profileRepo,
-				watcherRepo,
-				partySvc,
-				watcherSvc,
-			),
-			InvitationsService: invitationsSvc,
-			AssetLoader:        loader,
+			ProfileAggregatorService: profileAggregatorSvc,
+			InvitationsService:       invitationsSvc,
+			AssetLoader:              loader,
+			PartyMgmtHandlers:        partyMgmtHandlers,
 		},
 	)
 
-	// Initialize party management handlers after app is created (to avoid circular dependency)
-	app.PartyMgmtHandlers = partymgmthttp.NewHandlers(partymgmthttp.Config{
-		Renderer:           app, // Application implements Renderer interface
-		Logger:             logger,
-		SessionStore:       sessionStore,
-		MoviesService:      moviesSvc,
-		PartyService:       partySvc,
-		WatcherService:     watcherSvc,
-		InvitationsService: invitationsSvc,
-		PartiesRepository:  partyRepo,
-		Telemetry:          telemetry,
-	})
+	// Set the Renderer after app is created (to avoid circular dependency)
+	partyMgmtHandlers.Renderer = app
 
 	addr := os.Getenv("ADDR")
 	if addr == "" {

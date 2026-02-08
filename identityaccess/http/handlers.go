@@ -26,6 +26,23 @@ type Renderer interface {
 	ClientError(w http.ResponseWriter, r *http.Request, status int, message string)
 }
 
+// ProfilesTemplateDataProvider defines an interface for creating ProfilesTemplateData.
+// This allows the handler to get profile-specific template data without depending on web package types.
+type ProfilesTemplateDataProvider interface {
+	NewProfilesTemplateData(r *http.Request, w http.ResponseWriter, path string) ProfilesTemplateData
+}
+
+// ProfilesTemplateData represents template data for profile pages.
+// This interface matches the structure of web.ProfilesTemplateData.
+type ProfilesTemplateData interface {
+	SetProfile(profile *identityaccess.Profile)
+	SetParties(parties, invitedParties interface{})
+	SetWatchedMovies(movies interface{})
+	SetPagination(curPage, numPages int)
+	InitHasErrorFields()
+	GetErrorFields() (email, password, firstName, lastName **bool)
+}
+
 // TemplateDataProvider defines a function that creates template data for rendering.
 // This allows the handlers to get template data without depending on the web package.
 type TemplateDataProvider func(r *http.Request, w http.ResponseWriter, path string) interface{}
