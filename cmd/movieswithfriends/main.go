@@ -175,7 +175,8 @@ func main() {
 		sessionKey = []byte(sessionKeyVar)
 	}
 
-	sessionStore := sessions.NewCookieStore(sessionKey)
+	cookieStore := sessions.NewCookieStore(sessionKey)
+	sessionStore := web.NewSessionAccessor(cookieStore, logger)
 
 	moviesRepo := partymgmtstore.NewMoviesRepository(connPool)
 
@@ -190,6 +191,10 @@ func main() {
 		logger.Error("error loading manifest", slog.Any("err", err.Error()))
 		os.Exit(1)
 	}
+
+	renderer := web.NewRenderer(logger, sessionStore, loader)
+
+	flashMessager := web.NewFlashMessager(logger, cookieStore)
 
 	profileRepo := iamstore.NewProfileRepository(connPool)
 	watcherRepo := partymgmtstore.NewWatcherRepository(connPool)
@@ -215,6 +220,8 @@ func main() {
 	// Initialize domain-specific handlers first to pass to app config
 	partyMgmtHandlers := partymgmthttp.NewHandlers(partymgmthttp.Config{
 		Logger:                   logger,
+		Renderer:                 renderer,
+		FlashMessager:            flashMessager,
 		SessionStore:             sessionStore,
 		MoviesService:            moviesSvc,
 		PartyService:             partySvc,
@@ -223,19 +230,13 @@ func main() {
 		PartiesRepository:        partyRepo,
 		ProfileAggregatorService: profileAggregatorSvc,
 		Telemetry:                telemetry,
-		Renderer:                 nil, // Set after app is created to avoid circular dependency
 	})
-
-	// Create a placeholder for the Application to use in the template data provider closure
-	var app *web.Application
 
 	// Initialize identity access handlers
 	identityAccessHandlers := identityaccesshttp.NewHandlers(
-		nil, // Renderer set after app is created to avoid circular dependency
+		renderer,
+		flashMessager,
 		sessionStore,
-		func(r *http.Request, w http.ResponseWriter, path string) interface{} {
-			return app.NewTemplateData(r, w, path)
-		},
 		profilesSvc,
 		profileAggregatorSvc,
 		auth,
@@ -243,29 +244,7 @@ func main() {
 		logger,
 	)
 
-	app = web.NewApplication(
-		web.AppConfig{
-			Telemetry:                telemetry,
-			Logger:                   logger,
-			SessionStore:             sessionStore,
-			MoviesService:            moviesSvc,
-			MoviesRepository:         moviesRepo,
-			PartyService:             partySvc,
-			PartiesRepository:        partyRepo,
-			ProfilesService:          profilesSvc,
-			WatcherService:           watcherSvc,
-			Auth:                     auth,
-			ProfileAggregatorService: profileAggregatorSvc,
-			InvitationsService:       invitationsSvc,
-			AssetLoader:              loader,
-			PartyMgmtHandlers:        partyMgmtHandlers,
-			IdentityAccessHandlers:   identityAccessHandlers,
-		},
-	)
-
-	// Set the Renderer after app is created (to avoid circular dependency)
-	partyMgmtHandlers.Renderer = app
-	identityAccessHandlers.SetRenderer(app)
+	staticRoutes := &web.StaticRoutes{Renderer: renderer}
 
 	addr := os.Getenv("ADDR")
 	if addr == "" {
@@ -273,9 +252,22 @@ func main() {
 		addr = ":4000"
 	}
 
+	authMW := &identityaccesshttp.AuthMiddlewares{
+		Logger:          logger,
+		SessionStore:    sessionStore,
+		Auth:            auth,
+		Renderer:        renderer,
+		ProfilesService: profilesSvc,
+	}
+
 	server := http.Server{
 		Addr: addr,
-		Handler: otelhttp.NewHandler(app.Routes(), "movieswithfriends",
+		Handler: otelhttp.NewHandler(web.Routes(
+			authMW,
+			staticRoutes,
+			identityAccessHandlers,
+			partyMgmtHandlers,
+		), "movieswithfriends",
 			otelhttp.WithMessageEvents(otelhttp.ReadEvents, otelhttp.WriteEvents),
 			otelhttp.WithMeterProvider(telemetry.MeterProvider()),
 			otelhttp.WithTracerProvider(telemetry.TracerProvider()),
@@ -358,7 +350,7 @@ func (n gooseLogger) Printf(format string, v ...interface{}) {
 }
 
 func runMigrations(ctx context.Context, logger *slog.Logger, host, dbname string, creds DBCreds) error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
+	ctx, cancel := context.WithTimeout(ctx, time.Second*2)
 	defer cancel()
 
 	goose.SetLogger(gooseLogger{ctx: ctx, logger: logger})

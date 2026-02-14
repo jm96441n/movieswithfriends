@@ -1,58 +1,42 @@
 package http
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 
-	"github.com/gorilla/sessions"
 	"github.com/jm96441n/movieswithfriends/identityaccess"
 	"github.com/jm96441n/movieswithfriends/identityaccess/services"
 	"github.com/jm96441n/movieswithfriends/metrics"
+	"github.com/jm96441n/movieswithfriends/web"
 )
 
-const (
-	sessionName = "moviesWithFriendsCookie"
-)
+type flashMessager interface {
+	SetErrorFlashMessage(w http.ResponseWriter, r *http.Request, msg string)
+	SetInfoFlashMessage(w http.ResponseWriter, r *http.Request, msg string)
+}
 
-// Renderer provides template rendering capabilities for HTTP handlers.
-// This interface allows domain handlers to render templates without
-// depending on the full Application struct.
-type Renderer interface {
+type renderer interface {
+	NewBaseTemplateData(r *http.Request, w http.ResponseWriter, path string) web.BaseTemplateData
 	Render(w http.ResponseWriter, r *http.Request, status int, page string, data interface{})
 	RenderPartial(w http.ResponseWriter, r *http.Request, status int, page string, data interface{})
-	SetInfoFlashMessage(w http.ResponseWriter, r *http.Request, msg string)
-	SetErrorFlashMessage(w http.ResponseWriter, r *http.Request, msg string)
 	ServerError(w http.ResponseWriter, r *http.Request, err error)
 	ClientError(w http.ResponseWriter, r *http.Request, status int, message string)
 }
 
-// ProfilesTemplateDataProvider defines an interface for creating ProfilesTemplateData.
-// This allows the handler to get profile-specific template data without depending on web package types.
-type ProfilesTemplateDataProvider interface {
-	NewProfilesTemplateData(r *http.Request, w http.ResponseWriter, path string) ProfilesTemplateData
+type sessionStore interface {
+	GetProfileIDFromSession(ctx context.Context, r *http.Request) (int, error)
+	GetAccountIDFromSession(ctx context.Context, r *http.Request) (int, error)
+	SetProfileSessionValues(ctx context.Context, w http.ResponseWriter, r *http.Request, accountID, profileID int, fullName, email string) error
+	Logout(w http.ResponseWriter, r *http.Request) error
 }
-
-// ProfilesTemplateData represents template data for profile pages.
-// This interface matches the structure of web.ProfilesTemplateData.
-type ProfilesTemplateData interface {
-	SetProfile(profile *identityaccess.Profile)
-	SetParties(parties, invitedParties interface{})
-	SetWatchedMovies(movies interface{})
-	SetPagination(curPage, numPages int)
-	InitHasErrorFields()
-	GetErrorFields() (email, password, firstName, lastName **bool)
-}
-
-// TemplateDataProvider defines a function that creates template data for rendering.
-// This allows the handlers to get template data without depending on the web package.
-type TemplateDataProvider func(r *http.Request, w http.ResponseWriter, path string) interface{}
 
 // Handlers holds all HTTP handlers for the identityaccess domain.
 // It holds references to domain-specific services and dependencies.
 type Handlers struct {
-	renderer                 Renderer
-	sessionStore             *sessions.CookieStore
-	templateDataProvider     TemplateDataProvider
+	renderer                 renderer
+	flashMessager            flashMessager
+	sessionStore             sessionStore
 	profileService           *identityaccess.ProfileService
 	profileAggregatorService *services.ProfileAggregatorService
 	authenticator            *identityaccess.Authenticator
@@ -62,9 +46,9 @@ type Handlers struct {
 
 // NewHandlers creates a new Handlers instance with the required dependencies.
 func NewHandlers(
-	renderer Renderer,
-	sessionStore *sessions.CookieStore,
-	templateDataProvider TemplateDataProvider,
+	renderer renderer,
+	flashMessager flashMessager,
+	sessionStore sessionStore,
 	profileService *identityaccess.ProfileService,
 	profileAggregatorService *services.ProfileAggregatorService,
 	authenticator *identityaccess.Authenticator,
@@ -73,17 +57,12 @@ func NewHandlers(
 ) *Handlers {
 	return &Handlers{
 		renderer:                 renderer,
+		flashMessager:            flashMessager,
 		sessionStore:             sessionStore,
-		templateDataProvider:     templateDataProvider,
 		profileService:           profileService,
 		profileAggregatorService: profileAggregatorService,
 		authenticator:            authenticator,
 		telemetry:                telemetry,
 		logger:                   logger,
 	}
-}
-
-// SetRenderer sets the renderer after handler creation to avoid circular dependencies.
-func (h *Handlers) SetRenderer(renderer Renderer) {
-	h.renderer = renderer
 }

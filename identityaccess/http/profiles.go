@@ -1,7 +1,6 @@
 package http
 
 import (
-	"context"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -19,10 +18,10 @@ func (h *Handlers) ProfileShowHandler(w http.ResponseWriter, r *http.Request) {
 	logger := h.logger.With("handler", "ProfileShowHandler")
 	logger.DebugContext(ctx, "getting profile info")
 
-	profileID, err := h.getProfileIDFromSession(ctx, r)
+	profileID, err := h.sessionStore.GetProfileIDFromSession(ctx, r)
 	if err != nil {
 		logger.ErrorContext(ctx, "failed to get profile id from session", "error", err)
-		h.renderer.SetErrorFlashMessage(w, r, "There was an error loading your profile, please try logging in again")
+		h.flashMessager.SetErrorFlashMessage(w, r, "There was an error loading your profile, please try logging in again")
 		h.Logout(w, r)
 		http.Redirect(w, r, "/login", http.StatusInternalServerError)
 		return
@@ -38,28 +37,21 @@ func (h *Handlers) ProfileShowHandler(w http.ResponseWriter, r *http.Request) {
 			logger.ErrorContext(ctx, "failed to retrieve profile from db", "error", err)
 		}
 
-		h.renderer.SetErrorFlashMessage(w, r, "There was an error loading your profile, please try logging in again")
+		h.flashMessager.SetErrorFlashMessage(w, r, "There was an error loading your profile, please try logging in again")
 		h.Logout(w, r)
 		http.Redirect(w, r, "/login", status)
 		return
 	}
 
 	// Get profile-specific template data
-	if provider, ok := h.renderer.(ProfilesTemplateDataProvider); ok {
-		templateData := provider.NewProfilesTemplateData(r, w, "/profile")
-		templateData.SetProfile(pageData.Profile)
-		templateData.SetParties(pageData.Parties, pageData.InvitedParties)
-		templateData.SetWatchedMovies(pageData.WatchedMovies)
-		templateData.SetPagination(pageData.CurPage, pageData.NumPages)
+	templateData := NewProfilesTemplateData(r, w, "/profile", h.renderer)
+	templateData.SetProfile(pageData.Profile)
+	templateData.SetParties(pageData.Parties, pageData.InvitedParties)
+	templateData.SetWatchedMovies(pageData.WatchedMovies)
+	templateData.SetPagination(pageData.CurPage, pageData.NumPages)
 
-		logger.InfoContext(ctx, "successfully loaded profile info")
-		h.renderer.Render(w, r, http.StatusOK, "profiles/show.gohtml", templateData)
-		return
-	}
-
-	// Fallback
-	data := h.templateDataProvider(r, w, "/profile")
-	h.renderer.Render(w, r, http.StatusOK, "profiles/show.gohtml", data)
+	logger.InfoContext(ctx, "successfully loaded profile info")
+	h.renderer.Render(w, r, http.StatusOK, "profiles/show.gohtml", templateData)
 }
 
 // ProfileEditPageHandler displays the profile edit form.
@@ -75,23 +67,15 @@ func (h *Handlers) ProfileEditPageHandler(w http.ResponseWriter, r *http.Request
 			status = http.StatusNotFound
 		}
 
-		h.renderer.SetErrorFlashMessage(w, r, "There was an error loading your profile, please try logging in again")
+		h.flashMessager.SetErrorFlashMessage(w, r, "There was an error loading your profile, please try logging in again")
 		h.Logout(w, r)
 		http.Redirect(w, r, "/login", status)
 		return
 	}
 
-	// Get profile-specific template data
-	if provider, ok := h.renderer.(ProfilesTemplateDataProvider); ok {
-		templateData := provider.NewProfilesTemplateData(r, w, "/profile")
-		templateData.SetProfile(profile)
-		h.renderer.Render(w, r, http.StatusOK, "profiles/edit.gohtml", templateData)
-		return
-	}
-
-	// Fallback
-	data := h.templateDataProvider(r, w, "/profile")
-	h.renderer.Render(w, r, http.StatusOK, "profiles/edit.gohtml", data)
+	templateData := NewProfilesTemplateData(r, w, "/profile", h.renderer)
+	templateData.SetProfile(profile)
+	h.renderer.Render(w, r, http.StatusOK, "profiles/edit.gohtml", templateData)
 }
 
 // ProfileEditHandler processes profile edit form submission.
@@ -107,7 +91,7 @@ func (h *Handlers) ProfileEditHandler(w http.ResponseWriter, r *http.Request) {
 			status = http.StatusNotFound
 		}
 
-		h.renderer.SetErrorFlashMessage(w, r, "There was an error loading your profile, please try logging in again")
+		h.flashMessager.SetErrorFlashMessage(w, r, "There was an error loading your profile, please try logging in again")
 		h.Logout(w, r)
 		http.Redirect(w, r, "/login", status)
 		return
@@ -115,17 +99,10 @@ func (h *Handlers) ProfileEditHandler(w http.ResponseWriter, r *http.Request) {
 
 	req, err := parseEditProfileForm(r)
 	if err != nil {
-		h.renderer.SetErrorFlashMessage(w, r, "There was an error editing your profile, please try again")
-
-		if provider, ok := h.renderer.(ProfilesTemplateDataProvider); ok {
-			templateData := provider.NewProfilesTemplateData(r, w, "/profile")
-			templateData.SetProfile(profile)
-			h.renderer.Render(w, r, http.StatusBadRequest, "profiles/edit.gohtml", templateData)
-			return
-		}
-
-		data := h.templateDataProvider(r, w, "/profile")
-		h.renderer.Render(w, r, http.StatusBadRequest, "profiles/edit.gohtml", data)
+		h.flashMessager.SetErrorFlashMessage(w, r, "There was an error editing your profile, please try again")
+		templateData := NewProfilesTemplateData(r, w, "/profile", h.renderer)
+		templateData.SetProfile(profile)
+		h.renderer.Render(w, r, http.StatusBadRequest, "profiles/edit.gohtml", templateData)
 		return
 	}
 
@@ -135,43 +112,38 @@ func (h *Handlers) ProfileEditHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		var editErr *identityaccess.ProfileEditValidationError
 
-		h.renderer.SetErrorFlashMessage(w, r, "There was an error editing your profile, please try again")
+		h.flashMessager.SetErrorFlashMessage(w, r, "There was an error editing your profile, please try again")
 
-		if provider, ok := h.renderer.(ProfilesTemplateDataProvider); ok {
-			templateData := provider.NewProfilesTemplateData(r, w, "/profile")
-			templateData.SetProfile(profile)
+		templateData := NewProfilesTemplateData(r, w, "/profile", h.renderer)
+		templateData.SetProfile(profile)
 
-			if errors.As(err, &editErr) {
-				templateData.InitHasErrorFields()
-				email, password, firstName, lastName := templateData.GetErrorFields()
+		if errors.As(err, &editErr) {
+			templateData.InitHasErrorFields()
+			email, password, firstName, lastName := templateData.GetErrorFields()
 
-				if editErr.EmailError != nil {
-					**email = true
-				}
-
-				if editErr.PasswordError != nil {
-					**password = true
-				}
-
-				if editErr.FirstNameError != nil {
-					**firstName = true
-				}
-
-				if editErr.LastNameError != nil {
-					**lastName = true
-				}
+			if editErr.EmailError != nil {
+				**email = true
 			}
 
-			h.renderer.Render(w, r, http.StatusBadRequest, "profiles/edit.gohtml", templateData)
-			return
+			if editErr.PasswordError != nil {
+				**password = true
+			}
+
+			if editErr.FirstNameError != nil {
+				**firstName = true
+			}
+
+			if editErr.LastNameError != nil {
+				**lastName = true
+			}
 		}
 
-		data := h.templateDataProvider(r, w, "/profile")
-		h.renderer.Render(w, r, http.StatusBadRequest, "profiles/edit.gohtml", data)
+		h.renderer.Render(w, r, http.StatusBadRequest, "profiles/edit.gohtml", templateData)
 		return
+
 	}
 
-	h.renderer.SetInfoFlashMessage(w, r, "Edited your profile!")
+	h.flashMessager.SetInfoFlashMessage(w, r, "Edited your profile!")
 	http.Redirect(w, r, "/profile", http.StatusSeeOther)
 }
 
@@ -181,7 +153,7 @@ func (h *Handlers) GetPaginatedWatchHistoryHandler(w http.ResponseWriter, r *htt
 	logger := h.logger.With("handler", "GetPaginatedWatchHistoryHandler")
 	logger.DebugContext(ctx, "getting paginated movies list")
 
-	profileID, err := h.getProfileIDFromSession(ctx, r)
+	profileID, err := h.sessionStore.GetProfileIDFromSession(ctx, r)
 	if err != nil {
 		h.renderer.ServerError(w, r, err)
 		return
@@ -206,17 +178,12 @@ func (h *Handlers) GetPaginatedWatchHistoryHandler(w http.ResponseWriter, r *htt
 	}
 
 	if r.Header.Get("HX-Request") != "" {
-		if provider, ok := h.renderer.(ProfilesTemplateDataProvider); ok {
-			templateData := provider.NewProfilesTemplateData(r, w, "/profile")
-			templateData.SetWatchedMovies(movieData.WatchedMovies)
-			templateData.SetPagination(pageNum, movieData.NumPages)
-			h.renderer.RenderPartial(w, r, http.StatusOK, "profiles/partials/watch_list.gohtml", templateData)
-			return
-		}
-
-		data := h.templateDataProvider(r, w, "/profile")
-		h.renderer.RenderPartial(w, r, http.StatusOK, "profiles/partials/watch_list.gohtml", data)
+		templateData := NewProfilesTemplateData(r, w, "/profile", h.renderer)
+		templateData.SetWatchedMovies(movieData.WatchedMovies)
+		templateData.SetPagination(pageNum, movieData.NumPages)
+		h.renderer.RenderPartial(w, r, http.StatusOK, "profiles/partials/watch_list.gohtml", templateData)
 		return
+
 	}
 }
 
@@ -239,7 +206,7 @@ func parseEditProfileForm(r *http.Request) (identityaccess.ProfileUpdateReq, err
 func (h *Handlers) getProfileFromSession(r *http.Request) (*identityaccess.Profile, error) {
 	ctx, span, _ := metrics.SpanFromContext(r.Context(), "identityaccess.http.Handlers.getProfileFromSession")
 	defer span.End()
-	profileID, err := h.getProfileIDFromSession(ctx, r)
+	profileID, err := h.sessionStore.GetProfileIDFromSession(ctx, r)
 	if err != nil {
 		return nil, err
 	}
@@ -250,27 +217,4 @@ func (h *Handlers) getProfileFromSession(r *http.Request) (*identityaccess.Profi
 	}
 
 	return profile, nil
-}
-
-// getProfileIDFromSession retrieves the profile ID from the session.
-func (h *Handlers) getProfileIDFromSession(ctx context.Context, r *http.Request) (int, error) {
-	ctx, span, _ := metrics.SpanFromContext(ctx, "identityaccess.http.Handlers.getProfileIDFromSession")
-	defer span.End()
-
-	session, err := h.sessionStore.Get(r, sessionName)
-	if err != nil {
-		session, err = h.sessionStore.New(r, sessionName)
-		if err != nil {
-			h.logger.DebugContext(ctx, "failed to create new session")
-			return 0, nil
-		}
-	}
-
-	sessionProfileID := session.Values["profileID"]
-	profileID, ok := sessionProfileID.(int)
-	if !ok {
-		return 0, identityaccess.ErrFailedToGetProfileIDFromSession
-	}
-
-	return profileID, nil
 }

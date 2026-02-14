@@ -10,29 +10,9 @@ import (
 	"github.com/jm96441n/movieswithfriends/identityaccess"
 )
 
-// SignupTemplateDataProvider defines an interface for creating SignupTemplateData.
-// This allows the handler to get signup-specific template data without depending on web package types.
-type SignupTemplateDataProvider interface {
-	NewSignupTemplateData(r *http.Request, w http.ResponseWriter, path string) SignupTemplateData
-}
-
-// SignupTemplateData represents template data for the signup page.
-// This interface matches the structure of web.SignupTemplateData.
-type SignupTemplateData interface {
-	InitHasErrorFields()
-	GetErrorFields() (email, password, firstName, lastName **bool)
-}
-
 // SignUpShowHandler displays the signup form.
 func (h *Handlers) SignUpShowHandler(w http.ResponseWriter, r *http.Request) {
-	// Cast the renderer to access NewSignupTemplateData
-	if provider, ok := h.renderer.(SignupTemplateDataProvider); ok {
-		data := provider.NewSignupTemplateData(r, w, "/signup")
-		h.renderer.Render(w, r, http.StatusOK, "signup/show.gohtml", data)
-		return
-	}
-	// Fallback to regular template data
-	data := h.templateDataProvider(r, w, "/signup")
+	data := NewSignupTemplateData(r, w, "/signup", h.renderer)
 	h.renderer.Render(w, r, http.StatusOK, "signup/show.gohtml", data)
 }
 
@@ -55,7 +35,7 @@ func (h *Handlers) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 	_, err = h.profileService.CreateProfile(ctx, logger, req)
 	if err != nil {
 		if errors.Is(err, identityaccess.ErrAccountExists) {
-			h.renderer.SetErrorFlashMessage(w, r, "An account exists with this email. Try logging in or resetting your password.")
+			h.flashMessager.SetErrorFlashMessage(w, r, "An account exists with this email. Try logging in or resetting your password.")
 			http.Redirect(w, r, "/signup", http.StatusSeeOther)
 			return
 		}
@@ -64,32 +44,25 @@ func (h *Handlers) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 
 		if errors.As(err, &signupErr) {
 			// Get signup-specific template data
-			if provider, ok := h.renderer.(SignupTemplateDataProvider); ok {
-				data := provider.NewSignupTemplateData(r, w, "/signup")
-				data.InitHasErrorFields()
+			data := NewSignupTemplateData(r, w, "/signup", h.renderer)
+			data.InitHasErrorFields()
 
-				// Get pointers to error fields
-				email, password, firstName, lastName := data.GetErrorFields()
+			// Get pointers to error fields
+			email, password, firstName, lastName := data.GetErrorFields()
 
-				if signupErr.EmailError != nil {
-					**email = true
-				}
-				if signupErr.PasswordError != nil {
-					**password = true
-				}
-				if signupErr.FirstNameError != nil {
-					**firstName = true
-				}
-				if signupErr.LastNameError != nil {
-					**lastName = true
-				}
-
-				h.renderer.Render(w, r, http.StatusBadRequest, "signup/show.gohtml", data)
-				return
+			if signupErr.EmailError != nil {
+				**email = true
+			}
+			if signupErr.PasswordError != nil {
+				**password = true
+			}
+			if signupErr.FirstNameError != nil {
+				**firstName = true
+			}
+			if signupErr.LastNameError != nil {
+				**lastName = true
 			}
 
-			// Fallback
-			data := h.templateDataProvider(r, w, "/signup")
 			h.renderer.Render(w, r, http.StatusBadRequest, "signup/show.gohtml", data)
 			return
 		}
@@ -99,7 +72,7 @@ func (h *Handlers) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	logger.DebugContext(ctx, "seeting flash message")
-	h.renderer.SetInfoFlashMessage(w, r, "Successfully signed up! Please log in.")
+	h.flashMessager.SetInfoFlashMessage(w, r, "Successfully signed up! Please log in.")
 
 	h.telemetry.IncreaseUserRegisteredCounter(ctx, logger)
 

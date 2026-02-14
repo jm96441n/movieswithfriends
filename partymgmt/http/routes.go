@@ -1,20 +1,11 @@
 package http
 
-import (
-	"net/http"
-)
-
-// Route represents an HTTP route with its configuration.
-type Route struct {
-	Path               string
-	Handler            http.HandlerFunc
-	AuthenticatedRoute bool
-}
+import "github.com/jm96441n/movieswithfriends/web"
 
 // RegisterRoutes registers all party management routes.
 // This includes movies, parties, party movies, invitations, party members, and watchers.
-func (h *Handlers) RegisterRoutes() []Route {
-	return []Route{
+func (h *Handlers) RegisterRoutes() []web.Route {
+	return []web.Route{
 		// Movie routes
 		{
 			Path:               "GET /movies",
@@ -97,33 +88,4 @@ func (h *Handlers) RegisterRoutes() []Route {
 			AuthenticatedRoute: true,
 		},
 	}
-}
-
-// GetRoutes returns routes in a format compatible with the web package.
-// This method exists to satisfy the web.PartyMgmtHandlers interface without creating import cycles.
-func (h *Handlers) GetRoutes() []struct {
-	Path               string
-	Handler            http.HandlerFunc
-	AuthenticatedRoute bool
-} {
-	routes := h.RegisterRoutes()
-	result := make([]struct {
-		Path               string
-		Handler            http.HandlerFunc
-		AuthenticatedRoute bool
-	}, len(routes))
-
-	for i, r := range routes {
-		result[i] = struct {
-			Path               string
-			Handler            http.HandlerFunc
-			AuthenticatedRoute bool
-		}{
-			Path:               r.Path,
-			Handler:            r.Handler,
-			AuthenticatedRoute: r.AuthenticatedRoute,
-		}
-	}
-
-	return result
 }

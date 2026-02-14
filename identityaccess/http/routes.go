@@ -1,20 +1,11 @@
 package http
 
-import (
-	"net/http"
-)
-
-// Route represents an HTTP route with its configuration.
-type Route struct {
-	Path               string
-	Handler            http.HandlerFunc
-	AuthenticatedRoute bool
-}
+import "github.com/jm96441n/movieswithfriends/web"
 
 // RegisterRoutes registers all identity and access management routes.
 // This includes authentication (login/logout/signup) and profile management routes.
-func (h *Handlers) RegisterRoutes() []Route {
-	return []Route{
+func (h *Handlers) RegisterRoutes() []web.Route {
+	return []web.Route{
 		// Authentication routes
 		{
 			Path:               "GET /signup",

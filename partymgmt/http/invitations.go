@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/jm96441n/movieswithfriends/metrics"
-	"github.com/jm96441n/movieswithfriends/web"
 )
 
 // CreateInviteHandler handles creating a new invitation for a party.
@@ -18,12 +17,12 @@ func (h *Handlers) CreateInviteHandler(w http.ResponseWriter, r *http.Request) {
 	partyID, email, err := parseInviteForm(r)
 	if err != nil {
 		logger.ErrorContext(ctx, "Failed to parse form", slog.Any("error", err))
-		h.SetErrorFlashMessage(w, r, "There was an error inviting this user, try again.")
+		h.flashMessager.SetErrorFlashMessage(w, r, "There was an error inviting this user, try again.")
 		w.Header().Set("HX-Redirect", "/parties")
 		return
 	}
 
-	templateData := web.InviteModalTemplateData{
+	templateData := InviteModalTemplateData{
 		PartyID:   partyID,
 		ShowModal: true,
 	}
@@ -43,7 +42,7 @@ func (h *Handlers) CreateInviteHandler(w http.ResponseWriter, r *http.Request) {
 
 	logger.InfoContext(ctx, "successfully invited user")
 
-	h.RenderPartial(w, r, http.StatusOK, "parties/partials/invite_modal.gohtml", templateData)
+	h.renderer.RenderPartial(w, r, http.StatusOK, "parties/partials/invite_modal.gohtml", templateData)
 }
 
 // AcceptInviteHandler handles accepting a party invitation.
@@ -55,7 +54,7 @@ func (h *Handlers) AcceptInviteHandler(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
 		logger.ErrorContext(ctx, "Failed to parse form", slog.Any("error", err))
-		h.SetErrorFlashMessage(w, r, "There was an error accepting this invite, try again.")
+		h.flashMessager.SetErrorFlashMessage(w, r, "There was an error accepting this invite, try again.")
 		http.Redirect(w, r, "/parties", http.StatusInternalServerError)
 		return
 	}
@@ -63,14 +62,14 @@ func (h *Handlers) AcceptInviteHandler(w http.ResponseWriter, r *http.Request) {
 	partyID, err := strconv.Atoi(r.FormValue("partyID"))
 	if err != nil {
 		logger.ErrorContext(ctx, "failed to convert partyID to int", slog.Any("error", err))
-		h.SetErrorFlashMessage(w, r, "There was an error accepting this invite, try again.")
+		h.flashMessager.SetErrorFlashMessage(w, r, "There was an error accepting this invite, try again.")
 		http.Redirect(w, r, "/parties", http.StatusBadRequest)
 		return
 	}
 
 	if partyID == 0 {
 		logger.ErrorContext(ctx, "invalid partyID", slog.Int("partyID", 0))
-		h.SetErrorFlashMessage(w, r, "There was an error accepting this invite, try again.")
+		h.flashMessager.SetErrorFlashMessage(w, r, "There was an error accepting this invite, try again.")
 		http.Redirect(w, r, "/parties", http.StatusBadRequest)
 		return
 	}
@@ -78,7 +77,7 @@ func (h *Handlers) AcceptInviteHandler(w http.ResponseWriter, r *http.Request) {
 	watcher, err := h.getWatcherFromSession(ctx, r)
 	if err != nil {
 		logger.ErrorContext(ctx, "failed to get watcher from session", slog.Any("error", err))
-		h.SetErrorFlashMessage(w, r, "There was an error accepting this invite, try again.")
+		h.flashMessager.SetErrorFlashMessage(w, r, "There was an error accepting this invite, try again.")
 		http.Redirect(w, r, "/parties", http.StatusBadRequest)
 		return
 	}
@@ -88,7 +87,7 @@ func (h *Handlers) AcceptInviteHandler(w http.ResponseWriter, r *http.Request) {
 	err = party.AcceptInvite(ctx, logger, watcher.ID)
 	if err != nil {
 		logger.ErrorContext(ctx, "failed to add member to party", slog.Any("error", err))
-		h.SetErrorFlashMessage(w, r, "There was an error accepting this invite, try again.")
+		h.flashMessager.SetErrorFlashMessage(w, r, "There was an error accepting this invite, try again.")
 		http.Redirect(w, r, "/parties", http.StatusBadRequest)
 		return
 	}
@@ -98,13 +97,13 @@ func (h *Handlers) AcceptInviteHandler(w http.ResponseWriter, r *http.Request) {
 	parties, invites, err := watcher.GetPartiesAndInvitedParties(ctx, h.partyService)
 	if err != nil {
 		logger.ErrorContext(ctx, "failed to get parties and invites", slog.Any("error", err))
-		h.SetErrorFlashMessage(w, r, "There was an issue getting your parties, try again.")
+		h.flashMessager.SetErrorFlashMessage(w, r, "There was an issue getting your parties, try again.")
 		http.Redirect(w, r, "/profile", http.StatusBadRequest)
 		return
 	}
 
-	templateData := h.NewPartiesIndexTemplateData(r, w, "/parties", parties, invites, watcher.ID)
-	h.RenderPartial(w, r, http.StatusOK, "partials/party_list.gohtml", templateData)
+	templateData := NewPartiesIndexTemplateData(r, w, "/parties", h.renderer, parties, invites, watcher.ID)
+	h.renderer.RenderPartial(w, r, http.StatusOK, "partials/party_list.gohtml", templateData)
 	// this should remove the invitation, create the party_member record
 	// and then cause a re-render of the parties listing
 }

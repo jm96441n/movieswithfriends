@@ -6,13 +6,7 @@ import (
 	"strconv"
 
 	"github.com/jm96441n/movieswithfriends/partymgmt"
-	"github.com/jm96441n/movieswithfriends/web"
 )
-
-// NewAddMovieToPartiesModalTemplateData creates a new AddMovieToPartiesModalTemplateData.
-func (h *Handlers) NewAddMovieToPartiesModalTemplateData() web.AddMovieToPartiesModalTemplateData {
-	return web.AddMovieToPartiesModalTemplateData{}
-}
 
 // AddMovieToPartiesHandler handles adding a movie to multiple parties.
 func (h *Handlers) AddMovieToPartiesHandler(w http.ResponseWriter, r *http.Request) {
@@ -20,14 +14,14 @@ func (h *Handlers) AddMovieToPartiesHandler(w http.ResponseWriter, r *http.Reque
 	logger := h.logger.With("handler", "AddMovieToPartiesHandler")
 	err := r.ParseForm()
 	if err != nil {
-		h.ServerError(w, r, err)
+		h.renderer.ServerError(w, r, err)
 		return
 	}
 
 	watcher, err := h.getWatcherFromSession(ctx, r)
 	if err != nil {
 		logger.ErrorContext(ctx, "failed to get watcher from session", slog.Any("error", err))
-		h.ClientError(w, r, http.StatusInternalServerError, "failed to get watcher from session")
+		h.renderer.ClientError(w, r, http.StatusInternalServerError, "failed to get watcher from session")
 		return
 	}
 
@@ -35,7 +29,7 @@ func (h *Handlers) AddMovieToPartiesHandler(w http.ResponseWriter, r *http.Reque
 	formTMDBID := r.FormValue("tmdb_id")
 	if formMovieID == "" && formTMDBID == "" {
 		logger.ErrorContext(ctx, "no movie id or tmdb id")
-		h.ClientError(w, r, http.StatusBadRequest, "no movie id or tmdb id")
+		h.renderer.ClientError(w, r, http.StatusBadRequest, "no movie id or tmdb id")
 		return
 	}
 
@@ -49,7 +43,7 @@ func (h *Handlers) AddMovieToPartiesHandler(w http.ResponseWriter, r *http.Reque
 		id, err := strconv.Atoi(formMovieID)
 		if err != nil {
 			logger.ErrorContext(ctx, "failed to convert movie id to int", slog.Any("error", err))
-			h.ClientError(w, r, http.StatusBadRequest, "no movie id or tmdb id")
+			h.renderer.ClientError(w, r, http.StatusBadRequest, "no movie id or tmdb id")
 			return
 		}
 		mgmtMovieID.MovieID = &id
@@ -59,7 +53,7 @@ func (h *Handlers) AddMovieToPartiesHandler(w http.ResponseWriter, r *http.Reque
 		id, err := strconv.Atoi(formTMDBID)
 		if err != nil {
 			logger.ErrorContext(ctx, "failed to convert tmdb id to int", slog.Any("error", err))
-			h.ClientError(w, r, http.StatusBadRequest, "no movie id or tmdb id")
+			h.renderer.ClientError(w, r, http.StatusBadRequest, "no movie id or tmdb id")
 			return
 		}
 		mgmtMovieID.TMDBID = &id
@@ -68,7 +62,7 @@ func (h *Handlers) AddMovieToPartiesHandler(w http.ResponseWriter, r *http.Reque
 	movieID, err := h.moviesService.GetOrCreateMovie(ctx, logger, mgmtMovieID)
 	if err != nil {
 		logger.ErrorContext(ctx, "failed to get or create movie", slog.Any("error", err))
-		h.ClientError(w, r, http.StatusBadRequest, "error creating movie")
+		h.renderer.ClientError(w, r, http.StatusBadRequest, "error creating movie")
 		return
 	}
 
@@ -76,7 +70,7 @@ func (h *Handlers) AddMovieToPartiesHandler(w http.ResponseWriter, r *http.Reque
 		id, err := strconv.Atoi(partyID)
 		if err != nil {
 			logger.ErrorContext(ctx, "failed to convert party id to int", slog.Any("error", err))
-			h.ClientError(w, r, http.StatusBadRequest, "error creating movie")
+			h.renderer.ClientError(w, r, http.StatusBadRequest, "error creating movie")
 			return
 		}
 
@@ -98,7 +92,7 @@ func (h *Handlers) GetAddMovieToPartyModal(w http.ResponseWriter, r *http.Reques
 
 	movieID, err := strconv.Atoi(idParams)
 	if err != nil {
-		h.ClientError(w, r, http.StatusBadRequest, "Please try again")
+		h.renderer.ClientError(w, r, http.StatusBadRequest, "Please try again")
 		return
 	}
 
@@ -106,7 +100,7 @@ func (h *Handlers) GetAddMovieToPartyModal(w http.ResponseWriter, r *http.Reques
 	typeParam := queryParams.Get("type")
 
 	var mgmtID partymgmt.MovieID
-	var tmplData web.AddMovieToPartiesModalTemplateData
+	var tmplData AddMovieToPartiesModalTemplateData
 	switch typeParam {
 	case "tmdb":
 		mgmtID.TMDBID = &movieID
@@ -120,7 +114,7 @@ func (h *Handlers) GetAddMovieToPartyModal(w http.ResponseWriter, r *http.Reques
 	watcher, err := h.getWatcherFromSession(ctx, r)
 	if err != nil {
 		logger.ErrorContext(ctx, "failed to get watcher from session", slog.Any("error", err))
-		h.SetErrorFlashMessage(w, r, "There was an issue getting this movie, try again.")
+		h.flashMessager.SetErrorFlashMessage(w, r, "There was an issue getting this movie, try again.")
 		http.Redirect(w, r, "/movies", http.StatusInternalServerError)
 		return
 	}
@@ -128,7 +122,7 @@ func (h *Handlers) GetAddMovieToPartyModal(w http.ResponseWriter, r *http.Reques
 	parties, err := watcher.GetPartiesToAddMovie(ctx, logger, mgmtID)
 	if err != nil {
 		logger.ErrorContext(ctx, "failed to get parties to add movie", slog.Any("error", err))
-		h.SetErrorFlashMessage(w, r, "There was an issue getting this movie, try again.")
+		h.flashMessager.SetErrorFlashMessage(w, r, "There was an issue getting this movie, try again.")
 		http.Redirect(w, r, "/movies", http.StatusInternalServerError)
 		return
 	}
@@ -136,5 +130,5 @@ func (h *Handlers) GetAddMovieToPartyModal(w http.ResponseWriter, r *http.Reques
 	tmplData.AddedParties = parties.WithMovie
 	tmplData.NotAddedParties = parties.WithoutMovie
 
-	h.RenderPartial(w, r, http.StatusOK, "movies/partials/add_to_party_modal.gohtml", tmplData)
+	h.renderer.RenderPartial(w, r, http.StatusOK, "movies/partials/add_to_party_modal.gohtml", tmplData)
 }

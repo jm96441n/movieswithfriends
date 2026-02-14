@@ -4,12 +4,33 @@ import (
 	"net/http"
 )
 
-func (a *Application) HomeHandler(w http.ResponseWriter, r *http.Request) {
+type StaticRoutes struct {
+	Renderer *Renderer
+}
+
+func (s *StaticRoutes) RegisterRoutes() []Route {
+	return []Route{
+		{
+			Path:               "/",
+			Handler:            s.HomeHandler,
+			AuthenticatedRoute: false,
+		},
+		{
+			Path: "/health",
+			Handler: func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+			},
+			AuthenticatedRoute: false,
+		},
+	}
+}
+
+func (s *StaticRoutes) HomeHandler(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
-		data := a.NewTemplateData(r, w, "/")
-		a.render(w, r, http.StatusNotFound, "404.gohtml", data)
+		data := s.Renderer.NewBaseTemplateData(r, w, "/")
+		s.Renderer.Render(w, r, http.StatusNotFound, "404.gohtml", data)
 		return
 	}
-	data := a.NewTemplateData(r, w, "/")
-	a.render(w, r, http.StatusOK, "home.gohtml", data)
+	data := s.Renderer.NewBaseTemplateData(r, w, "/")
+	s.Renderer.Render(w, r, http.StatusOK, "home.gohtml", data)
 }
