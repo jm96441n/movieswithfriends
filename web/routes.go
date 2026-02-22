@@ -46,7 +46,7 @@ func Routes(authMiddlewares AuthMiddlewares, registerers ...routeRegisterer) htt
 			if r.AuthenticatedRoute {
 				handlerFunc = requireAuthMW(handlerFunc)
 			}
-			handlerFunc = otelhttp.NewHandler(otelhttp.WithRouteTag(r.Path, authenticatorMW(handlerFunc)), r.Path).(http.HandlerFunc)
+			handlerFunc = otelhttp.NewHandler(authenticatorMW(handlerFunc), r.Path).(http.HandlerFunc)
 
 			router.Handle(r.Path, handlerFunc)
 		}
