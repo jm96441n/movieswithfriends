@@ -1,6 +1,6 @@
 module github.com/jm96441n/movieswithfriends
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/exaring/otelpgx v0.10.0

@@ -23,9 +23,9 @@ type ProfilesTemplateData struct {
 	web.BaseTemplateData
 }
 
-func NewProfilesTemplateData(r *http.Request, w http.ResponseWriter, currentPath string, renderer renderer) *ProfilesTemplateData {
+func (h *Handlers) NewProfilesTemplateData(r *http.Request, w http.ResponseWriter, currentPath string) *ProfilesTemplateData {
 	return &ProfilesTemplateData{
-		BaseTemplateData: renderer.NewBaseTemplateData(r, w, currentPath),
+		BaseTemplateData: h.newBaseTemplateData(r, w, currentPath),
 	}
 }
 
@@ -83,8 +83,8 @@ func (s *SignupTemplateData) GetErrorFields() (email, password, firstName, lastN
 	return &s.HasEmailError, &s.HasPasswordError, &s.HasFirstNameError, &s.HasLastNameError
 }
 
-func NewSignupTemplateData(r *http.Request, w http.ResponseWriter, path string, renderer renderer) *SignupTemplateData {
+func (h *Handlers) NewSignupTemplateData(r *http.Request, w http.ResponseWriter, path string) *SignupTemplateData {
 	return &SignupTemplateData{
-		BaseTemplateData: renderer.NewBaseTemplateData(r, w, path),
+		BaseTemplateData: h.newBaseTemplateData(r, w, path),
 	}
 }

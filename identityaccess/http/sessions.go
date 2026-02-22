@@ -12,7 +12,7 @@ import (
 
 // LoginShowHandler displays the login form.
 func (h *Handlers) LoginShowHandler(w http.ResponseWriter, r *http.Request) {
-	h.renderer.Render(w, r, http.StatusOK, "login/show.gohtml", h.renderer.NewBaseTemplateData(r, w, "/login"))
+	h.renderer.Render(w, r, http.StatusOK, "login/show.gohtml", h.newBaseTemplateData(r, w, "/login"))
 }
 
 // LoginHandler processes login form submission and authenticates the user.

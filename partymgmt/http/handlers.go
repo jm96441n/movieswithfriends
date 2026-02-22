@@ -23,6 +23,7 @@ type Handlers struct {
 	logger                   *slog.Logger
 	flashMessager            flashMessager
 	sessionStore             SessionStore
+	newBaseTemplateData      func(*http.Request, http.ResponseWriter, string) web.BaseTemplateData
 	moviesService            *partymgmt.MovieService
 	partyService             partymgmt.PartyService
 	watcherService           partymgmt.WatcherService
@@ -33,7 +34,6 @@ type Handlers struct {
 }
 
 type renderer interface {
-	NewBaseTemplateData(r *http.Request, w http.ResponseWriter, path string) web.BaseTemplateData
 	Render(w http.ResponseWriter, r *http.Request, status int, page string, data interface{})
 	RenderPartial(w http.ResponseWriter, r *http.Request, status int, page string, data interface{})
 	ServerError(w http.ResponseWriter, r *http.Request, err error)
@@ -56,6 +56,7 @@ type Config struct {
 	Logger                   *slog.Logger
 	FlashMessager            flashMessager
 	SessionStore             SessionStore
+	NewBaseTemplateData      func(*http.Request, http.ResponseWriter, string) web.BaseTemplateData
 	MoviesService            *partymgmt.MovieService
 	PartyService             partymgmt.PartyService
 	WatcherService           partymgmt.WatcherService
@@ -72,6 +73,7 @@ func NewHandlers(cfg Config) *Handlers {
 		logger:                   cfg.Logger,
 		flashMessager:            cfg.FlashMessager,
 		sessionStore:             cfg.SessionStore,
+		newBaseTemplateData:      cfg.NewBaseTemplateData,
 		moviesService:            cfg.MoviesService,
 		partyService:             cfg.PartyService,
 		watcherService:           cfg.WatcherService,

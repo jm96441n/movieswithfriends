@@ -12,7 +12,7 @@ import (
 
 // SignUpShowHandler displays the signup form.
 func (h *Handlers) SignUpShowHandler(w http.ResponseWriter, r *http.Request) {
-	data := NewSignupTemplateData(r, w, "/signup", h.renderer)
+	data := h.NewSignupTemplateData(r, w, "/signup")
 	h.renderer.Render(w, r, http.StatusOK, "signup/show.gohtml", data)
 }
 
@@ -44,7 +44,7 @@ func (h *Handlers) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 
 		if errors.As(err, &signupErr) {
 			// Get signup-specific template data
-			data := NewSignupTemplateData(r, w, "/signup", h.renderer)
+			data := h.NewSignupTemplateData(r, w, "/signup")
 			data.InitHasErrorFields()
 
 			// Get pointers to error fields

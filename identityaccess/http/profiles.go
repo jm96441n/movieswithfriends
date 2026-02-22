@@ -44,7 +44,7 @@ func (h *Handlers) ProfileShowHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get profile-specific template data
-	templateData := NewProfilesTemplateData(r, w, "/profile", h.renderer)
+	templateData := h.NewProfilesTemplateData(r, w, "/profile")
 	templateData.SetProfile(pageData.Profile)
 	templateData.SetParties(pageData.Parties, pageData.InvitedParties)
 	templateData.SetWatchedMovies(pageData.WatchedMovies)
@@ -73,7 +73,7 @@ func (h *Handlers) ProfileEditPageHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	templateData := NewProfilesTemplateData(r, w, "/profile", h.renderer)
+	templateData := h.NewProfilesTemplateData(r, w, "/profile")
 	templateData.SetProfile(profile)
 	h.renderer.Render(w, r, http.StatusOK, "profiles/edit.gohtml", templateData)
 }
@@ -100,7 +100,7 @@ func (h *Handlers) ProfileEditHandler(w http.ResponseWriter, r *http.Request) {
 	req, err := parseEditProfileForm(r)
 	if err != nil {
 		h.flashMessager.SetErrorFlashMessage(w, r, "There was an error editing your profile, please try again")
-		templateData := NewProfilesTemplateData(r, w, "/profile", h.renderer)
+		templateData := h.NewProfilesTemplateData(r, w, "/profile")
 		templateData.SetProfile(profile)
 		h.renderer.Render(w, r, http.StatusBadRequest, "profiles/edit.gohtml", templateData)
 		return
@@ -114,7 +114,7 @@ func (h *Handlers) ProfileEditHandler(w http.ResponseWriter, r *http.Request) {
 
 		h.flashMessager.SetErrorFlashMessage(w, r, "There was an error editing your profile, please try again")
 
-		templateData := NewProfilesTemplateData(r, w, "/profile", h.renderer)
+		templateData := h.NewProfilesTemplateData(r, w, "/profile")
 		templateData.SetProfile(profile)
 
 		if errors.As(err, &editErr) {
@@ -178,7 +178,7 @@ func (h *Handlers) GetPaginatedWatchHistoryHandler(w http.ResponseWriter, r *htt
 	}
 
 	if r.Header.Get("HX-Request") != "" {
-		templateData := NewProfilesTemplateData(r, w, "/profile", h.renderer)
+		templateData := h.NewProfilesTemplateData(r, w, "/profile")
 		templateData.SetWatchedMovies(movieData.WatchedMovies)
 		templateData.SetPagination(pageNum, movieData.NumPages)
 		h.renderer.RenderPartial(w, r, http.StatusOK, "profiles/partials/watch_list.gohtml", templateData)

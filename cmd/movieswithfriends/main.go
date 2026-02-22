@@ -178,6 +178,9 @@ func main() {
 	cookieStore := sessions.NewCookieStore(sessionKey)
 	sessionStore := web.NewSessionAccessor(cookieStore, logger)
 
+	// Create the base template data factory function
+	newBaseTemplateData := web.NewBaseTemplateDataFactory(sessionStore)
+
 	moviesRepo := partymgmtstore.NewMoviesRepository(connPool)
 
 	assetDir, err := fs.Sub(ui.TemplateFS, "dist")
@@ -223,6 +226,7 @@ func main() {
 		Renderer:                 renderer,
 		FlashMessager:            flashMessager,
 		SessionStore:             sessionStore,
+		NewBaseTemplateData:      newBaseTemplateData,
 		MoviesService:            moviesSvc,
 		PartyService:             partySvc,
 		WatcherService:           watcherSvc,
@@ -237,6 +241,7 @@ func main() {
 		renderer,
 		flashMessager,
 		sessionStore,
+		newBaseTemplateData,
 		profilesSvc,
 		profileAggregatorSvc,
 		auth,
@@ -244,7 +249,10 @@ func main() {
 		logger,
 	)
 
-	staticRoutes := &web.StaticRoutes{Renderer: renderer}
+	staticRoutes := &web.StaticRoutes{
+		Renderer:            renderer,
+		NewBaseTemplateData: newBaseTemplateData,
+	}
 
 	addr := os.Getenv("ADDR")
 	if addr == "" {

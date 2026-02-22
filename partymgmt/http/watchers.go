@@ -45,7 +45,7 @@ func (h *Handlers) WatchedMoviesHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Get profile-specific template data
-	templateData := NewWatchListTemplateData(r, w, "/watched_movies", h.renderer)
+	templateData := h.NewWatchListTemplateData(r, w, "/watched_movies")
 	templateData.WatchedMovies = movieData.WatchedMovies
 	templateData.NumPages = movieData.NumPages
 	templateData.CurPage = pageNum

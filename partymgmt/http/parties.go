@@ -12,7 +12,7 @@ func (h *Handlers) NewPartyHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := h.logger.With("handler", "NewPartyHandler")
 	logger.InfoContext(ctx, "calling NewPartyHandler")
-	templateData := NewPartiesTemplateData(r, w, "/parties", h.renderer)
+	templateData := h.NewPartiesTemplateData(r, w, "/parties")
 	h.renderer.Render(w, r, http.StatusOK, "parties/new.gohtml", templateData)
 }
 
@@ -21,7 +21,7 @@ func (h *Handlers) EditPartyHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := h.logger.With("handler", "EditPartyHandler")
 	logger.InfoContext(ctx, "calling EditPartyHandler")
-	templateData := NewPartiesTemplateData(r, w, "/parties", h.renderer)
+	templateData := h.NewPartiesTemplateData(r, w, "/parties")
 	h.renderer.Render(w, r, http.StatusOK, "parties/edit.gohtml", templateData)
 }
 
@@ -33,7 +33,7 @@ func (h *Handlers) CreatePartyHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		logger.ErrorContext(ctx, "failed to get profile ID from session", slog.Any("error", err))
 		h.flashMessager.SetErrorFlashMessage(w, r, "There was an error creating this party, try again.")
-		data := NewPartiesTemplateData(r, w, "/parties", h.renderer)
+		data := h.NewPartiesTemplateData(r, w, "/parties")
 		h.renderer.Render(w, r, http.StatusInternalServerError, "parties/new.gohtml", data)
 		return
 	}
@@ -42,7 +42,7 @@ func (h *Handlers) CreatePartyHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		logger.ErrorContext(ctx, "failed to get parseForm", slog.Any("error", err))
 		h.flashMessager.SetErrorFlashMessage(w, r, "There was an error creating this party, try again.")
-		data := NewPartiesTemplateData(r, w, "/parties", h.renderer)
+		data := h.NewPartiesTemplateData(r, w, "/parties")
 		h.renderer.Render(w, r, http.StatusInternalServerError, "parties/new.gohtml", data)
 		return
 	}
@@ -51,7 +51,7 @@ func (h *Handlers) CreatePartyHandler(w http.ResponseWriter, r *http.Request) {
 	if name == "" {
 		logger.ErrorContext(ctx, "failed to get partyName from form")
 		h.flashMessager.SetErrorFlashMessage(w, r, "A Name is required to create this party.")
-		data := NewPartiesTemplateData(r, w, "/parties", h.renderer)
+		data := h.NewPartiesTemplateData(r, w, "/parties")
 		h.renderer.Render(w, r, http.StatusBadRequest, "parties/new.gohtml", data)
 		return
 	}
@@ -60,7 +60,7 @@ func (h *Handlers) CreatePartyHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		logger.ErrorContext(ctx, "failed to create party", slog.Any("error", err))
 		h.flashMessager.SetErrorFlashMessage(w, r, "There was an error creating this party, try again.")
-		data := NewPartiesTemplateData(r, w, "/parties", h.renderer)
+		data := h.NewPartiesTemplateData(r, w, "/parties")
 		h.renderer.Render(w, r, http.StatusInternalServerError, "parties/new.gohtml", data)
 		return
 	}
@@ -92,7 +92,7 @@ func (h *Handlers) PartyShowHandler(w http.ResponseWriter, r *http.Request) {
 	party, err := h.partyService.GetPartyWithMovies(ctx, logger, id)
 	if err != nil {
 		logger.ErrorContext(ctx, "failed to get party by ID", slog.Any("error", err))
-		data := h.renderer.NewBaseTemplateData(r, w, "/parties")
+		data := h.newBaseTemplateData(r, w, "/parties")
 		h.renderer.Render(w, r, http.StatusNotFound, "404.gohtml", data)
 		return
 	}
@@ -107,7 +107,7 @@ func (h *Handlers) PartyShowHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	templateData := NewPartiesTemplateData(r, w, "/parties", h.renderer)
+	templateData := h.NewPartiesTemplateData(r, w, "/parties")
 	templateData.Party = party
 	templateData.ModalData.PendingInvites = invites
 	templateData.ModalData.PartyID = id
@@ -136,7 +136,7 @@ func (h *Handlers) PartiesIndexHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	templateData := NewPartiesIndexTemplateData(r, w, "/parties", h.renderer, parties, invites, watcher.ID)
+	templateData := h.NewPartiesIndexTemplateData(r, w, "/parties", parties, invites, watcher.ID)
 	h.renderer.Render(w, r, http.StatusOK, "parties/index.gohtml", templateData)
 }
 

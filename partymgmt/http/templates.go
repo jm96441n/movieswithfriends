@@ -53,29 +53,29 @@ type WatchListTemplateData struct {
 	web.BaseTemplateData
 }
 
-func NewMoviesTemplateData(r *http.Request, w http.ResponseWriter, path string, renderer renderer) MoviesTemplateData {
+func (h *Handlers) NewMoviesTemplateData(r *http.Request, w http.ResponseWriter, path string) MoviesTemplateData {
 	return MoviesTemplateData{
-		BaseTemplateData: renderer.NewBaseTemplateData(r, w, path),
+		BaseTemplateData: h.newBaseTemplateData(r, w, path),
 	}
 }
 
-func NewPartiesIndexTemplateData(r *http.Request, w http.ResponseWriter, path string, renderer renderer, parties, invitedParties []partymgmt.Party, currentUserID int) PartiesIndexTemplateData {
+func (h *Handlers) NewPartiesIndexTemplateData(r *http.Request, w http.ResponseWriter, path string, parties, invitedParties []partymgmt.Party, currentUserID int) PartiesIndexTemplateData {
 	return PartiesIndexTemplateData{
 		Parties:          parties,
 		InvitedParties:   invitedParties,
 		CurrentUserID:    currentUserID,
-		BaseTemplateData: renderer.NewBaseTemplateData(r, w, path),
+		BaseTemplateData: h.newBaseTemplateData(r, w, path),
 	}
 }
 
-func NewPartiesTemplateData(r *http.Request, w http.ResponseWriter, path string, renderer renderer) PartiesTemplateData {
+func (h *Handlers) NewPartiesTemplateData(r *http.Request, w http.ResponseWriter, path string) PartiesTemplateData {
 	return PartiesTemplateData{
-		BaseTemplateData: renderer.NewBaseTemplateData(r, w, path),
+		BaseTemplateData: h.newBaseTemplateData(r, w, path),
 	}
 }
 
-func NewWatchListTemplateData(r *http.Request, w http.ResponseWriter, path string, renderer renderer) WatchListTemplateData {
+func (h *Handlers) NewWatchListTemplateData(r *http.Request, w http.ResponseWriter, path string) WatchListTemplateData {
 	return WatchListTemplateData{
-		BaseTemplateData: renderer.NewBaseTemplateData(r, w, path),
+		BaseTemplateData: h.newBaseTemplateData(r, w, path),
 	}
 }

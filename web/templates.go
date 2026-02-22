@@ -33,30 +33,35 @@ type BaseTemplateData struct {
 	UserEmail       string
 }
 
-func (rr *Renderer) NewBaseTemplateData(r *http.Request, w http.ResponseWriter, path string) BaseTemplateData {
-	authed := IsAuthenticated(r.Context())
+// NewBaseTemplateDataFactory creates a closure that generates BaseTemplateData.
+// The returned function captures the sessionStore and uses it to create BaseTemplateData
+// for each request.
+func NewBaseTemplateDataFactory(sessionStore *SessionAccessor) func(*http.Request, http.ResponseWriter, string) BaseTemplateData {
+	return func(r *http.Request, w http.ResponseWriter, path string) BaseTemplateData {
+		authed := IsAuthenticated(r.Context())
 
-	var (
-		fullName string
-		email    string
-	)
+		var (
+			fullName string
+			email    string
+		)
 
-	if authed {
-		fullName = r.Context().Value(FullNameContextKey).(string)
-		email = r.Context().Value(EmailContextKey).(string)
-	}
+		if authed {
+			fullName = r.Context().Value(FullNameContextKey).(string)
+			email = r.Context().Value(EmailContextKey).(string)
+		}
 
-	flashes := rr.sessionStore.getFlashes(r.Context(), r, w)
+		flashes := sessionStore.getFlashes(r.Context(), r, w)
 
-	return BaseTemplateData{
-		ErrorFlashes:    flashes.errorFlashes,
-		InfoFlashes:     flashes.infoFlashes,
-		WarningFlashes:  flashes.warningFlashes,
-		CurrentPagePath: path,
-		CurrentYear:     2025,
-		IsAuthenticated: authed,
-		FullName:        fullName,
-		UserEmail:       email,
+		return BaseTemplateData{
+			ErrorFlashes:    flashes.errorFlashes,
+			InfoFlashes:     flashes.infoFlashes,
+			WarningFlashes:  flashes.warningFlashes,
+			CurrentPagePath: path,
+			CurrentYear:     2025,
+			IsAuthenticated: authed,
+			FullName:        fullName,
+			UserEmail:       email,
+		}
 	}
 }
 

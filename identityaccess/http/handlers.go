@@ -17,7 +17,6 @@ type flashMessager interface {
 }
 
 type renderer interface {
-	NewBaseTemplateData(r *http.Request, w http.ResponseWriter, path string) web.BaseTemplateData
 	Render(w http.ResponseWriter, r *http.Request, status int, page string, data interface{})
 	RenderPartial(w http.ResponseWriter, r *http.Request, status int, page string, data interface{})
 	ServerError(w http.ResponseWriter, r *http.Request, err error)
@@ -37,6 +36,7 @@ type Handlers struct {
 	renderer                 renderer
 	flashMessager            flashMessager
 	sessionStore             sessionStore
+	newBaseTemplateData      func(*http.Request, http.ResponseWriter, string) web.BaseTemplateData
 	profileService           *identityaccess.ProfileService
 	profileAggregatorService *services.ProfileAggregatorService
 	authenticator            *identityaccess.Authenticator
@@ -49,6 +49,7 @@ func NewHandlers(
 	renderer renderer,
 	flashMessager flashMessager,
 	sessionStore sessionStore,
+	newBaseTemplateData func(*http.Request, http.ResponseWriter, string) web.BaseTemplateData,
 	profileService *identityaccess.ProfileService,
 	profileAggregatorService *services.ProfileAggregatorService,
 	authenticator *identityaccess.Authenticator,
@@ -59,6 +60,7 @@ func NewHandlers(
 		renderer:                 renderer,
 		flashMessager:            flashMessager,
 		sessionStore:             sessionStore,
+		newBaseTemplateData:      newBaseTemplateData,
 		profileService:           profileService,
 		profileAggregatorService: profileAggregatorService,
 		authenticator:            authenticator,

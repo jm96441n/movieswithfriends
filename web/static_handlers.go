@@ -5,7 +5,8 @@ import (
 )
 
 type StaticRoutes struct {
-	Renderer *Renderer
+	Renderer            *Renderer
+	NewBaseTemplateData func(*http.Request, http.ResponseWriter, string) BaseTemplateData
 }
 
 func (s *StaticRoutes) RegisterRoutes() []Route {
@@ -27,10 +28,10 @@ func (s *StaticRoutes) RegisterRoutes() []Route {
 
 func (s *StaticRoutes) HomeHandler(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
-		data := s.Renderer.NewBaseTemplateData(r, w, "/")
+		data := s.NewBaseTemplateData(r, w, "/")
 		s.Renderer.Render(w, r, http.StatusNotFound, "404.gohtml", data)
 		return
 	}
-	data := s.Renderer.NewBaseTemplateData(r, w, "/")
+	data := s.NewBaseTemplateData(r, w, "/")
 	s.Renderer.Render(w, r, http.StatusOK, "home.gohtml", data)
 }

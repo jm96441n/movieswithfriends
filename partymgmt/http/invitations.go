@@ -102,7 +102,7 @@ func (h *Handlers) AcceptInviteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	templateData := NewPartiesIndexTemplateData(r, w, "/parties", h.renderer, parties, invites, watcher.ID)
+	templateData := h.NewPartiesIndexTemplateData(r, w, "/parties", parties, invites, watcher.ID)
 	h.renderer.RenderPartial(w, r, http.StatusOK, "partials/party_list.gohtml", templateData)
 	// this should remove the invitation, create the party_member record
 	// and then cause a re-render of the parties listing
